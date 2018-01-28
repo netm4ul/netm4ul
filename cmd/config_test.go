@@ -49,3 +49,28 @@ func TestParseApi(t *testing.T){
 		t.Error("Expected 'P@ssW0rd!', got ", password)
 	}
 }
+
+func TestServers(t *testing.T){
+	serverCount := len(Config.Servers)
+	if serverCount != 3{
+		t.Error("Expected 3 servers, go ", serverCount)
+	}
+	if !Config.Servers["master"].Ip.Equal(net.ParseIP("1.1.1.1")){
+		t.Error("Expected 1.1.1.1 to be the master node @IP, got ", Config.Servers["master"].Ip)
+	}
+	if Config.Servers["master"].Type != "master"{
+		t.Error("Expected master type, got", Config.Servers["master"].Type)
+	}
+}
+
+func TestModules(t *testing.T){
+//	var enabled bool
+	moduleCount := len(Config.Modules)
+	if moduleCount != 3{
+		t.Error("Expected 3 modules, got", moduleCount)
+	}
+	if !Config.Modules["shodan"].Enabled{
+		t.Error("Expected shodan to be enabled", Config.Modules["shodan"].Enabled)
+	}
+}
+

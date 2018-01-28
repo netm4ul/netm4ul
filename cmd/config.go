@@ -1,52 +1,65 @@
 package cmd
 
-import(
+import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"net"
+	"os"
+	"path/filepath"
 )
 
-type Api struct{
-	Port uint16
-	User string
+type Api struct {
+	Port     uint16
+	User     string
 	Password string
 }
 
-type Keys struct{
+type Keys struct {
 	Google string
 	Shodan string
 }
 
-type MQ struct{
-	User string
+type MQ struct {
+	User     string
 	Password string
-	Ip net.IP
-	Port uint16
+	Ip       net.IP
+	Port     uint16
 }
 
-type Module struct{
-	enabled bool
+type Module struct {
+	Enabled bool
 }
 
-type Server struct{
-	Ip net.IP
+type Server struct {
+	Ip      net.IP
 	Modules []string
-	Type string
+	Type    string
 }
 
-type ConfigToml struct{
-	Api Api
-	Keys Keys
-	MQ MQ
-	Servers Server
-	Modules Module
+type ConfigToml struct {
+	Api     Api
+	Keys    Keys
+	MQ      MQ
+	Servers map[string]Server
+	Modules map[string]Module
 }
 
-// exported config
+// Config : exported config
 var Config ConfigToml
 
-func init(){
-	if _, err := toml.DecodeFile("../netm4ul.conf", &Config); err != nil{
+func init() {
+	/*
+		Get the executable path.
+		From there, get the config.
+	*/
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	configPath := filepath.Join(exPath, "netm4ul.conf")
+
+	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
 		fmt.Println(err)
 		return
 	}
