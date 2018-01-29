@@ -21,12 +21,12 @@ type Shodan struct {
 
 // Name : name getter
 func (S Shodan) Name() string {
-	return "Traceroute"
+	return "Shodan"
 }
 
 // Author : Author getter
 func (S Shodan) Author() string {
-	return "Edznux"
+	return "Razbaa"
 }
 
 // Version : Version  getter
@@ -71,7 +71,7 @@ func (S Shodan) ParseConfig() error {
 		panic(err)
 	}
 	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "config", "traceroute.conf")
+	configPath := filepath.Join(exPath, "config", "shodan.conf")
 
 	if _, err := toml.DecodeFile(configPath, &S.Config); err != nil {
 		fmt.Println(err)

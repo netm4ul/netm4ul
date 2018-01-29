@@ -19,8 +19,6 @@ always called (even in non-main package) & before main function
 New modules must be included here
 */
 func init() {
-
-	var err error
 	var t modules.Module = traceroute.Traceroute{}
 	ListModule = append(ListModule, t)
 	fmt.Println("[*] Modules loaded :")
