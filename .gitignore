@@ -17,3 +17,4 @@ netm4ul
 # vim backup file
 *.swp
 vendor/
+.idea/
