@@ -19,8 +19,6 @@ always called (even in non-main package) & before main function
 New modules must be included here
 */
 func init() {
-
-	var err error
 	var t modules.Module = traceroute.Traceroute{}
 	ListModule = append(ListModule, t)
 	fmt.Println("[*] Modules loaded :")
@@ -29,7 +27,11 @@ func init() {
 		if Config.Modules[strings.ToLower(m.Name())].Enabled {
 			fmt.Println("\t [+]", m.Name(), "Version :", m.Version(), "Enabled !")
 			ListModuleEnabled = append(ListModuleEnabled, m)
-			err = m.ParseConfig()
+			err := m.ParseConfig()
+			if err != nil{
+				fmt.Println("Error: could not parse config (PerseConfig)")
+				panic(err)
+			}
 		} else {
 			fmt.Println("\t [-]", m.Name(), "Version :", m.Version(), "Disabled !")
 		}
