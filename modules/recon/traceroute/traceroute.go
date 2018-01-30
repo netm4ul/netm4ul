@@ -2,10 +2,17 @@ package traceroute
 
 import (
 	"fmt"
+	//"github.com/BurntSushi/toml"
+	//"github.com/netm4ul/netm4ul/modules"
+	"bytes"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/modules"
-	"os"
-	"path/filepath"
 )
 
 // ConfigToml : configuration model (from the toml file)
@@ -26,7 +33,7 @@ func (T Traceroute) Name() string {
 
 // Author : Author getter
 func (T Traceroute) Author() string {
-	return "Edznux"
+	return "tomalavie"
 }
 
 // Version : Version  getter
@@ -42,10 +49,15 @@ func (T Traceroute) DependsOn() []modules.Condition {
 
 // Run : Main function of the module
 func (T Traceroute) Run(data interface{}) (interface{}, error) {
-	/*
-		TODO: Not implemented yet
-	*/
-	fmt.Println("NOT IMPLEMENTED YET")
+	fmt.Println("hello world")                   //Affiche hello world pour le fun
+	cmd := exec.Command("traceroute", "8.8.8.8") //
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf(out.String())
 	return nil, nil
 }
 
