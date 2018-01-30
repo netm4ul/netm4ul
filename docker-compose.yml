@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  rabbitMq:
+    container_name: "rabbitmq"
+    image: rabbitmq:3-management
+    ports:
+      - "8080:15672"
+      - "5672:5672"
+      - "5671:5671"
+    environment: 
+      RABBITMQ_DEFAULT_PASS: pass
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_VHOST: vhost
+
+  netmaul:
+    build: .
+    container_name: "netmaul"
+
+  mongodb:
+    image: mongo:latest
+    container_name: "mongodb"
+    environment:
+      MONGO_DATA_DIR: /data/db
+      MONGO_LOG_DIR: /dev/null
+      MONGODB_USER: user
+      MONGODB_PASS: pass
+    volumes:
+      - ./data/db:/data/db
+    ports:
+      - 27017:27017
+    command: mongod --smallfiles --logpath=/dev/null # --quiet
