@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/netm4ul/netm4ul/modules"
-	"github.com/netm4ul/netm4ul/modules/exploit/traceroute"
+	"github.com/netm4ul/netm4ul/modules/recon/traceroute"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ always called (even in non-main package) & before main function
 New modules must be included here
 */
 func init() {
-	var t modules.Module = traceroute.Traceroute{}
+	var t modules.Module = &traceroute.Traceroute{}
 	ListModule = append(ListModule, t)
 	fmt.Println("[*] Modules loaded :")
 
