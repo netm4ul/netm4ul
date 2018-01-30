@@ -5,7 +5,6 @@ import (
 	//"github.com/BurntSushi/toml"
 	//"github.com/netm4ul/netm4ul/modules"
 	"bytes"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
