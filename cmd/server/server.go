@@ -1,8 +1,10 @@
-package cmd
+package server
 
 import (
+	"bufio"
+	"encoding/gob"
 	"fmt"
-	"io/ioutil"
+	"log"
 	"net"
 	"os"
 )
@@ -33,10 +35,20 @@ func Listen(ipport string) {
 }
 
 func handleRequest(conn net.Conn) {
-	res, err := ioutil.ReadAll(conn)
+	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 	defer conn.Close()
+
+	handleHello(rw)
+}
+func handleHello(rw *bufio.ReadWriter) {
+	var data string
+
+	dec := gob.NewDecoder(rw)
+	err := dec.Decode(&data)
+
 	if err != nil {
-		panic(err)
+		log.Println("Cannot read gob data :", err)
+		return
 	}
-	fmt.Println(res)
+	fmt.Println(data)
 }

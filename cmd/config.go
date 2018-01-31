@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"net"
 	"os"
 	"path/filepath"
+
+	"github.com/BurntSushi/toml"
 )
 
 type Api struct {
@@ -37,11 +38,12 @@ type Server struct {
 }
 
 type ConfigToml struct {
-	Api     Api
-	Keys    Keys
-	MQ      MQ
-	Servers map[string]Server
-	Modules map[string]Module
+	IsServer bool
+	Api      Api
+	Keys     Keys
+	MQ       MQ
+	Servers  map[string]Server
+	Modules  map[string]Module
 }
 
 // Config : exported config
@@ -56,6 +58,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
 	exPath := filepath.Dir(ex)
 	configPath := filepath.Join(exPath, "netm4ul.conf")
 
