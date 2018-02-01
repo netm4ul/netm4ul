@@ -6,7 +6,6 @@ type Condition struct {
 	Module string // Module name
 }
 
-// Module : Mandatory interfaces for all modules
 type Module interface {
 	Name() string
 	Version() string

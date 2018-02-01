@@ -7,10 +7,19 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
+
+	"github.com/netm4ul/netm4ul/cmd/config"
+)
+
+var (
+	// ConfigServer : Global config for the server. Must be goroutine safe
+	ConfigServer *config.ConfigToml
 )
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
 func Listen(ipport string) {
+
 	l, err := net.Listen("tcp", ipport)
 
 	if err != nil {
@@ -35,20 +44,34 @@ func Listen(ipport string) {
 }
 
 func handleRequest(conn net.Conn) {
+
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 	defer conn.Close()
 
-	handleHello(rw)
+	handleHello(conn, rw)
 }
-func handleHello(rw *bufio.ReadWriter) {
-	var data string
 
+// Recv basic info for the node at connection time.
+func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
+
+	var data config.Node
 	dec := gob.NewDecoder(rw)
 	err := dec.Decode(&data)
 
 	if err != nil {
-		log.Println("Cannot read gob data :", err)
+		log.Println("Cannot read hello data :", err)
 		return
 	}
-	fmt.Println(data)
+
+	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
+
+	if _, ok := ConfigServer.Nodes[ip]; ok {
+		fmt.Println("Node known. Updating")
+	} else {
+		fmt.Println("unknown node. Creating")
+	}
+
+	ConfigServer.Nodes[ip] = data
+
+	fmt.Println(ConfigServer.Nodes)
 }

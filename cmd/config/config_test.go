@@ -1,20 +1,20 @@
-package cmd
+package config
 
 import (
 	"net"
 	"testing"
 )
 
-func TestParseMQ(t *testing.T) {
+func TestParseServer(t *testing.T) {
 	var user string
 	var password string
 	var port uint16
 	var ip net.IP
 
-	user = Config.MQ.User
-	password = Config.MQ.Password
-	ip = Config.MQ.Ip
-	port = Config.MQ.Port
+	user = Config.Server.User
+	password = Config.Server.Password
+	ip = Config.Server.IP
+	port = Config.Server.Port
 
 	if user != "user" {
 		t.Error("Expected 'user', got ", user)
@@ -30,14 +30,14 @@ func TestParseMQ(t *testing.T) {
 	}
 }
 
-func TestParseApi(t *testing.T) {
+func TestParseAPI(t *testing.T) {
 	var port uint16
 	var user string
 	var password string
 
-	user = Config.Api.User
-	port = Config.Api.Port
-	password = Config.Api.Password
+	user = Config.API.User
+	port = Config.API.Port
+	password = Config.API.Password
 
 	if user != "toto" {
 		t.Error("Expected 'toto', got ", user)
@@ -47,19 +47,6 @@ func TestParseApi(t *testing.T) {
 	}
 	if password != "P@ssW0rd!" {
 		t.Error("Expected 'P@ssW0rd!', got ", password)
-	}
-}
-
-func TestServers(t *testing.T) {
-	serverCount := len(Config.Servers)
-	if serverCount != 3 {
-		t.Error("Expected 3 servers, go ", serverCount)
-	}
-	if !Config.Servers["master"].Ip.Equal(net.ParseIP("1.1.1.1")) {
-		t.Error("Expected 1.1.1.1 to be the master node @IP, got ", Config.Servers["master"].Ip)
-	}
-	if Config.Servers["master"].Type != "master" {
-		t.Error("Expected master type, got", Config.Servers["master"].Type)
 	}
 }
 

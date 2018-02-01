@@ -1,4 +1,4 @@
-package cmd
+package config
 
 import (
 	"fmt"
@@ -9,51 +9,53 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type Api struct {
+// API : Rest API config
+type API struct {
 	Port     uint16
 	User     string
 	Password string
 }
 
+// Keys : setup tocken & api keys
 type Keys struct {
 	Google string
 	Shodan string
 }
 
-type MQ struct {
+// Server : Master node config
+type Server struct {
 	User     string
 	Password string
-	Ip       net.IP
+	IP       net.IP
 	Port     uint16
 }
 
+// Module : Basic struct for general module config
 type Module struct {
 	Enabled bool
 }
 
-type Server struct {
-	Ip      net.IP
+// Node : Node info
+type Node struct {
 	Modules []string
-	Type    string
 }
 
+// ConfigToml is the global config object
 type ConfigToml struct {
 	IsServer bool
-	Api      Api
+	API      API
 	Keys     Keys
-	MQ       MQ
-	Servers  map[string]Server
+	Server   Server
+	Nodes    map[string]Node
 	Modules  map[string]Module
 }
 
 // Config : exported config
 var Config ConfigToml
 
+//	Get the executable path.
+//	From there, get the config.
 func init() {
-	/*
-		Get the executable path.
-		From there, get the config.
-	*/
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
