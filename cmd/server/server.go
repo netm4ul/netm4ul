@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/netm4ul/netm4ul/cmd/config"
+	"github.com/netm4ul/netm4ul/cmd/server/database"
 )
 
 var (
@@ -73,5 +74,7 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 
 	ConfigServer.Nodes[ip] = data
 
+	session := database.Connect()
+	database.CreateProject(session, data.Project)
 	fmt.Println(ConfigServer.Nodes)
 }

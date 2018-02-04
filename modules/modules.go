@@ -16,4 +16,5 @@ type Module interface {
 	HandleMQ() error
 	SendMQ(data []byte) error
 	ParseConfig() error
+	WriteDb() error
 }

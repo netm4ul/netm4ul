@@ -11,33 +11,34 @@ import (
 
 // API : Rest API config
 type API struct {
-	Port     uint16
-	User     string
-	Password string
+	Port     uint16 `toml:"port"`
+	User     string `toml:"user"`
+	Password string `toml:"password"`
 }
 
 // Keys : setup tocken & api keys
 type Keys struct {
-	Google string
-	Shodan string
+	Google string `toml:"google"`
+	Shodan string `toml:"shodan"`
 }
 
 // Server : Master node config
 type Server struct {
-	User     string
-	Password string
-	IP       net.IP
-	Port     uint16
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	IP       net.IP `toml:"ip"`
+	Port     uint16 `toml:"port"`
 }
 
 // Module : Basic struct for general module config
 type Module struct {
-	Enabled bool
+	Enabled bool `toml:"enabled"`
 }
 
 // Node : Node info
 type Node struct {
 	Modules []string
+	Project string
 }
 
 // ConfigToml is the global config object

@@ -37,14 +37,14 @@ func InitModule() {
 	}
 }
 
-// SendHello : Send node info (modules list)
+// SendHello : Send node info (modules list, project name,...)
 func SendHello(rw *bufio.ReadWriter) error {
 	var err error
 
 	enc := gob.NewEncoder(rw)
 
 	module := ListModuleEnabled
-	node := config.Node{Modules: module}
+	node := config.Node{Modules: module, Project: "FirstProject"}
 
 	fmt.Println(node)
 
