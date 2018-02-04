@@ -1,10 +1,14 @@
 version: '3'
 
 services:
-  netmaul:
+  netmaulserver:
     build: .
-    container_name: "netmaul"
+    container_name: "netmaul-server"
+    command: ["/go/src/netm4ul/netm4ul -server"]
 
+  netmaulclient:
+    container_name: "netmaul-node"
+    build: .
   mongodb:
     image: mongo:latest
     container_name: "mongodb"
