@@ -1,12 +1,15 @@
 FROM golang:1.9
 
-RUN mkdir /go/src/netm4ul
+ARG PROJECT="github.com/netm4ul/netm4ul"
+ARG FULL_PATH=/go/src/${PROJECT}
+ARG EXECUTABLE=${FULL_PATH}/netm4ul
 
-COPY . /go/src/netm4ul
-WORKDIR /go/src/netm4ul
+RUN mkdir -p ${FULL_PATH}
 
-RUN go get -u github.com/golang/dep/...
+COPY . ${FULL_PATH}
+WORKDIR ${FULL_PATH}
 
-RUN make
-
-CMD ["/go/src/netm4ul/netm4ul"]
+# RUN go get -u github.com/golang/dep/...
+# RUN make
+RUN go build . 
+CMD [${EXECUTABLE}]
