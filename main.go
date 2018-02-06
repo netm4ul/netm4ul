@@ -26,7 +26,7 @@ func main() {
 		cmd.CreateServer(addr, &conf)
 
 	} else {
-		ip := config.Config.Server.IP.String()
+		ip := config.Config.Server.IP
 		port := strconv.FormatUint(uint64(config.Config.Server.Port), 10)
 		addr := ip + ":" + port
 		cmd.CreateClient(addr, &conf)

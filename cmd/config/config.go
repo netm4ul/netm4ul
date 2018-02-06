@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 
@@ -26,7 +25,15 @@ type Keys struct {
 type Server struct {
 	User     string `toml:"user"`
 	Password string `toml:"password"`
-	IP       net.IP `toml:"ip"`
+	IP       string `toml:"ip"`
+	Port     uint16 `toml:"port"`
+}
+
+// Database : Mongodb config
+type Database struct {
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	IP       string `toml:"ip"`
 	Port     uint16 `toml:"port"`
 }
 
@@ -47,6 +54,7 @@ type ConfigToml struct {
 	API      API
 	Keys     Keys
 	Server   Server
+	Database Database
 	Nodes    map[string]Node
 	Modules  map[string]Module
 }
