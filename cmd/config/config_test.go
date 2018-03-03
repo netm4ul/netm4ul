@@ -13,7 +13,7 @@ func TestParseServer(t *testing.T) {
 
 	user = Config.Server.User
 	password = Config.Server.Password
-	ip = Config.Server.IP
+	ip = net.ParseIP(Config.Server.IP)
 	port = Config.Server.Port
 
 	if user != "user" {

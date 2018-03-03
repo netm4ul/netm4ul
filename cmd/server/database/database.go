@@ -11,6 +11,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+/*
+	See README for the database "schema"
+	This file contains some generic informations.
+*/
+
+// Hop defines each "hop" from the host (netm4ul client) to the target.
 type Hop struct {
 	IP  net.IP
 	Max float32
@@ -18,16 +24,20 @@ type Hop struct {
 	Avg float32
 }
 
+// Route defines the route from the host (netm4ul client) to the target
 type Route struct {
 	Source      string
 	Destination string
 	Hops        []Hop
 }
+
+// Directory defines one directory from a remote target (webserver)
 type Directory struct {
 	Name string
 	Code string
 }
 
+// Port defines the basic structure for each port scanned on the target
 type Port struct {
 	Number      int16
 	Protocol    string
@@ -36,15 +46,18 @@ type Port struct {
 	Type        string
 	Directories []Directory
 }
+
+//IP defines the IP address of a target.
 type IP struct {
 	Value net.IP
 	Ports []Port
 }
 
+//Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	Name    string
-	Updated time.Time
-	IPs     []interface{}
+	Name      string
+	UpdatedAt int64
+	IPs       []interface{}
 }
 
 var db *mgo.Database
@@ -75,10 +88,10 @@ func Connect() *mgo.Session {
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string) {
 	// mongodb will create collection on use.
-	fmt.Println("Should add " + projectName + "to the collections 'projects'")
+	fmt.Println("Should add " + projectName + " to the collections 'projects'")
 	c := session.DB(dbname).C("projects")
 
-	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"updatedAt": time.Now()}})
+	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 	log.Println(info)
 	if err != nil {
 		log.Fatal(err)
