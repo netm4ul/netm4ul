@@ -23,7 +23,11 @@ func main() {
 
 		// listen on all interface + Server port
 		addr := ":" + strconv.FormatUint(uint64(config.Config.Server.Port), 10)
-		cmd.CreateServer(addr, &conf)
+		go cmd.CreateServer(addr, &conf)
+
+		//TODO flag enable / disable api
+		addrAPI := ":" + strconv.FormatUint(uint64(config.Config.API.Port), 10)
+		cmd.CreateAPI(addrAPI, &conf)
 
 	} else {
 		ip := config.Config.Server.IP

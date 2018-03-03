@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/netm4ul/netm4ul/cmd/api"
 	"github.com/netm4ul/netm4ul/cmd/client"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server"
@@ -18,6 +19,12 @@ const (
 func CreateServer(ipport string, conf *config.ConfigToml) {
 	server.ConfigServer = conf
 	server.Listen(ipport)
+}
+
+// CreateServer : Initialise the infinite server loop on the master node
+func CreateAPI(ipport string, conf *config.ConfigToml) {
+	// api.ConfigServer = conf
+	api.Start(ipport, conf)
 }
 
 // CreateClient : Connect the node to the master server

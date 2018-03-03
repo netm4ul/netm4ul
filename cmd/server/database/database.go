@@ -55,9 +55,9 @@ type IP struct {
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	Name      string
-	UpdatedAt int64
-	IPs       []interface{}
+	Name      string        `json:"name,omitempty" bson:"Name"`
+	UpdatedAt int64         `json:"updated_at,omitempty" bson:"UpdatedAt,omitempty"`
+	IPs       []interface{} `json:"ips,omitempty" bson:"omitempty"`
 }
 
 var db *mgo.Database
