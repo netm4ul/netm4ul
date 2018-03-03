@@ -5,6 +5,8 @@ services:
     build: .
     container_name: "netmaulserver"
     command: ["/go/src/github.com/netm4ul/netm4ul/netm4ul","-server"]
+    ports:
+      - 8080:8080
 
   netmaulclient:
     container_name: "netmaulclient"
