@@ -81,6 +81,32 @@ The `api` folder contains all the code for the REST api on the Master node.
 The `server` folder contains all the code for recieving and storing data in the DB. It's in charge of balancing all the modules on each client node.
 The `client` folder contains all the code for client connection to the master node.
 
+#### API
+
+The api is a HTTP REST API. It only serves json results with the `Content-Type: application/json`.
+It uses the following format :
+
+```
+{
+	"status": "success", // only "success" or "error"
+	"code": 200, // see the "code list" below
+	"message": "Some message", // required only in ERROR code. Not mandatory on success
+	"data" : // any kind of json type : object, array, string, number, ... If error, no data are returned.
+}
+```
+
+All the JSON fields are **lowercase** and most of them are omitted if empty.
+
+**Code list**
+
+| Number | Meaning             | Description                                    | Status  |
+| ------ | ------------------- | ---------------------------------------------- | ------- |
+| 200    | OK                  | Expected result                                | success |
+| 404    | Not Found           | The requested item was not found on the server | error   |
+| 998    | Database Error      | Some error occured with the database           | error   |
+| 999    | Not Implemented Yet | This endpoint is not available yet             | error   |
+
+
 ### Module
 
 To write your module you will need to implement the Module interface (`modules/modules.go`) and put it into the `modules/<folder>` folders corresponding to your module.

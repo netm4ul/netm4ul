@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/cmd/config"
+	"github.com/netm4ul/netm4ul/cmd/server"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -16,14 +17,30 @@ const (
 	// APIVersion is the string representation of the api version
 	APIVersion = "v1"
 	// APIEndpoint represents the path of the api
-	APIEndpoint = "/api/" + APIVersion
+	APIEndpoint           = "/api/" + APIVersion
+	CodeOK                = 200
+	CodeNotFound          = 404
+	CodeDatabaseError     = 998
+	CodeNotImplementedYet = 999
 )
 
 // Result is the standard response format
 type Result struct {
 	Status  string      `json:"status"`
+	Code    int         `json:"code"`
 	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+type API struct {
+	Port    uint16 `json:"port,omitempty"`
+	Version string `json:"version,omitempty"`
+}
+
+//Metadata of the current system (node, api, database)
+type Metadata struct {
+	Nodes map[string]config.Node `json:"nodes"`
+	API   API                    `json:"api"`
 }
 
 //Start the API and route endpoints to functions
@@ -40,8 +57,9 @@ func Start(ipport string, conf *config.ConfigToml) {
 	router.HandleFunc(APIEndpoint+"/projects", GetProjects).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}", GetProject).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}/ips", GetIPsByProjectName).Methods("GET")
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports", GetPortsByIP).Methods("GET") // We don't need to go deeper. Get all ports at once
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{port}/directories", GetDirectoryByPort).Methods("GET")
+	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports", GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
+	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{protocol}", GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp)
+	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", GetDirectoryByPort).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/routes", GetRoutesByIP).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}/raw/{module}", GetRawModuleByProject).Methods("GET")
 
@@ -55,7 +73,9 @@ func Start(ipport string, conf *config.ConfigToml) {
 
 //GetIndex returns a link to the documentation on the root path
 func GetIndex(w http.ResponseWriter, r *http.Request) {
-	res := Result{Status: "success", Message: "Documentation available at https://github.com/netm4ul/netm4ul"}
+	api := API{Port: config.Config.API.Port, Version: APIVersion}
+	d := Metadata{API: api, Nodes: server.ConfigServer.Nodes}
+	res := Result{Status: "success", Code: CodeOK, Message: "Documentation available at https://github.com/netm4ul/netm4ul", Data: d}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -63,6 +83,7 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
+  "code": 200,
   "data": [
     {
       "name": "FirstProject"
@@ -73,7 +94,7 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 func GetProjects(w http.ResponseWriter, r *http.Request) {
 	session := database.Connect()
 	p := database.GetProjects(session)
-	res := Result{Status: "success", Data: p}
+	res := Result{Status: "success", Code: CodeOK, Data: p}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -81,6 +102,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
+  "code": 200,
   "data": {
     "name": "FirstProject",
     "updated_at": 1520122127
@@ -93,11 +115,11 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Requestion project : ", vars["name"])
 	p := database.GetProjectByName(session, vars["name"])
 	if p.Name != "" {
-		res := Result{Status: "success", Data: p}
+		res := Result{Status: "success", Code: CodeOK, Data: p}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
-	notFound := Result{Status: "error", Message: "Project not found"}
+	notFound := Result{Status: "error", Code: CodeNotFound, Message: "Project not found"}
 	json.NewEncoder(w).Encode(notFound)
 }
 
@@ -105,6 +127,7 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
+  "code": 200,
   "data": [
 	  "10.0.0.1",
 	  "10.0.0.12",
@@ -123,17 +146,17 @@ func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	err := session.DB(database.DBname).C("projects").Find(bson.M{"Name": name}).All(&ips)
 	if err != nil {
 		log.Println("Error in selecting projects", err)
-		res := Result{Status: "error", Message: "Error in selecting project IPs"}
+		res := Result{Status: "error", Code: CodeDatabaseError, Message: "Error in selecting project IPs"}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
 	if len(ips) == 1 && ips[0].Value == nil {
-		res := Result{Status: "success", Data: []string{}, Message: "No IP found"}
+		res := Result{Status: "error", Code: CodeNotFound, Data: []string{}, Message: "No IP found"}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
-	res := Result{Status: "success", Data: ips}
+	res := Result{Status: "success", Code: CodeOK, Data: ips}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -141,6 +164,7 @@ func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
+  "code": 200,
   "data": [
 	  {
 		"number": 22
@@ -162,7 +186,7 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	ip := vars["ip"]
 	log.Println("name :", name, "ip :", ip)
 
-	res := Result{Status: "error", Message: "Not implemented yet"}
+	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -170,6 +194,7 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
+  "code": 200,
   "data": [
 	  {
 		"number": 22
@@ -186,14 +211,14 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 */
 func GetDirectoryByPort(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Message: "Not implemented yet"}
+	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
 }
 
 //GetRawModuleByProject returns all the raw output for requested module.
 func GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Message: "Not implemented yet"}
+	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -201,6 +226,7 @@ func GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
 /*
 {
 	"status": "success",
+	"code": 200,
 	"data": [
 		{
 			"Source": "1.2.3.4",
@@ -218,7 +244,7 @@ func GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
 */
 func GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Message: "Not implemented yet"}
+	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -226,12 +252,13 @@ func GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 /*
 {
 	"status": "success",
+	"code": 200,
 	"data": "ProjectName"
 }
 */
 func CreateProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Message: "Not implemented yet"}
+	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -239,12 +266,13 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 /*
 {
 	"status": "success",
+	"code": 200,
 	"data": "ProjectName"
 }
 */
 func DeleteProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Message: "Not implemented yet"}
+	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
 }
 

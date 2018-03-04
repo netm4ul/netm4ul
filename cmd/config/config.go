@@ -39,13 +39,13 @@ type Database struct {
 
 // Module : Basic struct for general module config
 type Module struct {
-	Enabled bool `toml:"enabled"`
+	Enabled bool `toml:"enabled" json:"enabled"`
 }
 
 // Node : Node info
 type Node struct {
-	Modules []string
-	Project string
+	Modules []string `json:"modules"`
+	Project string   `json:"project"`
 }
 
 // ConfigToml is the global config object

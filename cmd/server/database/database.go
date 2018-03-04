@@ -62,6 +62,8 @@ type Project struct {
 
 var db *mgo.Database
 
+//DBname is the name of the mongodb collection
+// TODO move into config
 const DBname = "netm4ul"
 
 // Connect to the database and return a session
