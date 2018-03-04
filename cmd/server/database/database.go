@@ -26,31 +26,31 @@ type Hop struct {
 
 // Route defines the route from the host (netm4ul client) to the target
 type Route struct {
-	Source      string
-	Destination string
-	Hops        []Hop
+	Source      string `json:"source,omitempty" bson:"Source"`
+	Destination string `json:"destination,omitempty" bson:"Destination"`
+	Hops        []Hop  `json:"hops,omitempty" bson:"Hops,omitempty"`
 }
 
 // Directory defines one directory from a remote target (webserver)
 type Directory struct {
-	Name string
-	Code string
+	Name string `json:"name" bson:"Name"`
+	Code string `json:"code,omitempty" bson:"Code,omitempty"`
 }
 
 // Port defines the basic structure for each port scanned on the target
 type Port struct {
-	Number      int16
-	Protocol    string
-	Status      string // open, filtered, closed
-	Banner      string
-	Type        string
-	Directories []Directory
+	Number      int16       `json:"number,omitempty" bson:"Number"`
+	Protocol    string      `json:"protocol,omitempty" bson:"Protocol"`
+	Status      string      `json:"status,omitempty" bson:"Status"` // open, filtered, closed
+	Banner      string      `json:"banner,omitempty" bson:"Banner,omitempty"`
+	Type        string      `json:"type,omitempty" bson:"Type,omitempty"`
+	Directories []Directory `json:"value,omitempty" bson:"Value,omitempty"`
 }
 
 //IP defines the IP address of a target.
 type IP struct {
-	Value net.IP
-	Ports []Port
+	Value net.IP `json:"value,omitempty" bson:"Value"`
+	Ports []Port `json:"ports,omitempty" bson:"Ports,omitempty"`
 }
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
@@ -62,12 +62,11 @@ type Project struct {
 
 var db *mgo.Database
 
-const dbname = "netm4ul"
+const DBname = "netm4ul"
 
 // Connect to the database and return a session
 func Connect() *mgo.Session {
-	fmt.Println("Connecting !")
-	log.Println("config.Config.Database.IP : ", config.Config.Database.IP)
+	log.Println("config.Config.Database.IP :", config.Config.Database.IP)
 	mongoDBDialInfo := &mgo.DialInfo{
 		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
@@ -81,7 +80,6 @@ func Connect() *mgo.Session {
 	if err != nil {
 		log.Fatal("Error connecting with the database", err)
 	}
-	fmt.Println("Connected !")
 	return session
 }
 
@@ -89,7 +87,7 @@ func Connect() *mgo.Session {
 func CreateProject(session *mgo.Session, projectName string) {
 	// mongodb will create collection on use.
 	fmt.Println("Should add " + projectName + " to the collections 'projects'")
-	c := session.DB(dbname).C("projects")
+	c := session.DB(DBname).C("projects")
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 	log.Println(info)
