@@ -1,34 +1,91 @@
-# netm4ul
+# Netm4ul
 Distributed recon &amp; pentest tool
 
 ## Usage
 
-### Master node
-
-Run one master node instance
+### Running NetM4ul with Docker (recommanded)
 
 ```
+vim netm4ul.conf # change the credentials (db, api, etc...)
+docker-compose up --build # you can add the "-d" option to detach your terminal, but you will need to "docker log" to see dev traces
+```
+
+This should download and run :
+- 1 master node of NetM4ul (`netmaulserver`)
+- 1 client node of NetM4ul (`netmaulclient`)
+- 1 mongodb database with data stored in the `./data/db` directory
+
+NOTE : If running with the provided `docker-compose.yml`, the `netm4ul.conf` **must** use the "container_name" of each service for their ip. (eg : set the database ip to "mongodb" in our case)
+
+### Running without Docker
+
+Requirement : 
+- [Mongodb database](https://www.mongodb.com)
+- [Go](https://golang.org/)
+- [dep](https://github.com/golang/dep)
+
+```
+vim netm4ul.conf # change the credentials (db, api, etc...) and ip / ports
 make
-./netm4ul -server
-```
-
-### Clients node
-
-Run N client
-
-```
-vim netm4ul.conf # add the master node (ip, port) in the server section
-make
-./netm4ul
+./netm4ul -server # in one terminal
+./netm4ul # in the other terminal
 ```
 
 ## Contributing
+
+### Structure
+
+```
+.
+├── cmd
+│   ├── api
+│   │   └── api.go
+│   ├── client
+│   │   └── client.go
+│   ├── config
+│   │   ├── config.go
+│   │   └── config_test.go
+│   ├── handler.go
+│   └── server
+│       ├── database
+│       │   ├── database.go
+│       │   └── helpers.go
+│       └── server.go
+├── config
+│   ├── dorks.conf
+│   ├── sqlmap.conf
+│   └── traceroute.conf
+├── docker-compose.yml
+├── Dockerfile
+├── Gopkg.lock
+├── Gopkg.toml
+├── LICENSE
+├── main.go
+├── Makefile
+├── modules
+│   ├── exploit
+│   ├── modules.go
+│   ├── recon
+│   │   └── traceroute
+│   │       └── traceroute.go
+│   └── report
+├── netm4ul
+├── netm4ul.conf
+└── README.md
+```
+
+### Core
+
+Located in the `cmd` folder, all the core components are there.
+The `api` folder contains all the code for the REST api on the Master node.
+The `server` folder contains all the code for recieving and storing data in the DB. It's in charge of balancing all the modules on each client node.
+The `client` folder contains all the code for client connection to the master node.
 
 ### Module
 
 To write your module you will need to implement the Module interface (`modules/modules.go`) and put it into the `modules/<folder>` folders corresponding to your module.
 All data produced by your module should write into the MongoDB database using the `WriteDB()` method.
-`WriteDB()` must write data (at least) under its own collection and optionnaly update the global structure.
+`WriteDB()` **must** write data (at least) under its own collection and optionnaly update the global structure.
 
 ### Database
 
