@@ -3,12 +3,16 @@ version: '3'
 services:
   netmaulserver:
     build: .
-    container_name: "netmaul-server"
-    command: ["/go/src/netm4ul/netm4ul -server"]
+    container_name: "netmaulserver"
+    command: ["/go/src/github.com/netm4ul/netm4ul/netm4ul","-server"]
+    ports:
+      - 8080:8080
 
   netmaulclient:
-    container_name: "netmaul-node"
+    container_name: "netmaulclient"
     build: .
+    command: ["/go/src/github.com/netm4ul/netm4ul/netm4ul"]
+
   mongodb:
     image: mongo:latest
     container_name: "mongodb"

@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 
@@ -11,33 +10,42 @@ import (
 
 // API : Rest API config
 type API struct {
-	Port     uint16
-	User     string
-	Password string
+	Port     uint16 `toml:"port"`
+	User     string `toml:"user"`
+	Password string `toml:"password"`
 }
 
 // Keys : setup tocken & api keys
 type Keys struct {
-	Google string
-	Shodan string
+	Google string `toml:"google"`
+	Shodan string `toml:"shodan"`
 }
 
 // Server : Master node config
 type Server struct {
-	User     string
-	Password string
-	IP       net.IP
-	Port     uint16
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	IP       string `toml:"ip"`
+	Port     uint16 `toml:"port"`
+}
+
+// Database : Mongodb config
+type Database struct {
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	IP       string `toml:"ip"`
+	Port     uint16 `toml:"port"`
 }
 
 // Module : Basic struct for general module config
 type Module struct {
-	Enabled bool
+	Enabled bool `toml:"enabled" json:"enabled"`
 }
 
 // Node : Node info
 type Node struct {
-	Modules []string
+	Modules []string `json:"modules"`
+	Project string   `json:"project"`
 }
 
 // ConfigToml is the global config object
@@ -46,6 +54,7 @@ type ConfigToml struct {
 	API      API
 	Keys     Keys
 	Server   Server
+	Database Database
 	Nodes    map[string]Node
 	Modules  map[string]Module
 }

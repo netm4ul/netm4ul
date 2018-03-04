@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/netm4ul/netm4ul/cmd/config"
+	"github.com/netm4ul/netm4ul/cmd/server/database"
 )
 
 var (
@@ -19,7 +20,7 @@ var (
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
 func Listen(ipport string) {
-
+	log.Println("Listenning : ", ipport)
 	l, err := net.Listen("tcp", ipport)
 
 	if err != nil {
@@ -73,5 +74,8 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 
 	ConfigServer.Nodes[ip] = data
 
+	session := database.Connect()
+	database.CreateProject(session, data.Project)
 	fmt.Println(ConfigServer.Nodes)
+	database.GetProjects(session)
 }
