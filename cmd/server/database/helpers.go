@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"log"
 
 	mgo "gopkg.in/mgo.v2"
@@ -16,7 +15,7 @@ func GetProjects(session *mgo.Session) []Project {
 		log.Println("Error in selecting projects", err)
 		return nil
 	}
-	fmt.Println("GetProjects p : ", p)
+	log.Println("GetProjects p : ", p)
 	return p
 }
 
@@ -28,6 +27,6 @@ func GetProjectByName(session *mgo.Session, name string) Project {
 		log.Println("Error in selecting projects", err)
 		return Project{}
 	}
-	fmt.Println("GetProjectByName p : ", p)
+	log.Println("GetProjectByName p : ", p)
 	return p
 }

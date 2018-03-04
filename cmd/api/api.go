@@ -58,13 +58,14 @@ func Start(ipport string, conf *config.ConfigToml) {
 	router.HandleFunc(APIEndpoint+"/projects/{name}", GetProject).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}/ips", GetIPsByProjectName).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports", GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{protocol}", GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp)
+	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{protocol}", GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
 	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", GetDirectoryByPort).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/routes", GetRoutesByIP).Methods("GET")
 	router.HandleFunc(APIEndpoint+"/projects/{name}/raw/{module}", GetRawModuleByProject).Methods("GET")
 
 	// POST
 	router.HandleFunc(APIEndpoint+"/projects", CreateProject).Methods("POST")
+	router.HandleFunc(APIEndpoint+"/projects/{name}/run/{module}", RunModule).Methods("POST")
 
 	// DELETE
 	router.HandleFunc(APIEndpoint+"/projects/{name}", DeleteProject).Methods("DELETE")
@@ -184,6 +185,15 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["name"]
 	ip := vars["ip"]
+	protocol := vars["protocol"]
+
+	if protocol != "" {
+		log.Println("name :", name, "ip :", ip, "protocol :", protocol)
+		res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
 	log.Println("name :", name, "ip :", ip)
 
 	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
@@ -258,6 +268,26 @@ func GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 */
 func CreateProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
+	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	json.NewEncoder(w).Encode(res)
+}
+
+//RunModule return this template after starting the modules
+/*
+{
+	"status": "success",
+	"code": 200,
+	"data": {
+		nodes: [
+			"1.2.3.4",
+			"4.3.2.1"
+		]
+	}
+}
+*/
+func RunModule(w http.ResponseWriter, r *http.Request) {
+	//TODO
+	server.SendCmd()
 	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
 }
