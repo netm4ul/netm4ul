@@ -52,5 +52,6 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	go client.Recv(rw)
 	// TODO : Client.Recv(cmd) & Client.Send(data)
 }

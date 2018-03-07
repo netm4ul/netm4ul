@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -16,7 +17,36 @@ import (
 var (
 	// ConfigServer : Global config for the server. Must be goroutine safe
 	ConfigServer *config.ConfigToml
+	//Nodes represent a map to net.Conn
+	Nodes map[string]net.Conn
 )
+
+const (
+	//CapacityLow defines the lowest tier for a performance metric
+	CapacityLow = 1
+	//CapacityMedium defines the middle tier for a performance metric
+	CapacityMedium = 2
+	//CapacityHigh defines the highest tier for a performance metric
+	CapacityHigh = 3
+)
+
+//Requirements defines all the specification needed for a node to be eligble at executing on command.
+type Requirements struct {
+	NetworkType        string `json:"networktype"`        // "external", "internal", ""
+	ConnectionCapacity uint16 `json:"connectioncapacity"` // CapacityLow, CapacityMedium, CapacityHigh
+	ComputingCapacity  uint16 `json:"computingcapacity"`  // CapacityLow, CapacityMedium, CapacityHigh
+}
+
+//Command represents the communication protocol between clients and the master node
+type Command struct {
+	Name         string       `json:"name"`
+	Options      []string     `json:"options"`
+	Requirements Requirements `json:"requirements"`
+}
+
+func init() {
+	Nodes = make(map[string]net.Conn)
+}
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
 func Listen(ipport string) {
@@ -55,9 +85,9 @@ func handleRequest(conn net.Conn) {
 // Recv basic info for the node at connection time.
 func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 
-	var data config.Node
+	var node config.Node
 	dec := gob.NewDecoder(rw)
-	err := dec.Decode(&data)
+	err := dec.Decode(&node)
 
 	if err != nil {
 		log.Println("Cannot read hello data :", err)
@@ -72,10 +102,56 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 		fmt.Println("unknown node. Creating")
 	}
 
-	ConfigServer.Nodes[ip] = data
+	ConfigServer.Nodes[ip] = node
+	Nodes[ip] = conn
 
 	session := database.Connect()
-	database.CreateProject(session, data.Project)
+	database.CreateProject(session, node.Project)
 	fmt.Println(ConfigServer.Nodes)
 	database.GetProjects(session)
+}
+
+//SendCmdByName is a wrapper to the SendCommand function.
+func SendCmdByName(name string, option []string) {
+	//TODO get the Command by module name & setup options and requirements
+
+	// cmd := Command{
+	// 	Name: name,
+	// 	Options: option,
+	// 	Requirements: GetRequirementFromCommandName(name)
+	// }
+	// SendCmd(cmd)
+}
+
+//SendCmd sends one commands with its options to selected clients
+func SendCmd(command Command) error {
+
+	conns, err := getAvailableNodes(command.Requirements)
+	log.Println("Nodes available : ", len(conns))
+	if err != nil {
+		return errors.New("Could not get nodes :" + err.Error())
+	}
+
+	// Send to all nodes following the requirements
+	for _, conn := range conns {
+
+		rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+		err := gob.NewEncoder(rw).Encode(command)
+
+		if err != nil {
+			return errors.New("Could not send command :" + err.Error())
+		}
+	}
+
+	return nil
+}
+
+//getAvailableNodes return a list of net.Conn available. They must follows the requirements.
+func getAvailableNodes(req Requirements) ([]net.Conn, error) {
+	// TODO : Requirements for each modules and load balance
+	var availables []net.Conn
+	for _, conn := range Nodes {
+		availables = append(availables, conn)
+	}
+	return availables, nil
 }

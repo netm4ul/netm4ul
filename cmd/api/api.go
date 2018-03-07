@@ -286,9 +286,17 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 }
 */
 func RunModule(w http.ResponseWriter, r *http.Request) {
+	var res Result
+
 	//TODO
-	server.SendCmd()
-	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	// Setup correct command
+	cmd := server.Command{Name: "test", Options: []string{"option1", "option2"}}
+	log.Println("RunModule for cmd :", cmd)
+	err := server.SendCmd(cmd)
+	if err != nil {
+		res = Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	}
+	res = Result{Status: "success", Code: CodeOK, Message: "Command sent"}
 	json.NewEncoder(w).Encode(res)
 }
 
