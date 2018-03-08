@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -74,7 +74,7 @@ func init() {
 	configPath := filepath.Join(exPath, "netm4ul.conf")
 
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 }

@@ -3,6 +3,7 @@ package client
 import (
 	"bufio"
 	"encoding/gob"
+	"io"
 	"log"
 	"net"
 
@@ -19,7 +20,7 @@ var (
 )
 
 // Connect : Setup the connection to the master node
-func Connect(ipport string) (*bufio.ReadWriter, error) {
+func Connect(ipport string) (*net.TCPConn, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", ipport)
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	conn.SetKeepAlive(true)
@@ -28,9 +29,7 @@ func Connect(ipport string) (*bufio.ReadWriter, error) {
 		return nil, errors.Wrap(err, "Dialing "+ipport+" failed")
 	}
 
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-
-	return rw, nil
+	return conn, nil
 }
 
 // InitModule : Update ListModule & ListModuleEnabled variable
@@ -44,8 +43,9 @@ func InitModule() {
 }
 
 // SendHello : Send node info (modules list, project name,...)
-func SendHello(rw *bufio.ReadWriter) error {
+func SendHello(conn *net.TCPConn) error {
 	var err error
+	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 
 	enc := gob.NewEncoder(rw)
 
@@ -68,15 +68,23 @@ func SendHello(rw *bufio.ReadWriter) error {
 }
 
 //Recv read the incomming data from the server. The server use the server.Command struct.
-func Recv(rw *bufio.ReadWriter) (server.Command, error) {
+func Recv(conn *net.TCPConn) (server.Command, error) {
+	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+
 	log.Println("Waiting for incomming data")
 	var cmd server.Command
 	dec := gob.NewDecoder(rw)
 	err := dec.Decode(&cmd)
 
-	if err != nil {
-		return server.Command{}, errors.New("Could not decode recieved message")
+	// handle connection closed (server shutdown for example)
+	if err == io.EOF {
+		return server.Command{}, errors.New("Connection closed : " + err.Error())
 	}
+
+	if err != nil {
+		return server.Command{}, errors.New("Could not decode recieved message : " + err.Error())
+	}
+
 	log.Printf("Recieved command %+v", cmd)
 
 	return server.Command{}, errors.New("Could not decode recieved message")

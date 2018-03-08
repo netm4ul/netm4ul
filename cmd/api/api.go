@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -113,7 +112,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 func GetProject(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	session := database.Connect()
-	fmt.Println("Requestion project : ", vars["name"])
+	log.Println("Requestion project : ", vars["name"])
 	p := database.GetProjectByName(session, vars["name"])
 	if p.Name != "" {
 		res := Result{Status: "success", Code: CodeOK, Data: p}

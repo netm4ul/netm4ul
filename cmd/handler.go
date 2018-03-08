@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"log"
+	"net"
 	"time"
 
 	"github.com/netm4ul/netm4ul/cmd/api"
@@ -30,11 +30,13 @@ func CreateAPI(ipport string, conf *config.ConfigToml) {
 // CreateClient : Connect the node to the master server
 func CreateClient(ipport string, conf *config.ConfigToml) {
 	client.InitModule()
+
+	log.Println("Modules enabled : ", client.ListModuleEnabled)
 	var err error
-	var rw *bufio.ReadWriter
+	var conn *net.TCPConn
 
 	for tries := 0; tries < maxRetry; tries++ {
-		rw, err = client.Connect(ipport)
+		conn, err = client.Connect(ipport)
 		if err != nil {
 			log.Println("Could not connect : ", err)
 			log.Println("Retry count : ", tries, "Max retry : ", maxRetry)
@@ -48,10 +50,18 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 		log.Fatal(err)
 	}
 
-	err = client.SendHello(rw)
+	err = client.SendHello(conn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	go client.Recv(rw)
+	// Recieve data
+	go func() {
+		for {
+			_, err := client.Recv(conn)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}()
 	// TODO : Client.Recv(cmd) & Client.Send(data)
 }

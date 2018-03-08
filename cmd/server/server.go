@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -54,19 +53,19 @@ func Listen(ipport string) {
 	l, err := net.Listen("tcp", ipport)
 
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
+		log.Println("Error listening:", err.Error())
 		os.Exit(1)
 	}
 
 	// Close the listener when the application closes.
 	defer l.Close()
-	fmt.Println("Listening on " + ipport)
+	log.Println("Listening on " + ipport)
 
 	for {
 		// Listen for an incoming connection.
 		conn, err := l.Accept()
 		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
+			log.Println("Error accepting: ", err.Error())
 			os.Exit(1)
 		}
 		// Handle connections in a new goroutine. (multi-client)
@@ -77,7 +76,7 @@ func Listen(ipport string) {
 func handleRequest(conn net.Conn) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-	defer conn.Close()
+	// defer conn.Close()
 
 	handleHello(conn, rw)
 }
@@ -97,9 +96,9 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
 	if _, ok := ConfigServer.Nodes[ip]; ok {
-		fmt.Println("Node known. Updating")
+		log.Println("Node known. Updating")
 	} else {
-		fmt.Println("unknown node. Creating")
+		log.Println("unknown node. Creating")
 	}
 
 	ConfigServer.Nodes[ip] = node
@@ -107,8 +106,10 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 
 	session := database.Connect()
 	database.CreateProject(session, node.Project)
-	fmt.Println(ConfigServer.Nodes)
-	database.GetProjects(session)
+	log.Println(ConfigServer.Nodes)
+	p := database.GetProjects(session)
+	log.Println(p)
+
 }
 
 //SendCmdByName is a wrapper to the SendCommand function.
@@ -141,6 +142,13 @@ func SendCmd(command Command) error {
 		if err != nil {
 			return errors.New("Could not send command :" + err.Error())
 		}
+
+		err = rw.Flush()
+		if err != nil {
+			log.Println(err)
+			return errors.New("Could not send command :" + err.Error())
+		}
+		log.Println("Sent command : ", command)
 	}
 
 	return nil

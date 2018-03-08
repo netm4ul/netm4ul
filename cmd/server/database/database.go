@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"time"
@@ -88,7 +87,7 @@ func Connect() *mgo.Session {
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string) {
 	// mongodb will create collection on use.
-	fmt.Println("Should add " + projectName + " to the collections 'projects'")
+	log.Println("Should add " + projectName + " to the collections 'projects'")
 	c := session.DB(DBname).C("projects")
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
