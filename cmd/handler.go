@@ -54,14 +54,23 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	// Recieve data
 	go func() {
 		for {
-			_, err := client.Recv(conn)
+			cmd, err := client.Recv(conn)
+
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				continue
 			}
+
+			// must exist, if it doesn't, this line shouldn't be executed (checks above)
+			module := client.SessionClient.Modules[cmd.Name]
+
+			//TODO
+			// send data back to the server
+			client.Execute(module)
 		}
 	}()
-	// TODO : Client.Recv(cmd) & Client.Send(data)
 }

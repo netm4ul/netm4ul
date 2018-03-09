@@ -9,10 +9,13 @@ import (
 
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server"
+	"github.com/netm4ul/netm4ul/cmd/session"
+	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
 )
 
 var (
+	SessionClient *session.Session
 	// ListModule : global list of modules
 	ListModule []string
 	// ListModuleEnabled : global list of enabled modules
@@ -34,6 +37,8 @@ func Connect(ipport string) (*net.TCPConn, error) {
 
 // InitModule : Update ListModule & ListModuleEnabled variable
 func InitModule() {
+	SessionClient = session.NewSession()
+	log.Println(SessionClient)
 	for m := range config.Config.Modules {
 		ListModule = append(ListModule, m)
 		if config.Config.Modules[m].Enabled {
@@ -86,6 +91,18 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	}
 
 	log.Printf("Recieved command %+v", cmd)
+	_, ok := SessionClient.Modules[cmd.Name]
 
-	return server.Command{}, errors.New("Could not decode recieved message")
+	if !ok {
+		return server.Command{}, errors.New("Unsupported (or unknown) command : " + cmd.Name)
+	}
+
+	return cmd, nil
+}
+
+func Execute(module modules.Module) error {
+	log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
+	//TODO
+	// module.Run(someArgs)
+	return nil
 }

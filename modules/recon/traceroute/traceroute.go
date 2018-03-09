@@ -25,29 +25,35 @@ type Traceroute struct {
 	Config ConfigToml
 }
 
+func NewTraceroute() modules.Module {
+	var t modules.Module
+	t = Traceroute{}
+	return t
+}
+
 // Name : name getter
-func (T *Traceroute) Name() string {
+func (T Traceroute) Name() string {
 	return "Traceroute"
 }
 
 // Author : Author getter
-func (T *Traceroute) Author() string {
+func (T Traceroute) Author() string {
 	return "tomalavie"
 }
 
 // Version : Version  getter
-func (T *Traceroute) Version() string {
+func (T Traceroute) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (T *Traceroute) DependsOn() []modules.Condition {
+func (T Traceroute) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
 
 // Run : Main function of the module
-func (T *Traceroute) Run(data interface{}) (interface{}, error) {
+func (T Traceroute) Run(data interface{}) (interface{}, error) {
 	fmt.Println("hello world")                   //Affiche hello world pour le fun
 	cmd := exec.Command("traceroute", "8.8.8.8") //
 	var out bytes.Buffer
@@ -61,22 +67,22 @@ func (T *Traceroute) Run(data interface{}) (interface{}, error) {
 }
 
 // Parse : Parse the result of the execution
-func (T *Traceroute) Parse() (interface{}, error) {
+func (T Traceroute) Parse() (interface{}, error) {
 	return nil, nil
 }
 
 // HandleMQ : Recv data from the MQ
-func (T *Traceroute) HandleMQ() error {
+func (T Traceroute) HandleMQ() error {
 	return nil
 }
 
 // SendMQ : Send data to the MQ
-func (T *Traceroute) SendMQ(data []byte) error {
+func (T Traceroute) SendMQ(data []byte) error {
 	return nil
 }
 
 // ParseConfig : Load the config from the config folder
-func (T *Traceroute) ParseConfig() error {
+func (T Traceroute) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -89,5 +95,10 @@ func (T *Traceroute) ParseConfig() error {
 		return err
 	}
 	fmt.Println(T.Config.MaxHops)
+	return nil
+}
+
+// WriteDb : Save data
+func (T Traceroute) WriteDb() error {
 	return nil
 }

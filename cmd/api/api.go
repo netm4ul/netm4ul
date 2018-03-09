@@ -285,11 +285,16 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 }
 */
 func RunModule(w http.ResponseWriter, r *http.Request) {
+	//TODO
+	// Setup correct command (and option through parameters)
+
+	vars := mux.Vars(r)
+	// name := vars["name"]
+	module := vars["module"]
+
 	var res Result
 
-	//TODO
-	// Setup correct command
-	cmd := server.Command{Name: "test", Options: []string{"option1", "option2"}}
+	cmd := server.Command{Name: module, Options: []string{"option1", "option2"}}
 	log.Println("RunModule for cmd :", cmd)
 	err := server.SendCmd(cmd)
 	if err != nil {
