@@ -1,17 +1,15 @@
 language: go
 go:
-  - 1.9
-  - master
-
+- 1.9
+- master
 before_script:
-  - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
-  - curl -L -s https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 -o $GOPATH/bin/dep
-  - chmod +x $GOPATH/bin/dep
-
-install:
-  - dep ensure
-
+- GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
+- go get -u github.com/golang/dep/...
 script:
-  - test -z $(gofmt -s -l $GO_FILES)         # Fail if a .go file hasn't been formatted with gofmt
-  - go test -v -race ./...                   # Run all the tests with the race detector enabled
-  - go vet ./...                             # go vet is the official Go static analyzer
+- test -z $(gofmt -s -l $GO_FILES)
+- go test -v -race ./...
+- go vet ./...
+notifications:
+  slack:
+    rooms:
+      secure: vrKqUvDK1Jkb1w++OE4MgTr909xQuyE+Lp6VbJ2yOwtxNL1OoJyy3a/CZtlO2+8IbEjQweUEBUYvVcYZdv+n+P8Qf1z8EFJ0sFKB/G3McGDbr6rmRAA7JpC2YBaiqRSyxJyBXPyiZgg0/1mHVlMZhrWaRCeZb3BNjh8gHcKlpe2xSF7lZHiav3gvVwHJO7zxnVBgd94vWn3I/WiMjTTgzQx9y2gcKAEkW8e1SjyKOFon9EArzCkViR2odhsNZ9trDvqmlqGCrb1FtUCNWENrTlp8ePQcOAmVaHKn9ziw15Am0HIOwiOtbySCCq69sbiI21bIdyIcJyrOO/hdzHCFW53EE3Kk9KD+rLJgxZJ1TYAL+m/uRcqdo46PQhzZ5OqwwTtkcvchSwxnCtm2viZNDkZNnemLdYmUC6Z25z536Gsqone5qZbHQxJw+iEu4xJJAshOP1tpbyiU/LFOQM354trPnYgp5lmjnHCVH7o+HotpFHuvRUGPhIWxUzWcYxe+mZT2PI1YVYbjqn96pzdONvCnhnrQ+dJa6qQ4crFzsf54tyvPGVAEHoGp3GXzlPXWt4EBpsShgr4R5vc+JFesY2flInlVw46IzAQU1jqFYHCM39jdzDjbwYWLXDHgAkzwPrugoAr7OW9RPXzdfk9aPWs2/azNkkO0kb3GmWLRy1c=
