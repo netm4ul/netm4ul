@@ -32,12 +32,6 @@ func main() {
 		addrAPI := ":" + strconv.FormatUint(uint64(config.Config.API.Port), 10)
 		go cmd.CreateAPI(addrAPI, &conf)
 
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		<-c
-		log.Println("shutting down")
-		os.Exit(0)
-
 	} else {
 
 		ip := config.Config.Server.IP
@@ -45,10 +39,12 @@ func main() {
 		addr := ip + ":" + port
 		go cmd.CreateClient(addr, &conf)
 
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		<-c
-		log.Println("shutting down")
-		os.Exit(0)
 	}
+
+	// handle gracefull shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+	log.Println("shutting down")
+	os.Exit(0)
 }

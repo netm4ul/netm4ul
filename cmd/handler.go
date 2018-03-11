@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io"
 	"log"
 	"net"
 	"time"
@@ -21,7 +22,7 @@ func CreateServer(ipport string, conf *config.ConfigToml) {
 	server.Listen(ipport)
 }
 
-// CreateServer : Initialise the infinite server loop on the master node
+// CreateAPI : Initialise the infinite server loop on the master node
 func CreateAPI(ipport string, conf *config.ConfigToml) {
 	// api.ConfigServer = conf
 	api.Start(ipport, conf)
@@ -60,6 +61,11 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 		for {
 			cmd, err := client.Recv(conn)
 
+			// kill on socket closed.
+			if err == io.EOF {
+				log.Fatalln(err)
+			}
+
 			if err != nil {
 				log.Println(err)
 				continue
@@ -70,7 +76,8 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 
 			//TODO
 			// send data back to the server
-			client.Execute(module)
+			data, err := client.Execute(module, cmd)
+			client.SendResult(conn, data)
 		}
 	}()
 }

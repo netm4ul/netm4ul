@@ -1,18 +1,30 @@
 package traceroute
 
 import (
+	"encoding/gob"
 	"fmt"
-	//"github.com/BurntSushi/toml"
-	//"github.com/netm4ul/netm4ul/modules"
-	"bytes"
 	"log"
+	"time"
+
 	"os"
-	"os/exec"
 	"path/filepath"
+
+	"github.com/netm4ul/netm4ul/cmd/server/database"
+	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/modules"
 )
+
+// TracerouteResult represent the parsed ouput
+type TracerouteResult struct {
+	Source      string
+	Destination string
+	Max         float32
+	Min         float32
+	Avg         float32
+}
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
@@ -25,7 +37,9 @@ type Traceroute struct {
 	Config ConfigToml
 }
 
+//NewTraceroute generate a new Traceroute module (type modules.Module)
 func NewTraceroute() modules.Module {
+	gob.Register(TracerouteResult{})
 	var t modules.Module
 	t = Traceroute{}
 	return t
@@ -53,32 +67,22 @@ func (T Traceroute) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (T Traceroute) Run(data interface{}) (interface{}, error) {
-	fmt.Println("hello world")                   //Affiche hello world pour le fun
-	cmd := exec.Command("traceroute", "8.8.8.8") //
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf(out.String())
-	return nil, nil
+func (T Traceroute) Run(data []string) (modules.Result, error) {
+	fmt.Println("hello world") //Affiche hello world pour le fun
+	// cmd := exec.Command("traceroute", "8.8.8.8") //
+	// var out bytes.Buffer
+	// cmd.Stdout = &out
+	// err := cmd.Run()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf(out.String())
+	return modules.Result{Data: TracerouteResult{Source: "SRC", Destination: "DST", Min: 12.3, Max: 123.4, Avg: 56.78}, Timestamp: time.Now(), Module: T.Name()}, nil
 }
 
 // Parse : Parse the result of the execution
-func (T Traceroute) Parse() (interface{}, error) {
-	return nil, nil
-}
-
-// HandleMQ : Recv data from the MQ
-func (T Traceroute) HandleMQ() error {
-	return nil
-}
-
-// SendMQ : Send data to the MQ
-func (T Traceroute) SendMQ(data []byte) error {
-	return nil
+func (T Traceroute) Parse() (TracerouteResult, error) {
+	return TracerouteResult{}, nil
 }
 
 // ParseConfig : Load the config from the config folder
@@ -99,6 +103,12 @@ func (T Traceroute) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T Traceroute) WriteDb() error {
+func (T Traceroute) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+	log.Println("Write to the database.")
+	var data TracerouteResult
+	data = result.Data.(TracerouteResult)
+
+	raw := bson.M{projectName + ".results." + result.Module: data}
+	database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }

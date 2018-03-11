@@ -72,7 +72,7 @@ func SendHello(conn *net.TCPConn) error {
 	return nil
 }
 
-//Recv read the incomming data from the server. The server use the server.Command struct.
+// Recv read the incomming data from the server. The server use the server.Command struct.
 func Recv(conn *net.TCPConn) (server.Command, error) {
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 
@@ -83,7 +83,7 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 
 	// handle connection closed (server shutdown for example)
 	if err == io.EOF {
-		return server.Command{}, errors.New("Connection closed : " + err.Error())
+		return server.Command{}, err
 	}
 
 	if err != nil {
@@ -100,9 +100,32 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	return cmd, nil
 }
 
-func Execute(module modules.Module) error {
+// Execute runs modules with the right options and handle errors.
+func Execute(module modules.Module, cmd server.Command) (modules.Result, error) {
 	log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
 	//TODO
-	// module.Run(someArgs)
+	res, err := module.Run(cmd.Options)
+	return res, err
+}
+
+// SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
+func SendResult(conn *net.TCPConn, res modules.Result) error {
+	var err error
+	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	enc := gob.NewEncoder(rw)
+	err = enc.Encode(res)
+
+	if err != nil {
+		log.Println("Error :", err)
+		return err
+	}
+
+	err = rw.Flush()
+	if err != nil {
+		log.Println("Error :", err)
+		return err
+	}
+
 	return nil
+
 }

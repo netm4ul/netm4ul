@@ -96,3 +96,13 @@ func CreateProject(session *mgo.Session, projectName string) {
 		log.Fatal(err)
 	}
 }
+
+//UpsertRawData is used by module to store raw results into the database.
+func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
+	c := session.DB(DBname).C("projects")
+	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
+	log.Printf("%+v", info)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
