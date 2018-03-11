@@ -10,11 +10,11 @@ shodan="apikey" # needed for passive port scan
 [server]
 user = "user"
 password = "password"
-ip = "localhost"
+ip = "netmaulserver"
 port = 5672
 
 [database]
-ip = "localhost"
+ip = "mongodb"
 port = 27017
 user = "NetM4ul"
 password = "NetM4ul"
