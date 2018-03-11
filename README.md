@@ -1,6 +1,11 @@
 # Netm4ul
 Distributed recon &amp; pentest tool
 
+Master
+[![Build Status Master](https://travis-ci.org/netm4ul/netm4ul.svg?branch=master)](https://travis-ci.org/netm4ul/netm4ul)
+Develop 
+[![Build Status Develop](https://travis-ci.org/netm4ul/netm4ul.svg?branch=develop)](https://travis-ci.org/netm4ul/netm4ul)
+
 ## Usage
 
 ### Running NetM4ul with Docker (recommanded)
