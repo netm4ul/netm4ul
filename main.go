@@ -1,47 +1,63 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 
 	"github.com/netm4ul/netm4ul/cmd"
+	"github.com/netm4ul/netm4ul/cmd/cli"
 	"github.com/netm4ul/netm4ul/cmd/config"
 )
 
 func init() {
-	flag.BoolVar(&config.Config.IsServer, "server", false, "Set the node as server")
-	flag.Parse()
+	cli.ParseArgs()
 }
 
 func main() {
 
-	conf := config.ConfigToml{}
+	if config.Config.IsServer && config.Config.IsClient {
+		log.Fatalln("Cannot be Server AND Client at the same time")
+	}
 
+	// -server (master mode)
 	if config.Config.IsServer {
 		// init array of nodes
-		conf.Nodes = make(map[string]config.Node)
+		config.Config.Nodes = make(map[string]config.Node)
 
 		// listen on all interface + Server port
 		addr := ":" + strconv.FormatUint(uint64(config.Config.Server.Port), 10)
-		go cmd.CreateServer(addr, &conf)
+		go cmd.CreateServer(addr, &config.Config)
 
 		//TODO flag enable / disable api
 		addrAPI := ":" + strconv.FormatUint(uint64(config.Config.API.Port), 10)
-		go cmd.CreateAPI(addrAPI, &conf)
+		go cmd.CreateAPI(addrAPI, &config.Config)
 
-	} else {
+		gracefulShutdown()
+		//unreachable return, only for clarity
+		return
+	}
+
+	// -client (node mode)
+	if config.Config.IsClient {
 
 		ip := config.Config.Server.IP
 		port := strconv.FormatUint(uint64(config.Config.Server.Port), 10)
 		addr := ip + ":" + port
-		go cmd.CreateClient(addr, &conf)
+		go cmd.CreateClient(addr, &config.Config)
 
+		gracefulShutdown()
+		//unreachable return, only for clarity
+		return
 	}
 
-	// handle gracefull shutdown
+	// CLI mode
+
+}
+
+func gracefulShutdown() {
+	// handle graceful shutdown
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c

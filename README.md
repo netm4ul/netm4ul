@@ -33,8 +33,32 @@ Requirement :
 vim netm4ul.conf # change the credentials (db, api, etc...) and ip / ports
 make
 ./netm4ul -server # in one terminal
-./netm4ul # in the other terminal
+./netm4ul -client # in  another terminal
+# netm4ul is running, you can control it directly with
+./netm4ul -targets <somedomain,ip,ip range(CIDR)>
 ```
+
+
+### CLI
+
+```
+  -client  : Set the node as client
+  -config  : Custom config file path (default "netm4ul.conf")
+  -mode    : Mode of execution. Simple alias to list of module. See the config file (default "stealth")
+  -modules : List of modules executed
+  -server  : Set the node as server
+  -targets : List of targets, comma separated
+  -verbose : Enable verbose output
+  -version : Print the version
+```
+
+Example :
+
+`./netm4ul -client -config netm4ul.custom.conf -verbose`
+
+`./netm4ul -version`
+
+`./netm4ul -targets 192.168.1.1,192.168.2.0/24,localhost.localdomain -modules traceroute`
 
 ## Contributing
 

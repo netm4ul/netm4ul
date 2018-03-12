@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	// APIVersion is the string representation of the api version
-	APIVersion = "v1"
+	// Version is the string representation of the api version
+	Version = "v1"
 	// APIEndpoint represents the path of the api
-	APIEndpoint           = "/api/" + APIVersion
+	APIEndpoint           = "/api/" + Version
 	CodeOK                = 200
 	CodeNotFound          = 404
 	CodeDatabaseError     = 998
@@ -73,7 +73,7 @@ func Start(ipport string, conf *config.ConfigToml) {
 
 //GetIndex returns a link to the documentation on the root path
 func GetIndex(w http.ResponseWriter, r *http.Request) {
-	api := API{Port: config.Config.API.Port, Version: APIVersion}
+	api := API{Port: config.Config.API.Port, Version: Version}
 	d := Metadata{API: api, Nodes: server.ConfigServer.Nodes}
 	res := Result{Status: "success", Code: CodeOK, Message: "Documentation available at https://github.com/netm4ul/netm4ul", Data: d}
 	json.NewEncoder(w).Encode(res)

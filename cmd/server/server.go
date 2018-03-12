@@ -18,6 +18,10 @@ import (
 	"github.com/netm4ul/netm4ul/cmd/session"
 )
 
+const (
+	Version = "0.1"
+)
+
 var (
 	// ConfigServer : Global config for the server. Must be goroutine safe
 	ConfigServer *config.ConfigToml

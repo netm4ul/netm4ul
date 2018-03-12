@@ -14,6 +14,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	Version = "0.1"
+)
+
 var (
 	SessionClient *session.Session
 	// ListModule : global list of modules

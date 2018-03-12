@@ -51,6 +51,8 @@ type Node struct {
 // ConfigToml is the global config object
 type ConfigToml struct {
 	IsServer bool
+	IsClient bool
+	Targets  []string
 	API      API
 	Keys     Keys
 	Server   Server
@@ -62,19 +64,24 @@ type ConfigToml struct {
 // Config : exported config
 var Config ConfigToml
 
-//	Get the executable path.
-//	From there, get the config.
-func init() {
+// LoadConfig load the configuration file !
+func LoadConfig(file string) {
+	var configPath string
+
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
 	}
 
-	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "netm4ul.conf")
+	path := filepath.Dir(ex)
+
+	if file == "" {
+		configPath = filepath.Join(path, "netm4ul.conf")
+	} else {
+		configPath = filepath.Join(path, file)
+	}
 
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
-		log.Println(err)
-		return
+		log.Fatalln(err)
 	}
 }
