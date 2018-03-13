@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/netm4ul/netm4ul/cmd/api"
-	"github.com/netm4ul/netm4ul/cmd/cli"
 	"github.com/netm4ul/netm4ul/cmd/client"
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server"
 )
@@ -33,15 +33,15 @@ func CreateAPI(ipport string, conf *config.ConfigToml) {
 func CreateClient(ipport string, conf *config.ConfigToml) {
 	client.InitModule()
 
-	log.Println(cli.Green("Modules enabled :"), client.ListModuleEnabled)
+	log.Println(colors.Green("Modules enabled :"), client.ListModuleEnabled)
 	var err error
 	var conn *net.TCPConn
 
 	for tries := 0; tries < maxRetry; tries++ {
 		conn, err = client.Connect(ipport)
 		if err != nil {
-			log.Println(cli.Red("Could not connect :"), err)
-			log.Printf(cli.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
+			log.Println(colors.Red("Could not connect :"), err)
+			log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
 			time.Sleep(1 * time.Second)
 		} else {
 			break
@@ -64,11 +64,11 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 
 			// kill on socket closed.
 			if err == io.EOF {
-				log.Fatalf(cli.Red("Connection closed : %s"), err.Error())
+				log.Fatalf(colors.Red("Connection closed : %s"), err.Error())
 			}
 
 			if err != nil {
-				log.Println(cli.Red(err.Error()))
+				log.Println(colors.Red(err.Error()))
 				continue
 			}
 

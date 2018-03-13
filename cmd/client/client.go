@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/netm4ul/netm4ul/cmd/cli"
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server"
 	"github.com/netm4ul/netm4ul/cmd/session"
@@ -44,7 +44,7 @@ func Connect(ipport string) (*net.TCPConn, error) {
 func InitModule() {
 	SessionClient = session.NewSession()
 	if config.Config.Verbose {
-		log.Printf(cli.Yellow("Session client : %+v"), SessionClient)
+		log.Printf(colors.Yellow("Session client : %+v"), SessionClient)
 	}
 	for m := range config.Config.Modules {
 		ListModule = append(ListModule, m)
@@ -65,7 +65,7 @@ func SendHello(conn *net.TCPConn) error {
 	node := config.Node{Modules: module, Project: "FirstProject"}
 
 	if config.Config.Verbose {
-		log.Printf(cli.Yellow("Node : %+v"), node)
+		log.Printf(colors.Yellow("Node : %+v"), node)
 	}
 
 	err = enc.Encode(node)
@@ -86,7 +86,7 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	var cmd server.Command
 
 	if config.Config.Verbose {
-		log.Println(cli.Yellow("Waiting for incomming data"))
+		log.Println(colors.Yellow("Waiting for incomming data"))
 	}
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
@@ -104,7 +104,7 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	}
 
 	if config.Config.Verbose {
-		log.Printf(cli.Yellow("Recieved command %+v"), cmd)
+		log.Printf(colors.Yellow("Recieved command %+v"), cmd)
 	}
 	_, ok := SessionClient.Modules[cmd.Name]
 
@@ -134,13 +134,13 @@ func SendResult(conn *net.TCPConn, res modules.Result) error {
 	err = enc.Encode(res)
 
 	if err != nil {
-		log.Println(cli.Red("Error :"), err)
+		log.Println(colors.Red("Error :"), err)
 		return err
 	}
 
 	err = rw.Flush()
 	if err != nil {
-		log.Println(cli.Red("Error :"), err)
+		log.Println(colors.Red("Error :"), err)
 		return err
 	}
 

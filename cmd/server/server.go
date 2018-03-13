@@ -13,7 +13,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 
-	"github.com/netm4ul/netm4ul/cmd/cli"
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
 	"github.com/netm4ul/netm4ul/cmd/session"
@@ -60,11 +60,11 @@ func init() {
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
 func Listen(ipport string) {
-	log.Printf(cli.Green("Listenning on : %s"), ipport)
+	log.Printf(colors.Green("Listenning on : %s"), ipport)
 	l, err := net.Listen("tcp", ipport)
 
 	if err != nil {
-		log.Println(cli.Red("Error listening : %s"), err.Error())
+		log.Println(colors.Red("Error listening : %s"), err.Error())
 		os.Exit(1)
 	}
 
@@ -76,7 +76,7 @@ func Listen(ipport string) {
 		// Listen for an incoming connection.
 		conn, err := l.Accept()
 		if err != nil {
-			log.Println(cli.Red("Error accepting : %s"), err.Error())
+			log.Println(colors.Red("Error accepting : %s"), err.Error())
 			os.Exit(1)
 		}
 
@@ -107,7 +107,7 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter, session *mgo.Session) {
 	err := dec.Decode(&node)
 
 	if err != nil {
-		log.Println(cli.Red("Cannot read hello data : %s"), err.Error())
+		log.Println(colors.Red("Cannot read hello data : %s"), err.Error())
 		return
 	}
 
@@ -115,9 +115,9 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter, session *mgo.Session) {
 
 	if config.Config.Verbose {
 		if _, ok := ConfigServer.Nodes[ip]; ok {
-			log.Println(cli.Yellow("Node known. Updating"))
+			log.Println(colors.Yellow("Node known. Updating"))
 		} else {
-			log.Println(cli.Yellow("Unknown node. Creating"))
+			log.Println(colors.Yellow("Unknown node. Creating"))
 		}
 	}
 
@@ -128,8 +128,8 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter, session *mgo.Session) {
 	p := database.GetProjects(session)
 
 	if config.Config.Verbose {
-		log.Printf(cli.Yellow("Nodes : %+v"), ConfigServer.Nodes)
-		log.Printf(cli.Yellow("Projects : %+v"), p)
+		log.Printf(colors.Yellow("Nodes : %+v"), ConfigServer.Nodes)
+		log.Printf(colors.Yellow("Projects : %+v"), p)
 	}
 
 }
@@ -166,7 +166,7 @@ func SendCmd(command Command) error {
 	conns, err := getAvailableNodes(command.Requirements)
 
 	if config.Config.Verbose {
-		log.Printf(cli.Yellow("Available node(s) : %d"), len(conns))
+		log.Printf(colors.Yellow("Available node(s) : %d"), len(conns))
 	}
 	if err != nil {
 		return errors.New("Could not get nodes :" + err.Error())
@@ -186,7 +186,7 @@ func SendCmd(command Command) error {
 		if err != nil {
 			return errors.New("Could not send command :" + err.Error())
 		}
-		log.Printf(cli.Green("Sent command \"%s\" to %s"), command.Name, conn.RemoteAddr().String())
+		log.Printf(colors.Green("Sent command \"%s\" to %s"), command.Name, conn.RemoteAddr().String())
 	}
 
 	return nil
@@ -212,20 +212,20 @@ func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bo
 
 	// handle connection closed (client shutdown)
 	if err == io.EOF {
-		log.Printf(cli.Red("Connection closed : %s"), err.Error())
+		log.Printf(colors.Red("Connection closed : %s"), err.Error())
 		// stop all handleData for this conn
 		return true
 	}
 
 	// handle other error
 	if err != nil {
-		log.Printf(cli.Red("Error while decoding data : %s"), err.Error())
+		log.Printf(colors.Red("Error while decoding data : %s"), err.Error())
 		return false
 	}
 
 	module, ok := SessionServer.Modules[strings.ToLower(data.Module)]
 	if !ok {
-		log.Printf(cli.Red("Unknown module : %s %+v %s"), data.Module, module, ok)
+		log.Printf(colors.Red("Unknown module : %s %+v %s"), data.Module, module, ok)
 	}
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 	projectName, err := getProjectByNodeIP(ip)
@@ -233,7 +233,7 @@ func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bo
 	err = module.WriteDb(data, mgoSession, projectName)
 
 	if err != nil {
-		log.Println(cli.Red("Database error : %s"), err)
+		log.Println(colors.Red("Database error : %s"), err)
 	}
 	return false
 

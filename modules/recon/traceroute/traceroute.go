@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/netm4ul/netm4ul/cmd/cli"
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
 	mgo "gopkg.in/mgo.v2"
@@ -107,7 +107,7 @@ func (T Traceroute) ParseConfig() error {
 // WriteDb : Save data
 func (T Traceroute) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
 	if config.Config.Verbose {
-		log.Println(cli.Yellow("Writing to the database."))
+		log.Println(colors.Yellow("Writing to the database."))
 	}
 	var data TracerouteResult
 	data = result.Data.(TracerouteResult)

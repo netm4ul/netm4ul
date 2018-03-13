@@ -1,4 +1,4 @@
-package cli
+package colors
 
 // from https://github.com/bettercap/bettercap/blob/master/core/swag.go
 import (
@@ -26,14 +26,15 @@ var (
 	BG_YELLOW = "\033[43m"
 	BG_LBLUE  = "\033[104m"
 
-	RESET = "\033[0m"
+	RESET   = "\033[0m"
+	NoColor = false
 )
 
 func init() {
-	noColors = os.Getenv("TERM") == "dumb" ||
+	NoColor = os.Getenv("TERM") == "dumb" ||
 		os.Getenv("TERM") == "" ||
 		(!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()))
-	if noColors {
+	if NoColor {
 		BOLD = ""
 		DIM = ""
 		RED = ""

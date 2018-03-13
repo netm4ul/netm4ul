@@ -3,7 +3,7 @@ package database
 import (
 	"log"
 
-	"github.com/netm4ul/netm4ul/cmd/cli"
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -13,10 +13,10 @@ func GetProjects(session *mgo.Session) []Project {
 	var p []Project
 	err := session.DB(DBname).C("projects").Find(nil).Select(bson.M{"Name": 1}).All(&p)
 	if err != nil {
-		log.Println(cli.Red("Error in selecting projects"), err)
+		log.Println(colors.Red("Error in selecting projects"), err)
 		return nil
 	}
-	log.Printf(cli.Yellow("GetProjects p : %+v"), p)
+	log.Printf(colors.Yellow("GetProjects p : %+v"), p)
 	return p
 }
 
@@ -25,9 +25,9 @@ func GetProjectByName(session *mgo.Session, name string) Project {
 	var p Project
 	err := session.DB(DBname).C("projects").Find(bson.M{"Name": name}).One(&p)
 	if err != nil {
-		log.Printf(cli.Red("Error in selecting projects"), err)
+		log.Printf(colors.Red("Error in selecting projects"), err)
 		return Project{}
 	}
-	log.Printf(cli.Yellow("GetProjectByName p : %+v"), p)
+	log.Printf(colors.Yellow("GetProjectByName p : %+v"), p)
 	return p
 }

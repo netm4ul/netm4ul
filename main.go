@@ -8,6 +8,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/cmd"
 	"github.com/netm4ul/netm4ul/cmd/cli"
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/cmd/config"
 )
 
@@ -18,7 +19,7 @@ func init() {
 func main() {
 
 	if config.Config.IsServer && config.Config.IsClient {
-		log.Fatalln(cli.Red("Cannot be Server AND Client at the same time"))
+		log.Fatalln(colors.Red("Cannot be Server AND Client at the same time"))
 	}
 
 	// -server (master mode)

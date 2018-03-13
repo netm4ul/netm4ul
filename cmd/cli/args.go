@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/cmd/config"
 )
 
@@ -67,14 +68,9 @@ func ParseArgs() {
 	}
 
 	// CLI only mode
-	if targets == "" {
-		fmt.Println(Red("You must provide a target with '-targets <ip|domain>'"))
-		os.Exit(1)
-	}
-
 	ts, err := parseTargets(targets)
 	if err != nil {
-		fmt.Println(Red("Could not read -targets arguments :" + err.Error()))
+		fmt.Println(colors.Red("Could not read -targets arguments :" + err.Error()))
 		os.Exit(1)
 	}
 	config.Config.Targets = ts
@@ -82,7 +78,7 @@ func ParseArgs() {
 	if modules != "" {
 		mods, err := parseModules(modules)
 		if err != nil {
-			fmt.Println(Yellow(err.Error()))
+			fmt.Println(colors.Yellow(err.Error()))
 		}
 		addModules(mods)
 	}
@@ -91,6 +87,11 @@ func ParseArgs() {
 func parseTargets(str string) ([]string, error) {
 
 	var res []string
+	if targets == "" {
+		fmt.Println(colors.Red("You must provide a target with '-targets <ip|domain>'"))
+		os.Exit(1)
+	}
+
 	splitted := strings.Split(str, ",")
 
 	if len(splitted) == 0 {
