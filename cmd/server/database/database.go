@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/netm4ul/netm4ul/cmd/cli"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -67,7 +68,6 @@ const DBname = "netm4ul"
 
 // Connect to the database and return a session
 func Connect() *mgo.Session {
-	log.Println("config.Config.Database.IP :", config.Config.Database.IP)
 	mongoDBDialInfo := &mgo.DialInfo{
 		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
@@ -81,17 +81,22 @@ func Connect() *mgo.Session {
 	if err != nil {
 		log.Fatal("Error connecting with the database", err)
 	}
+	log.Printf(cli.Green("Connected to the database : %s"), config.Config.Database.IP)
 	return session
 }
 
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string) {
 	// mongodb will create collection on use.
-	log.Println("Should add " + projectName + " to the collections 'projects'")
 	c := session.DB(DBname).C("projects")
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
-	log.Println(info)
+
+	if config.Config.Verbose && info.Updated == 1 {
+		log.Printf(cli.Yellow("Info : %+v"), info)
+		log.Printf(cli.Yellow("Adding %s to the collections 'projects'"), projectName)
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +106,7 @@ func CreateProject(session *mgo.Session, projectName string) {
 func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
 	c := session.DB(DBname).C("projects")
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
-	log.Printf("%+v", info)
+	log.Printf(cli.Yellow("Info : %+v"), info)
 	if err != nil {
 		log.Fatal(err)
 	}

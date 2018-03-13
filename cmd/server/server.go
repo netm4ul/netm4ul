@@ -13,16 +13,14 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 
+	"github.com/netm4ul/netm4ul/cmd/cli"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
 	"github.com/netm4ul/netm4ul/cmd/session"
 )
 
-const (
-	Version = "0.1"
-)
-
 var (
+	Version = config.Config.Versions.Server
 	// ConfigServer : Global config for the server. Must be goroutine safe
 	ConfigServer *config.ConfigToml
 	//Nodes represent a map to net.Conn
@@ -62,24 +60,23 @@ func init() {
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
 func Listen(ipport string) {
-	log.Println("Listenning : ", ipport)
+	log.Printf(cli.Green("Listenning on : %s"), ipport)
 	l, err := net.Listen("tcp", ipport)
 
 	if err != nil {
-		log.Println("Error listening:", err.Error())
+		log.Println(cli.Red("Error listening : %s"), err.Error())
 		os.Exit(1)
 	}
 
 	// Close the listener when the application closes.
 	defer l.Close()
-	log.Println("Listening on " + ipport)
 	mgoSession := database.Connect()
 
 	for {
 		// Listen for an incoming connection.
 		conn, err := l.Accept()
 		if err != nil {
-			log.Println("Error accepting: ", err.Error())
+			log.Println(cli.Red("Error accepting : %s"), err.Error())
 			os.Exit(1)
 		}
 
@@ -94,7 +91,7 @@ func handleRequest(conn net.Conn, mgoSession *mgo.Session) {
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 	// defer conn.Close()
 
-	handleHello(conn, rw)
+	handleHello(conn, rw, mgoSession)
 
 	stop := false
 	for !stop {
@@ -103,33 +100,37 @@ func handleRequest(conn net.Conn, mgoSession *mgo.Session) {
 }
 
 // Recv basic info for the node at connection time.
-func handleHello(conn net.Conn, rw *bufio.ReadWriter) {
+func handleHello(conn net.Conn, rw *bufio.ReadWriter, session *mgo.Session) {
 
 	var node config.Node
 	dec := gob.NewDecoder(rw)
 	err := dec.Decode(&node)
 
 	if err != nil {
-		log.Println("Cannot read hello data :", err)
+		log.Println(cli.Red("Cannot read hello data : %s"), err.Error())
 		return
 	}
 
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
-	if _, ok := ConfigServer.Nodes[ip]; ok {
-		log.Println("Node known. Updating")
-	} else {
-		log.Println("unknown node. Creating")
+	if config.Config.Verbose {
+		if _, ok := ConfigServer.Nodes[ip]; ok {
+			log.Println(cli.Yellow("Node known. Updating"))
+		} else {
+			log.Println(cli.Yellow("Unknown node. Creating"))
+		}
 	}
 
 	ConfigServer.Nodes[ip] = node
 	Nodes[ip] = conn
-
-	session := database.Connect()
 	database.CreateProject(session, node.Project)
-	log.Println(ConfigServer.Nodes)
+
 	p := database.GetProjects(session)
-	log.Println(p)
+
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("Nodes : %+v"), ConfigServer.Nodes)
+		log.Printf(cli.Yellow("Projects : %+v"), p)
+	}
 
 }
 
@@ -163,7 +164,10 @@ func SendCmdByName(name string, options []string) {
 func SendCmd(command Command) error {
 
 	conns, err := getAvailableNodes(command.Requirements)
-	log.Println("Nodes available : ", len(conns))
+
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("Available node(s) : %d"), len(conns))
+	}
 	if err != nil {
 		return errors.New("Could not get nodes :" + err.Error())
 	}
@@ -180,10 +184,9 @@ func SendCmd(command Command) error {
 
 		err = rw.Flush()
 		if err != nil {
-			log.Println(err)
 			return errors.New("Could not send command :" + err.Error())
 		}
-		log.Println("Sent command :", command.Name, "to", conn.RemoteAddr())
+		log.Printf(cli.Green("Sent command \"%s\" to %s"), command.Name, conn.RemoteAddr().String())
 	}
 
 	return nil
@@ -209,20 +212,20 @@ func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bo
 
 	// handle connection closed (client shutdown)
 	if err == io.EOF {
-		log.Println("Connection closed : " + err.Error())
+		log.Printf(cli.Red("Connection closed : %s"), err.Error())
 		// stop all handleData for this conn
 		return true
 	}
 
 	// handle other error
 	if err != nil {
-		log.Println("Error while decoding data : " + err.Error())
+		log.Printf(cli.Red("Error while decoding data : %s"), err.Error())
 		return false
 	}
 
 	module, ok := SessionServer.Modules[strings.ToLower(data.Module)]
 	if !ok {
-		log.Println("Unknown module : ", data.Module, module, ok)
+		log.Printf(cli.Red("Unknown module : %s %+v %s"), data.Module, module, ok)
 	}
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 	projectName, err := getProjectByNodeIP(ip)
@@ -230,7 +233,7 @@ func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bo
 	err = module.WriteDb(data, mgoSession, projectName)
 
 	if err != nil {
-		log.Println(err)
+		log.Println(cli.Red("Database error : %s"), err)
 	}
 	return false
 

@@ -6,17 +6,21 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/netm4ul/netm4ul/cmd/cli"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
 	"gopkg.in/mgo.v2/bson"
 )
 
-const (
+var (
 	// Version is the string representation of the api version
-	Version = "v1"
+	Version     string
+	APIEndpoint string
+)
+
+const (
 	// APIEndpoint represents the path of the api
-	APIEndpoint           = "/api/" + Version
 	CodeOK                = 200
 	CodeNotFound          = 404
 	CodeDatabaseError     = 998
@@ -32,8 +36,8 @@ type Result struct {
 }
 
 type API struct {
-	Port    uint16 `json:"port,omitempty"`
-	Version string `json:"version,omitempty"`
+	Port     uint16          `json:"port,omitempty"`
+	Versions config.Versions `json:"versions"`
 }
 
 //Metadata of the current system (node, api, database)
@@ -44,8 +48,10 @@ type Metadata struct {
 
 //Start the API and route endpoints to functions
 func Start(ipport string, conf *config.ConfigToml) {
+	Version = config.Config.Versions.Api
+	APIEndpoint = "/api/" + Version
 
-	log.Println("API Listenning : ", ipport)
+	log.Printf(cli.Green("API Listenning : %s, version : %s"), ipport, config.Config.Versions.Api)
 	router := mux.NewRouter()
 
 	// Add content-type json header !
@@ -73,7 +79,7 @@ func Start(ipport string, conf *config.ConfigToml) {
 
 //GetIndex returns a link to the documentation on the root path
 func GetIndex(w http.ResponseWriter, r *http.Request) {
-	api := API{Port: config.Config.API.Port, Version: Version}
+	api := API{Port: config.Config.API.Port, Versions: config.Config.Versions}
 	d := Metadata{API: api, Nodes: server.ConfigServer.Nodes}
 	res := Result{Status: "success", Code: CodeOK, Message: "Documentation available at https://github.com/netm4ul/netm4ul", Data: d}
 	json.NewEncoder(w).Encode(res)
@@ -112,7 +118,10 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 func GetProject(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	session := database.Connect()
-	log.Println("Requestion project : ", vars["name"])
+
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("Requesting project : %s"), vars["name"])
+	}
 	p := database.GetProjectByName(session, vars["name"])
 	if p.Name != "" {
 		res := Result{Status: "success", Code: CodeOK, Data: p}
@@ -145,13 +154,16 @@ func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 
 	err := session.DB(database.DBname).C("projects").Find(bson.M{"Name": name}).All(&ips)
 	if err != nil {
-		log.Println("Error in selecting projects", err)
+		log.Println(cli.Red("Error in selecting projects %s"), err.Error())
 		res := Result{Status: "error", Code: CodeDatabaseError, Message: "Error in selecting project IPs"}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
 	if len(ips) == 1 && ips[0].Value == nil {
+		if config.Config.Verbose {
+			log.Printf(cli.Yellow("Project %s not found"), name)
+		}
 		res := Result{Status: "error", Code: CodeNotFound, Data: []string{}, Message: "No IP found"}
 		json.NewEncoder(w).Encode(res)
 		return
@@ -187,13 +199,17 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	protocol := vars["protocol"]
 
 	if protocol != "" {
-		log.Println("name :", name, "ip :", ip, "protocol :", protocol)
+		if config.Config.Verbose {
+			log.Printf(cli.Yellow("name : %s, ip : %s, protocol : %s"), name, ip, protocol)
+		}
 		res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
-	log.Println("name :", name, "ip :", ip)
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("name : %s, ip : %s"), name, ip)
+	}
 
 	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
@@ -295,7 +311,11 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 	var res Result
 
 	cmd := server.Command{Name: module, Options: []string{"option1", "option2"}}
-	log.Println("RunModule for cmd :", cmd)
+
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("RunModule for cmd : %+v"), cmd)
+	}
+
 	err := server.SendCmd(cmd)
 	if err != nil {
 		res = Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
@@ -320,7 +340,9 @@ func DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 func jsonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.RequestURI)
+		if config.Config.Verbose {
+			log.Printf(cli.Green("Request URL : %s"), r.RequestURI)
+		}
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)

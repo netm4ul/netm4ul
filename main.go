@@ -18,7 +18,7 @@ func init() {
 func main() {
 
 	if config.Config.IsServer && config.Config.IsClient {
-		log.Fatalln("Cannot be Server AND Client at the same time")
+		log.Fatalln(cli.Red("Cannot be Server AND Client at the same time"))
 	}
 
 	// -server (master mode)

@@ -20,10 +20,22 @@
   version = "v1.6.1"
 
 [[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [[projects]]
   branch = "v2"
@@ -40,6 +52,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "362dcdef533230f25526b5489423ff0adc790b1e95170c2f95ea4c38e1479f08"
+  inputs-digest = "ba1fb32aaed1b182ae4c82fbfac6a04f80050ff9d31a161fc960da35ba0d40ed"
   solver-name = "gps-cdcl"
   solver-version = 1

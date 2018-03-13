@@ -42,6 +42,13 @@ type Module struct {
 	Enabled bool `toml:"enabled" json:"enabled"`
 }
 
+// Versions : Store the version
+type Versions struct {
+	Api    string `toml:"api" json:"api"`
+	Server string `toml:"server" json:"server"`
+	Client string `toml:"client" json:"client"`
+}
+
 // Node : Node info
 type Node struct {
 	Modules []string `json:"modules"`
@@ -50,15 +57,20 @@ type Node struct {
 
 // ConfigToml is the global config object
 type ConfigToml struct {
-	IsServer bool
-	IsClient bool
-	Targets  []string
-	API      API
-	Keys     Keys
-	Server   Server
-	Database Database
-	Nodes    map[string]Node
-	Modules  map[string]Module
+	Versions   Versions
+	Verbose    bool
+	NoColors   bool
+	ConfigPath string
+	Mode       string
+	IsServer   bool
+	IsClient   bool
+	Targets    []string
+	API        API
+	Keys       Keys
+	Server     Server
+	Database   Database
+	Nodes      map[string]Node
+	Modules    map[string]Module
 }
 
 // Config : exported config

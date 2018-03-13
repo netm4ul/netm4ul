@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/netm4ul/netm4ul/cmd/cli"
 	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server"
 	"github.com/netm4ul/netm4ul/cmd/session"
@@ -42,7 +43,9 @@ func Connect(ipport string) (*net.TCPConn, error) {
 // InitModule : Update ListModule & ListModuleEnabled variable
 func InitModule() {
 	SessionClient = session.NewSession()
-	log.Println(SessionClient)
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("Session client : %+v"), SessionClient)
+	}
 	for m := range config.Config.Modules {
 		ListModule = append(ListModule, m)
 		if config.Config.Modules[m].Enabled {
@@ -61,7 +64,9 @@ func SendHello(conn *net.TCPConn) error {
 	module := ListModuleEnabled
 	node := config.Node{Modules: module, Project: "FirstProject"}
 
-	log.Println(node)
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("Node : %+v"), node)
+	}
 
 	err = enc.Encode(node)
 	if err != nil {
@@ -78,10 +83,14 @@ func SendHello(conn *net.TCPConn) error {
 
 // Recv read the incomming data from the server. The server use the server.Command struct.
 func Recv(conn *net.TCPConn) (server.Command, error) {
+	var cmd server.Command
+
+	if config.Config.Verbose {
+		log.Println(cli.Yellow("Waiting for incomming data"))
+	}
+
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 
-	log.Println("Waiting for incomming data")
-	var cmd server.Command
 	dec := gob.NewDecoder(rw)
 	err := dec.Decode(&cmd)
 
@@ -94,7 +103,9 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 		return server.Command{}, errors.New("Could not decode recieved message : " + err.Error())
 	}
 
-	log.Printf("Recieved command %+v", cmd)
+	if config.Config.Verbose {
+		log.Printf(cli.Yellow("Recieved command %+v"), cmd)
+	}
 	_, ok := SessionClient.Modules[cmd.Name]
 
 	if !ok {
@@ -106,7 +117,10 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 
 // Execute runs modules with the right options and handle errors.
 func Execute(module modules.Module, cmd server.Command) (modules.Result, error) {
-	log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
+
+	if config.Config.Verbose {
+		log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
+	}
 	//TODO
 	res, err := module.Run(cmd.Options)
 	return res, err
@@ -120,13 +134,13 @@ func SendResult(conn *net.TCPConn, res modules.Result) error {
 	err = enc.Encode(res)
 
 	if err != nil {
-		log.Println("Error :", err)
+		log.Println(cli.Red("Error :"), err)
 		return err
 	}
 
 	err = rw.Flush()
 	if err != nil {
-		log.Println("Error :", err)
+		log.Println(cli.Red("Error :"), err)
 		return err
 	}
 
