@@ -31,10 +31,11 @@ var (
 	verbose    bool
 	version    bool
 
-	isServer bool
-	isClient bool
-	noColors bool
-	info     bool
+	isServer   bool
+	isClient   bool
+	noColors   bool
+	info       bool
+	completion bool
 )
 
 // ParseArgs Parse CLI arguments
@@ -51,6 +52,7 @@ func ParseArgs() {
 	flag.StringVar(&mode, "mode", DefaultMode, "Mode of execution. Simple alias to list of module. See the config file")
 	flag.StringVar(&modules, "modules", "", "List of modules executed")
 	flag.BoolVar(&info, "info", false, "Prints infos")
+	flag.BoolVar(&completion, "completion", false, "Create bash autocompletion script")
 
 	// Node setup
 	flag.BoolVar(&isServer, "server", false, "Set the node as server")
@@ -59,6 +61,7 @@ func ParseArgs() {
 	flag.Parse()
 
 	config.LoadConfig(configPath)
+
 	if version {
 		PrintVersion()
 		os.Exit(0)
@@ -77,7 +80,10 @@ func ParseArgs() {
 			printInfo()
 			os.Exit(0)
 		}
-
+		if completion {
+			printCompletion()
+			os.Exit(0)
+		}
 		parseCLI()
 		// no targets provided !
 		createProjectIfNotExist()
@@ -103,7 +109,7 @@ func printInfo() {
 			log.Printf(colors.Red("Can't get project %s : %s"), config.Config.Project.Name, err.Error())
 		}
 		if config.Config.Verbose {
-			log.Printf("Project : %+v", p)
+			log.Printf(colors.Green("Project : %+v"), p)
 		}
 	}
 
@@ -116,7 +122,7 @@ func printInfo() {
 	// build array of array for the table !
 	for _, p := range listOfProjects {
 		if config.Config.Verbose {
-			log.Println("p : ", p)
+			log.Printf(colors.Green("p : %+v"), p)
 		}
 		data = append(data, []string{p.Name, p.Description, strconv.Itoa(len(p.IPs)), time.Unix(p.UpdatedAt, 0).String()})
 	}
@@ -124,29 +130,33 @@ func printInfo() {
 	table.AppendBulk(data)
 	table.Render()
 }
-func createProjectIfNotExist() {
-	// p := database.Project{Name: config.Config.Project.Name, Description: config.Config.Project.Description}
+func printCompletion() {
+	fmt.Println(template)
+}
 
-	// listOfProject, err := GetProjects()
-	// if err != nil {
-	// 	log.Printf(colors.Red("Can't get project list : %s"), err.Error())
-	// }
+func createProjectIfNotExist() {
+	p := database.Project{Name: config.Config.Project.Name, Description: config.Config.Project.Description}
+
+	listOfProject, err := GetProjects()
+	if err != nil {
+		log.Printf(colors.Red("Can't get project list : %s"), err.Error())
+	}
 
 	found := false
-	// for _, project := range listOfProject {
-	// if project.Name == config.Config.Project.Name {
-	// found = true
-	// }
-	// }
+	for _, project := range listOfProject {
+		if project.Name == config.Config.Project.Name {
+			found = true
+		}
+	}
 
 	if found {
 		return
 	}
 
-	// err = CreateProject(p)
-	// if err != nil {
-	// 	log.Printf(colors.Red("Can't create project : %s"), err.Error())
-	// }
+	err = CreateProject(p)
+	if err != nil {
+		log.Printf(colors.Red("Can't create project : %s"), err.Error())
+	}
 
 }
 
