@@ -55,9 +55,10 @@ type IP struct {
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	Name      string        `json:"name,omitempty" bson:"Name"`
-	UpdatedAt int64         `json:"updated_at,omitempty" bson:"UpdatedAt,omitempty"`
-	IPs       []interface{} `json:"ips,omitempty" bson:"omitempty"`
+	Name        string        `json:"name" bson:"Name"`
+	Description string        `json:"description" bson:"Description,omitempty"`
+	UpdatedAt   int64         `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	IPs         []interface{} `json:"ips" bson:"omitempty"`
 }
 
 var db *mgo.Database
@@ -79,7 +80,7 @@ func Connect() *mgo.Session {
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
-		log.Fatal("Error connecting with the database", err)
+		log.Fatalf(colors.Red("Error connecting with the database : %s"), err.Error())
 	}
 	log.Printf(colors.Green("Connected to the database : %s"), config.Config.Database.IP)
 	return session

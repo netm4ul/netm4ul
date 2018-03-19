@@ -55,8 +55,14 @@ type Node struct {
 	Project string   `json:"project"`
 }
 
+type Project struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 // ConfigToml is the global config object
 type ConfigToml struct {
+	Project    Project
 	Versions   Versions
 	Verbose    bool
 	NoColors   bool

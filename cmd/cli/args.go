@@ -3,14 +3,19 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/cmd/config"
+	"github.com/netm4ul/netm4ul/cmd/server/database"
 )
 
 const (
@@ -29,19 +34,23 @@ var (
 	isServer bool
 	isClient bool
 	noColors bool
+	info     bool
 )
 
 // ParseArgs Parse CLI arguments
 func ParseArgs() {
 
-	// CLI commands
+	// CLI arguments
 	flag.StringVar(&configPath, "config", DefaultConfigPath, "Custom config file path")
-	flag.StringVar(&targets, "targets", "", "List of targets, comma separated")
-	flag.StringVar(&mode, "mode", DefaultMode, "Mode of execution. Simple alias to list of module. See the config file")
-	flag.StringVar(&modules, "modules", "", "List of modules executed")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output")
 	flag.BoolVar(&version, "version", false, "Print the version")
 	flag.BoolVar(&noColors, "no-colors", false, "Disable color printing")
+
+	// CLI commands
+	flag.StringVar(&targets, "targets", "", "List of targets, comma separated")
+	flag.StringVar(&mode, "mode", DefaultMode, "Mode of execution. Simple alias to list of module. See the config file")
+	flag.StringVar(&modules, "modules", "", "List of modules executed")
+	flag.BoolVar(&info, "info", false, "Prints infos")
 
 	// Node setup
 	flag.BoolVar(&isServer, "server", false, "Set the node as server")
@@ -62,12 +71,87 @@ func ParseArgs() {
 	config.Config.IsClient = isClient
 	config.Config.NoColors = noColors
 
-	if config.Config.IsClient || config.Config.IsServer {
-		// no modes, no targets, no modules
+	// cli only
+	if !config.Config.IsClient && !config.Config.IsServer {
+		if info {
+			printInfo()
+			os.Exit(0)
+		}
+
+		parseCLI()
+		// no targets provided !
+		createProjectIfNotExist()
+	}
+
+}
+
+func printInfo() {
+	var p database.Project
+	var err error
+	var data [][]string
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Projects", "Descriptions", "IPs", "Last update"})
+	// str := "-"
+
+	if config.Config.Verbose {
+		log.Printf("config.Config.Project.Name : %+v", config.Config.Project.Name)
+	}
+	if config.Config.Project.Name != "" {
+		p, err = GetProject(config.Config.Project.Name)
+		if err != nil {
+			log.Printf(colors.Red("Can't get project %s : %s"), config.Config.Project.Name, err.Error())
+		}
+		if config.Config.Verbose {
+			log.Printf("Project : %+v", p)
+		}
+	}
+
+	// get list of projects
+	listOfProjects, err := GetProjects()
+	if err != nil {
+		log.Printf(colors.Red("Can't get projects list : %s"), err.Error())
+	}
+
+	// build array of array for the table !
+	for _, p := range listOfProjects {
+		if config.Config.Verbose {
+			log.Println("p : ", p)
+		}
+		data = append(data, []string{p.Name, p.Description, strconv.Itoa(len(p.IPs)), time.Unix(p.UpdatedAt, 0).String()})
+	}
+
+	table.AppendBulk(data)
+	table.Render()
+}
+func createProjectIfNotExist() {
+	// p := database.Project{Name: config.Config.Project.Name, Description: config.Config.Project.Description}
+
+	// listOfProject, err := GetProjects()
+	// if err != nil {
+	// 	log.Printf(colors.Red("Can't get project list : %s"), err.Error())
+	// }
+
+	found := false
+	// for _, project := range listOfProject {
+	// if project.Name == config.Config.Project.Name {
+	// found = true
+	// }
+	// }
+
+	if found {
 		return
 	}
 
-	// CLI only mode
+	// err = CreateProject(p)
+	// if err != nil {
+	// 	log.Printf(colors.Red("Can't create project : %s"), err.Error())
+	// }
+
+}
+
+func parseCLI() {
+
 	ts, err := parseTargets(targets)
 	if err != nil {
 		fmt.Println(colors.Red("Could not read -targets arguments :" + err.Error()))

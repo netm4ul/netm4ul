@@ -15,12 +15,11 @@ import (
 
 var (
 	// Version is the string representation of the api version
-	Version     string
-	APIEndpoint string
+	Version string
 )
 
 const (
-	// APIEndpoint represents the path of the api
+	// represents the path of the api
 	CodeOK                = 200
 	CodeNotFound          = 404
 	CodeDatabaseError     = 998
@@ -49,7 +48,6 @@ type Metadata struct {
 //Start the API and route endpoints to functions
 func Start(ipport string, conf *config.ConfigToml) {
 	Version = config.Config.Versions.Api
-	APIEndpoint = "/api/" + Version
 
 	log.Printf(colors.Green("API Listenning : %s, version : %s"), ipport, config.Config.Versions.Api)
 	router := mux.NewRouter()
@@ -59,21 +57,21 @@ func Start(ipport string, conf *config.ConfigToml) {
 
 	// GET
 	router.HandleFunc("/", GetIndex).Methods("GET")
-	router.HandleFunc(APIEndpoint+"/projects", GetProjects).Methods("GET")
-	router.HandleFunc(APIEndpoint+"/projects/{name}", GetProject).Methods("GET")
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips", GetIPsByProjectName).Methods("GET")
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports", GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{protocol}", GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", GetDirectoryByPort).Methods("GET")
-	router.HandleFunc(APIEndpoint+"/projects/{name}/ips/{ip}/routes", GetRoutesByIP).Methods("GET")
-	router.HandleFunc(APIEndpoint+"/projects/{name}/raw/{module}", GetRawModuleByProject).Methods("GET")
+	router.HandleFunc("/projects", GetProjects).Methods("GET")
+	router.HandleFunc("/projects/{name}", GetProject).Methods("GET")
+	router.HandleFunc("/projects/{name}/ips", GetIPsByProjectName).Methods("GET")
+	router.HandleFunc("/projects/{name}/ips/{ip}/ports", GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
+	router.HandleFunc("/projects/{name}/ips/{ip}/ports/{protocol}", GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
+	router.HandleFunc("/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", GetDirectoryByPort).Methods("GET")
+	router.HandleFunc("/projects/{name}/ips/{ip}/routes", GetRoutesByIP).Methods("GET")
+	router.HandleFunc("/projects/{name}/raw/{module}", GetRawModuleByProject).Methods("GET")
 
 	// POST
-	router.HandleFunc(APIEndpoint+"/projects", CreateProject).Methods("POST")
-	router.HandleFunc(APIEndpoint+"/projects/{name}/run/{module}", RunModule).Methods("POST")
+	router.HandleFunc("/projects", CreateProject).Methods("POST")
+	router.HandleFunc("/projects/{name}/run/{module}", RunModule).Methods("POST")
 
 	// DELETE
-	router.HandleFunc(APIEndpoint+"/projects/{name}", DeleteProject).Methods("DELETE")
+	router.HandleFunc("/projects/{name}", DeleteProject).Methods("DELETE")
 	log.Fatal(http.ListenAndServe(ipport, router))
 }
 
@@ -100,6 +98,7 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 func GetProjects(w http.ResponseWriter, r *http.Request) {
 	session := database.Connect()
 	p := database.GetProjects(session)
+	// psend := struct{ Projects []database.Project }{Projects: p}
 	res := Result{Status: "success", Code: CodeOK, Data: p}
 	json.NewEncoder(w).Encode(res)
 }
