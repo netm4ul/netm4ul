@@ -128,13 +128,33 @@ func GetProjects() ([]database.Project, error) {
 }
 
 func GetProject(name string) (database.Project, error) {
-	return database.Project{}, nil
+	var data database.Project
+	resjson, err := getData("/projects/" + name)
+
+	if config.Config.Verbose {
+		log.Printf(colors.Yellow("response : %+v"), resjson)
+	}
+
+	if err != nil {
+		return data, err
+	}
+
+	err = mapstructure.Decode(resjson.Data, &data)
+	if err != nil {
+		return data, err
+	}
+
+	if resjson.Code != 200 {
+		return data, errors.New("Can't get projects list :" + err.Error())
+	}
+
+	return data, nil
 }
 
-func RequestIPs() (database.IP, error) {
+func GetIPsByProject(project string) (database.IP, error) {
 	return database.IP{}, nil
 }
 
-func RequestPorts() ([]database.Port, error) {
+func GetPortsByIP(project string, ip string) ([]database.Port, error) {
 	return []database.Port{}, nil
 }

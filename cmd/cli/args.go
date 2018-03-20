@@ -20,10 +20,12 @@ import (
 
 const (
 	DefaultConfigPath = "netm4ul.conf"
-	DefaultMode       = "stealth"
 )
 
 var (
+	Modes       = []string{"passive", "stealth", "aggressive"}
+	DefaultMode = Modes[1] // uses first non-passive mode.
+
 	configPath string
 	targets    string
 	modules    string
@@ -34,7 +36,7 @@ var (
 	isServer   bool
 	isClient   bool
 	noColors   bool
-	info       bool
+	info       string
 	completion bool
 )
 
@@ -51,7 +53,7 @@ func ParseArgs() {
 	flag.StringVar(&targets, "targets", "", "List of targets, comma separated")
 	flag.StringVar(&mode, "mode", DefaultMode, "Mode of execution. Simple alias to list of module. See the config file")
 	flag.StringVar(&modules, "modules", "", "List of modules executed")
-	flag.BoolVar(&info, "info", false, "Prints infos")
+	flag.StringVar(&info, "info", "", "Prints infos")
 	flag.BoolVar(&completion, "completion", false, "Create bash autocompletion script")
 
 	// Node setup
@@ -76,8 +78,8 @@ func ParseArgs() {
 
 	// cli only
 	if !config.Config.IsClient && !config.Config.IsServer {
-		if info {
-			printInfo()
+		if info != "" {
+			printInfo(info)
 			os.Exit(0)
 		}
 		if completion {
@@ -91,27 +93,21 @@ func ParseArgs() {
 
 }
 
-func printInfo() {
-	var p database.Project
+func printInfo(infoType string) {
+	switch infoType {
+	case "projects":
+		printProjectsInfo()
+	case "project":
+		printProjectInfo(config.Config.Project.Name)
+	}
+}
+
+func printProjectsInfo() {
 	var err error
 	var data [][]string
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Projects", "Descriptions", "IPs", "Last update"})
-	// str := "-"
-
-	if config.Config.Verbose {
-		log.Printf("config.Config.Project.Name : %+v", config.Config.Project.Name)
-	}
-	if config.Config.Project.Name != "" {
-		p, err = GetProject(config.Config.Project.Name)
-		if err != nil {
-			log.Printf(colors.Red("Can't get project %s : %s"), config.Config.Project.Name, err.Error())
-		}
-		if config.Config.Verbose {
-			log.Printf(colors.Green("Project : %+v"), p)
-		}
-	}
+	table.SetHeader([]string{"Project", "Description", "# IPs", "Last update"})
 
 	// get list of projects
 	listOfProjects, err := GetProjects()
@@ -130,8 +126,43 @@ func printInfo() {
 	table.AppendBulk(data)
 	table.Render()
 }
+
+func printProjectInfo(projectName string) {
+
+	var p database.Project
+	var err error
+	var data [][]string
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"IP", "Ports"})
+
+	if projectName == "" {
+		log.Fatalln(colors.Red("No project provided"))
+		// exit
+	}
+
+	p, err = GetProject(projectName)
+	if err != nil {
+		log.Printf(colors.Red("Can't get project %s : %s"), projectName, err.Error())
+	}
+
+	if config.Config.Verbose {
+		log.Printf(colors.Green("Project : %+v"), p)
+	}
+
+	for _, ip := range p.IPs {
+		log.Printf("ip : %+v", ip)
+		for _, port := range ip.Ports {
+			data = append(data, []string{ip.Value.String(), strconv.Itoa(int(port.Number))})
+		}
+	}
+
+	table.AppendBulk(data)
+	table.Render()
+}
+
 func printCompletion() {
-	fmt.Println(template)
+	fmt.Println(generateBashCompletion())
 }
 
 func createProjectIfNotExist() {
@@ -142,15 +173,11 @@ func createProjectIfNotExist() {
 		log.Printf(colors.Red("Can't get project list : %s"), err.Error())
 	}
 
-	found := false
 	for _, project := range listOfProject {
 		if project.Name == config.Config.Project.Name {
-			found = true
+			return
+			// already exist, so exit this function
 		}
-	}
-
-	if found {
-		return
 	}
 
 	err = CreateProject(p)

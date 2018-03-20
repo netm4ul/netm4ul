@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -122,13 +123,24 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 		log.Printf(colors.Yellow("Requesting project : %s"), vars["name"])
 	}
 	p := database.GetProjectByName(session, vars["name"])
-	if p.Name != "" {
-		res := Result{Status: "success", Code: CodeOK, Data: p}
-		json.NewEncoder(w).Encode(res)
+
+	// TODO : use real data
+	p.IPs = append(p.IPs, database.IP{
+		Value: net.ParseIP("127.0.0.1"),
+		Ports: []database.Port{
+			database.Port{Number: 53, Banner: "Bind9", Status: "open"},
+		},
+	})
+
+	if p.Name == "" {
+		notFound := Result{Status: "error", Code: CodeNotFound, Message: "Project not found"}
+		json.NewEncoder(w).Encode(notFound)
 		return
 	}
-	notFound := Result{Status: "error", Code: CodeNotFound, Message: "Project not found"}
-	json.NewEncoder(w).Encode(notFound)
+
+	res := Result{Status: "success", Code: CodeOK, Data: p}
+	json.NewEncoder(w).Encode(res)
+
 }
 
 //GetIPsByProjectName return this template

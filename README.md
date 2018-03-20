@@ -32,9 +32,12 @@ Requirement :
 ```
 vim netm4ul.conf # change the credentials (db, api, etc...) and ip / ports
 make
+
 ./netm4ul -server # in one terminal
 ./netm4ul -client # in  another terminal
+
 # netm4ul is running, you can control it directly with
+
 ./netm4ul -targets <somedomain,ip,ip range(CIDR)>
 ```
 
@@ -42,15 +45,20 @@ make
 ### CLI
 
 ```
-  -client  : Set the node as client
-  -config  : Custom config file path (default "netm4ul.conf")
-  -mode    : Mode of execution. Simple alias to list of module. See the config file (default "stealth")
-  -modules : List of modules executed
-  -server  : Set the node as server
-  -targets : List of targets, comma separated
-  -verbose : Enable verbose output
-  -version : Print the version
+  -client           : Set the node as client
+  -completion       : Create bash autocompletion script
+  -config <string>  : Custom config file path (default "netm4ul.conf")
+  -info             : Prints infos
+  -mode <string>    : Mode of execution. Simple alias to list of module. See the config file (default "stealth")
+  -modules <string> : List of modules executed
+  -no-colors        : Disable color printing
+  -server           : Set the node as server
+  -targets <string> : List of targets, comma separated
+  -verbose          : Enable verbose output
+  -version          : Print the version
 ```
+
+You can add the autocompletion with `source <(./netm4ul -completion)` (bash only at the moment)
 
 Example :
 
@@ -60,27 +68,37 @@ Example :
 
 `./netm4ul -targets 192.168.1.1,192.168.2.0/24,localhost.localdomain -modules traceroute`
 
+
 ## Contributing
 
 ### Structure
 
 ```
 .
-├── cmd
-│   ├── api
+├── cmd                         # Source folder
+│   ├── api                     # HTTP Api
 │   │   └── api.go
-│   ├── client
+│   ├── cli                     # Command line code (args parsing and cli interface)
+│   │   ├── args.go
+│   │   ├── cli.go
+│   │   ├── completion.go
+│   │   └── requests.go
+│   ├── client                  # Client (node) code
 │   │   └── client.go
-│   ├── config
+│   ├── colors                  # Colors package (TODO : change it to log.)
+│   │   └── colors.go
+│   ├── config                  # Configuration parsing
 │   │   ├── config.go
 │   │   └── config_test.go
-│   ├── handler.go
-│   └── server
-│       ├── database
-│       │   ├── database.go
-│       │   └── helpers.go
-│       └── server.go
-├── config
+│   ├── handler.go              # Router for master, client or CLI
+│   ├── server                  # Server (master node) code
+│   │   ├── database            # Database connection
+│   │   │   ├── database.go
+│   │   │   └── helpers.go
+│   │   └── server.go
+│   └── session                 # Projects sessions : current projects settings (modules, name...)
+│       └── session.go
+├── config                      # Module config files.
 │   ├── dorks.conf
 │   ├── sqlmap.conf
 │   └── traceroute.conf
@@ -91,16 +109,16 @@ Example :
 ├── LICENSE
 ├── main.go
 ├── Makefile
-├── modules
+├── modules                     # Modules folders.
 │   ├── exploit
 │   ├── modules.go
 │   ├── recon
-│   │   └── traceroute
-│   │       └── traceroute.go
+│   │   └── ...
+│   │   └── ...
 │   └── report
-├── netm4ul
 ├── netm4ul.conf
-└── README.md
+├── netm4ul.conf.docker
+├── README.md
 ```
 
 ### Core
