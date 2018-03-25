@@ -74,7 +74,7 @@ func (N *Nmap) DependsOn() []modules.Condition {
 
 // Run : Main function of the module
 func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
-
+	N.ParseConfig()
 	fmt.Println(&N.Config)
 	var opt []string
 
@@ -99,6 +99,7 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	}
 
 	// Port range option : -p- for all ports, -p x-y for specific range, nothing for default
+	log.Println(N.Config.PortRange)
 	if N.Config.PortRange != "Null" {
 		opt = append(opt, "-p"+N.Config.PortRange)
 	} else if N.Config.PortRange == "-" {
@@ -143,7 +144,8 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	fmt.Println("My cmd:", cmd)
 	execErr := cmd.Run()
 	if execErr != nil {
-		panic(execErr)
+		log.Fatal(execErr)
+		// panic(execErr)
 	}
 	var err error
 	N.Result, err = ioutil.ReadFile(filename)

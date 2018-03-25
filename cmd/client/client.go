@@ -91,6 +91,7 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	}
 
 	log.Printf("Recieved command %+v", cmd)
+	log.Println(SessionClient.Modules)
 	_, ok := SessionClient.Modules[cmd.Name]
 
 	if !ok {

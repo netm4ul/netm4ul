@@ -294,7 +294,8 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 
 	var res Result
 
-	cmd := server.Command{Name: module, Options: []string{"option1", "option2"}}
+	// cmd := server.Command{Name: module, Options: []string{"option1", "option2"}}
+	cmd := server.Command{Name: module, Options: []string{"127.0.0.1"}}
 	log.Println("RunModule for cmd :", cmd)
 	err := server.SendCmd(cmd)
 	if err != nil {
