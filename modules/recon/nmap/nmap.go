@@ -3,15 +3,23 @@ package nmap
 //package nmap
 
 import (
+	// "fmt"
+	"encoding/gob"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	mynmap "github.com/lair-framework/go-nmap"
-	"github.com/netm4ul/netm4ul/modules"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
+
+	"github.com/netm4ul/netm4ul/cmd/server/database"
+	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+
+	"github.com/BurntSushi/toml"
+	mynmap "github.com/lair-framework/go-nmap"
+	"github.com/netm4ul/netm4ul/modules"
 )
 
 //ConfigToml : configuration model (from the toml file)
@@ -33,6 +41,14 @@ type Nmap struct {
 	Config  ConfigToml
 	Result  []byte
 	Nmaprun *mynmap.NmapRun
+}
+
+// NewTraceroute generate a new Nmap module (type modules.Module)
+func NewNmap() modules.Module {
+	gob.Register(mynmap.NmapRun{})
+	var t modules.Module
+	t = &Nmap{}
+	return t
 }
 
 // Name : name getter
@@ -57,7 +73,7 @@ func (N *Nmap) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (N *Nmap) Run(interface{}) (interface{}, error) {
+func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 
 	fmt.Println(&N.Config)
 	var opt []string
@@ -119,7 +135,8 @@ func (N *Nmap) Run(interface{}) (interface{}, error) {
 	opt = append(opt, "-oX", filename)
 
 	// TODO : change it for Run argument, will be passed as an option : ./netm4ul 127.0.0.1
-	opt = append(opt, "127.0.0.1")
+
+	opt = append(opt, opt2...)
 
 	fmt.Println(opt)
 	cmd := exec.Command("/usr/bin/nmap", opt...)
@@ -133,7 +150,8 @@ func (N *Nmap) Run(interface{}) (interface{}, error) {
 	if err != nil {
 		log.Fatal("Error 2 : ", err)
 	}
-	return N.Result, err
+
+	return modules.Result{Data: N.Result, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
 // Parse : Parse the result of the execution
@@ -173,6 +191,17 @@ func (N *Nmap) ParseConfig() error {
 		return err
 	}
 
+	return nil
+}
+
+// WriteDb : Save data
+func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+	log.Println("Write to the database.")
+	var data mynmap.NmapRun
+	data = result.Data.(mynmap.NmapRun)
+
+	raw := bson.M{projectName + ".results." + result.Module: data}
+	database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }
 

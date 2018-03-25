@@ -20,6 +20,12 @@
   version = "v1.6.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/lair-framework/go-nmap"
+  packages = ["."]
+  revision = "672725bbaae4337773b4ca267029c22606e38420"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -40,6 +46,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "362dcdef533230f25526b5489423ff0adc790b1e95170c2f95ea4c38e1479f08"
+  inputs-digest = "807d53c7ddf1882710d69b3f51edbc205f4b0d565e52ab4584598e6619bc5215"
   solver-name = "gps-cdcl"
   solver-version = 1
