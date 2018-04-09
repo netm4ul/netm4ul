@@ -8,9 +8,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/cmd/config"
-	"github.com/netm4ul/netm4ul/cmd/server"
-	"github.com/netm4ul/netm4ul/cmd/server/database"
+	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server"
+	"github.com/netm4ul/netm4ul/core/server/database"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -49,30 +49,32 @@ type Metadata struct {
 //Start the API and route endpoints to functions
 func Start(ipport string, conf *config.ConfigToml) {
 	Version = config.Config.Versions.Api
-
+	prefix := "/api/" + Version
 	log.Printf(colors.Green("API Listenning : %s, version : %s"), ipport, config.Config.Versions.Api)
+	log.Println("API Endpoint :", ipport+prefix)
 	router := mux.NewRouter()
 
 	// Add content-type json header !
 	router.Use(jsonMiddleware)
 
 	// GET
-	router.HandleFunc("/", GetIndex).Methods("GET")
-	router.HandleFunc("/projects", GetProjects).Methods("GET")
-	router.HandleFunc("/projects/{name}", GetProject).Methods("GET")
-	router.HandleFunc("/projects/{name}/ips", GetIPsByProjectName).Methods("GET")
-	router.HandleFunc("/projects/{name}/ips/{ip}/ports", GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
-	router.HandleFunc("/projects/{name}/ips/{ip}/ports/{protocol}", GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
-	router.HandleFunc("/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", GetDirectoryByPort).Methods("GET")
-	router.HandleFunc("/projects/{name}/ips/{ip}/routes", GetRoutesByIP).Methods("GET")
-	router.HandleFunc("/projects/{name}/raw/{module}", GetRawModuleByProject).Methods("GET")
+	router.HandleFunc(prefix+"/", GetIndex).Methods("GET")
+	router.HandleFunc(prefix+"/projects", GetProjects).Methods("GET")
+	router.HandleFunc(prefix+"/projects/{name}", GetProject).Methods("GET")
+	router.HandleFunc(prefix+"/projects/{name}/ips", GetIPsByProjectName).Methods("GET")
+	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports", GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
+	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports/{protocol}", GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
+	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", GetDirectoryByPort).Methods("GET")
+	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/routes", GetRoutesByIP).Methods("GET")
+	router.HandleFunc(prefix+"/projects/{name}/raw/{module}", GetRawModuleByProject).Methods("GET")
 
 	// POST
-	router.HandleFunc("/projects", CreateProject).Methods("POST")
-	router.HandleFunc("/projects/{name}/run/{module}", RunModule).Methods("POST")
+	router.HandleFunc(prefix+"/projects", CreateProject).Methods("POST")
+	router.HandleFunc(prefix+"/projects/{name}/run/{module}", RunModule).Methods("POST")
 
 	// DELETE
-	router.HandleFunc("/projects/{name}", DeleteProject).Methods("DELETE")
+	router.HandleFunc(prefix+"/projects/{name}", DeleteProject).Methods("DELETE")
+
 	log.Fatal(http.ListenAndServe(ipport, router))
 }
 

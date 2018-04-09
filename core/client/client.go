@@ -8,9 +8,9 @@ import (
 	"net"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/cmd/config"
-	"github.com/netm4ul/netm4ul/cmd/server"
-	"github.com/netm4ul/netm4ul/cmd/session"
+	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server"
+	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
 )

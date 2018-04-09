@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/netm4ul/netm4ul/cmd/api"
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/cmd/config"
-	"github.com/netm4ul/netm4ul/cmd/server/database"
+	"github.com/netm4ul/netm4ul/core/api"
+	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server/database"
 	"github.com/pkg/errors"
 )
 

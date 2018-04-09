@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/cmd/config"
+	"github.com/netm4ul/netm4ul/core/config"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )

@@ -7,9 +7,9 @@ import (
 	"strconv"
 
 	"github.com/netm4ul/netm4ul/cmd"
-	"github.com/netm4ul/netm4ul/cmd/cli"
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/cmd/config"
+	"github.com/netm4ul/netm4ul/core"
+	"github.com/netm4ul/netm4ul/core/config"
 )
 
 func init() {
