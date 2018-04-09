@@ -30,7 +30,7 @@ var (
 	NoColor = false
 )
 
-func init() {
+func SetupTerminal() {
 	NoColor = os.Getenv("TERM") == "dumb" ||
 		os.Getenv("TERM") == "" ||
 		(!isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()))

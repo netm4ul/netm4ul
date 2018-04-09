@@ -1,7 +1,6 @@
-package cli
+package cmd
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -18,90 +17,29 @@ import (
 	"github.com/netm4ul/netm4ul/core/server/database"
 )
 
-const (
-	DefaultConfigPath = "netm4ul.conf"
-)
-
-var (
-	Modes       = []string{"passive", "stealth", "aggressive"}
-	DefaultMode = Modes[1] // uses first non-passive mode.
-
-	configPath string
-	targets    string
-	modules    string
-	mode       string
-	verbose    bool
-	version    bool
-
-	isServer   bool
-	isClient   bool
-	noColors   bool
-	info       string
-	completion bool
-)
-
 // ParseArgs Parse CLI arguments
 func ParseArgs() {
 
-	// CLI arguments
-	flag.StringVar(&configPath, "config", DefaultConfigPath, "Custom config file path")
-	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output")
-	flag.BoolVar(&version, "version", false, "Print the version")
-	flag.BoolVar(&noColors, "no-colors", false, "Disable color printing")
-
-	// CLI commands
-	flag.StringVar(&targets, "targets", "", "List of targets, comma separated")
-	flag.StringVar(&mode, "mode", DefaultMode, "Mode of execution. Simple alias to list of module. See the config file")
-	flag.StringVar(&modules, "modules", "", "List of modules executed")
-	flag.StringVar(&info, "info", "", "Prints infos")
-	flag.BoolVar(&completion, "completion", false, "Create bash autocompletion script")
-
-	// Node setup
-	flag.BoolVar(&isServer, "server", false, "Set the node as server")
-	flag.BoolVar(&isClient, "client", false, "Set the node as client")
-
-	flag.Parse()
-
-	config.LoadConfig(configPath)
-
-	if version {
-		PrintVersion()
-		os.Exit(0)
-	}
-
-	config.Config.ConfigPath = configPath
-	config.Config.Verbose = verbose
-	config.Config.Mode = mode
-	config.Config.IsServer = isServer
-	config.Config.IsClient = isClient
-	config.Config.NoColors = noColors
+	// // CLI commands
+	// flag.StringVar(&targets, "targets", "", "List of targets, comma separated")
+	// flag.BoolVar(&completion, "completion", false, "Create bash autocompletion script")
 
 	// cli only
-	if !config.Config.IsClient && !config.Config.IsServer {
-		if info != "" {
-			printInfo(info)
-			os.Exit(0)
-		}
-		if completion {
-			printCompletion()
-			os.Exit(0)
-		}
-		parseCLI()
-		// no targets provided !
-		createProjectIfNotExist()
-	}
+	// if !config.Config.IsClient && !config.Config.IsServer {
+	// 	if info != "" {
+	// 		printInfo(info)
+	// 		os.Exit(0)
+	// 	}
+	// 	if completion {
+	// 		printCompletion()
+	// 		os.Exit(0)
+	// 	}
+	// 	parseCLI()
+	// 	// no targets provided !
+	// 	createProjectIfNotExist()
+	// }
 
 }
-
-func printInfo(infoType string) {
-	switch infoType {
-	case "projects":
-		printProjectsInfo()
-	case "project":
-		printProjectInfo(config.Config.Project.Name)
-	}
-}
-
 func printProjectsInfo() {
 	var err error
 	var data [][]string
@@ -208,7 +146,7 @@ func parseCLI() {
 func parseTargets(str string) ([]string, error) {
 
 	var res []string
-	if targets == "" {
+	if str == "" {
 		fmt.Println(colors.Red("You must provide a target with '-targets <ip|domain>'"))
 		os.Exit(1)
 	}
