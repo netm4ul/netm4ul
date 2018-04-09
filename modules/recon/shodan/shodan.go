@@ -1,20 +1,22 @@
 package shodan
 
 import (
-	"os"
-	"path/filepath"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/modules"
+	"os"
+	"path/filepath"
+	"log"
+	"gopkg.in/ns3777k/go-shodan.v2/shodan"
 )
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	API_KEY int `toml:"api_key"`
+	// API_KEY int `toml:"api_key"`
 }
 
-// Traceroute "class"
-type Shodan struct {
+// Shodan "class"
+type ShodanResult struct {
 	// Config : exported config
 	Config ConfigToml
 }
@@ -26,7 +28,7 @@ func (S Shodan) Name() string {
 
 // Author : Author getter
 func (S Shodan) Author() string {
-	return "Razbaa"
+	return "Rzbaa"
 }
 
 // Version : Version  getter
@@ -40,12 +42,23 @@ func (S Shodan) DependsOn() []modules.Condition {
 	return []modules.Condition{}
 }
 
+func (S Shodan) NewShodan() modules.Module {
+	gob.Register(ShodanResult{})
+	var s modules.Module
+	s = Shodan{}
+	return s
+}
+
 // Run : Main function of the module
 func (S Shodan) Run(data interface{}) (interface{}, error) {
 	/*
 		TODO: Not implemented yet
 	*/
-	fmt.Println("NOT IMPLEMENTED YET")
+	fmt.Println("Shodan World!")
+
+	// Get SHODAN_API_KEY from Environment Variables
+	API_KEY = os.Getenv("SHODAN_API_KEY")
+	fmt.Println(API_KEY)
 	return nil, nil
 }
 

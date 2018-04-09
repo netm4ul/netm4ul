@@ -28,7 +28,6 @@ func CreateAPI(ipport string, conf *config.ConfigToml) {
 	api.Start(ipport, conf)
 }
 
-
 // CreateClient : Connect the node to the master server
 func CreateClient(ipport string, conf *config.ConfigToml) {
 	client.InitModule()

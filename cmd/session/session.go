@@ -25,4 +25,5 @@ func (p *Session) Register(m modules.Module) {
 
 func (p *Session) loadModule() {
 	p.Register(traceroute.NewTraceroute())
+	p.Register(shodan.NewShodan())
 }
