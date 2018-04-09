@@ -1,17 +1,17 @@
 package shodan
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
-	"time"
 	"os"
-	"net"
-	"encoding/gob"
 	"path/filepath"
-	"github.com/netm4ul/netm4ul/cmd/config"
-	"github.com/netm4ul/netm4ul/modules"
+	"time"
+
 	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
+	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/ns3777k/go-shodan.v2/shodan"
@@ -23,7 +23,7 @@ type ConfigToml struct {
 }
 
 type ShodanResult struct {
-	Test	string
+	Test string
 }
 
 // Shodan "class"
@@ -71,17 +71,13 @@ func (S Shodan) Run(data []string) (modules.Result, error) {
 	fmt.Println("Shodan World!")
 
 	client := shodan.NewClient(nil, config.Config.Keys.Shodan)
-    dns, err := client.GetDNSResolve([]string{"google.com", "edznux.fr"})
+	dns, err := client.GetDNSResolve([]string{"google.com", "edznux.fr"})
 
-    if err != nil {
-        log.Panic(err)
-    } else {
-    	log.Printf("%+v", dns)
-    	var a net.IP
-    	a = dns["edznux.fr"]
-    	fmt.Printf("%+v", &a.String())
-        log.Println(dns["edznux.fr"])
-    }
+	if err != nil {
+		log.Panic(err)
+	} else {
+		log.Println(*dns["edznux.fr"])
+	}
 
 	return modules.Result{Data: ShodanResult{Test: "Zgeg"}, Timestamp: time.Now(), Module: S.Name()}, nil
 }
