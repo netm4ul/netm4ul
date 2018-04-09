@@ -2,12 +2,18 @@ package shodan
 
 import (
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/netm4ul/netm4ul/modules"
-	"os"
-	"path/filepath"
 	"log"
-	"gopkg.in/ns3777k/go-shodan.v2/shodan"
+	"time"
+	"os"
+	"encoding/gob"
+	"path/filepath"
+	"github.com/netm4ul/netm4ul/modules"
+	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/cmd/server/database"
+	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+	//"log"
+	//"gopkg.in/ns3777k/go-shodan.v2/shodan"
 )
 
 // ConfigToml : configuration model (from the toml file)
@@ -15,8 +21,12 @@ type ConfigToml struct {
 	// API_KEY int `toml:"api_key"`
 }
 
-// Shodan "class"
 type ShodanResult struct {
+	Test	string
+}
+
+// Shodan "class"
+type Shodan struct {
 	// Config : exported config
 	Config ConfigToml
 }
@@ -42,7 +52,7 @@ func (S Shodan) DependsOn() []modules.Condition {
 	return []modules.Condition{}
 }
 
-func (S Shodan) NewShodan() modules.Module {
+func NewShodan() modules.Module {
 	gob.Register(ShodanResult{})
 	var s modules.Module
 	s = Shodan{}
@@ -50,16 +60,16 @@ func (S Shodan) NewShodan() modules.Module {
 }
 
 // Run : Main function of the module
-func (S Shodan) Run(data interface{}) (interface{}, error) {
+func (S Shodan) Run(data []string) (modules.Result, error) {
 	/*
 		TODO: Not implemented yet
 	*/
 	fmt.Println("Shodan World!")
 
 	// Get SHODAN_API_KEY from Environment Variables
-	API_KEY = os.Getenv("SHODAN_API_KEY")
+	API_KEY := os.Getenv("SHODAN_API_KEY")
 	fmt.Println(API_KEY)
-	return nil, nil
+	return modules.Result{Data: ShodanResult{Test: "Zgeg"}, Timestamp: time.Now(), Module: S.Name()}, nil
 }
 
 // Parse : Parse the result of the execution
@@ -90,5 +100,15 @@ func (S Shodan) ParseConfig() error {
 		fmt.Println(err)
 		return err
 	}
+	return nil
+}
+
+func (S Shodan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+	log.Println("Write to the database.")
+	var data ShodanResult
+	data = result.Data.(ShodanResult)
+
+	raw := bson.M{projectName + ".results." + result.Module: data}
+	database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }
