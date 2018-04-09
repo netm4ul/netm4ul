@@ -5,15 +5,16 @@ import (
 	"log"
 	"time"
 	"os"
+	"net"
 	"encoding/gob"
 	"path/filepath"
+	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	//"log"
-	//"gopkg.in/ns3777k/go-shodan.v2/shodan"
+	"gopkg.in/ns3777k/go-shodan.v2/shodan"
 )
 
 // ConfigToml : configuration model (from the toml file)
@@ -52,6 +53,7 @@ func (S Shodan) DependsOn() []modules.Condition {
 	return []modules.Condition{}
 }
 
+// NewShodan : Generate shodan object
 func NewShodan() modules.Module {
 	gob.Register(ShodanResult{})
 	var s modules.Module
@@ -61,20 +63,27 @@ func NewShodan() modules.Module {
 
 // Run : Main function of the module
 func (S Shodan) Run(data []string) (modules.Result, error) {
+
 	/*
 		TODO: Not implemented yet
 	*/
+
 	fmt.Println("Shodan World!")
 
-	// Get SHODAN_API_KEY from Environment Variables
-	API_KEY := os.Getenv("SHODAN_API_KEY")
-	fmt.Println(API_KEY)
-	return modules.Result{Data: ShodanResult{Test: "Zgeg"}, Timestamp: time.Now(), Module: S.Name()}, nil
-}
+	client := shodan.NewClient(nil, config.Config.Keys.Shodan)
+    dns, err := client.GetDNSResolve([]string{"google.com", "edznux.fr"})
 
-// Parse : Parse the result of the execution
-func (S Shodan) Parse() (interface{}, error) {
-	return nil, nil
+    if err != nil {
+        log.Panic(err)
+    } else {
+    	log.Printf("%+v", dns)
+    	var a net.IP
+    	a = dns["edznux.fr"]
+    	fmt.Printf("%+v", &a.String())
+        log.Println(dns["edznux.fr"])
+    }
+
+	return modules.Result{Data: ShodanResult{Test: "Zgeg"}, Timestamp: time.Now(), Module: S.Name()}, nil
 }
 
 // HandleMQ : Recv data from the MQ
@@ -112,3 +121,5 @@ func (S Shodan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectN
 	database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }
+
+//command: curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/shodan

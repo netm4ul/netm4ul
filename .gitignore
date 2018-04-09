@@ -24,3 +24,6 @@ netm4ul
 vendor/
 .idea/
 data/
+
+# perso config file
+netm4ul.conf.my

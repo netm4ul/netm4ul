@@ -71,7 +71,7 @@ func init() {
 	}
 
 	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "netm4ul.conf")
+	configPath := filepath.Join(exPath, "netm4ul.conf.my")
 
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
 		log.Println(err)

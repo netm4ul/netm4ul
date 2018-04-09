@@ -8,6 +8,12 @@
   version = "v0.3.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/google/go-querystring"
+  packages = ["query"]
+  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -18,6 +24,12 @@
   packages = ["."]
   revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
   version = "v1.6.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/moul/http2curl"
+  packages = ["."]
+  revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -37,9 +49,15 @@
   ]
   revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
 
+[[projects]]
+  name = "gopkg.in/ns3777k/go-shodan.v2"
+  packages = ["shodan"]
+  revision = "38cfc7f2172c882f18fe02955de4f450be6f8f3c"
+  version = "v2.0.4"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "362dcdef533230f25526b5489423ff0adc790b1e95170c2f95ea4c38e1479f08"
+  inputs-digest = "b6b377e154e0b4f8e2f50eec613c8628543e11141cca5a6ff585751459c53a26"
   solver-name = "gps-cdcl"
   solver-version = 1
