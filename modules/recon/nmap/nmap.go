@@ -202,29 +202,11 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	var data mynmap.NmapRun
 	data = result.Data.(mynmap.NmapRun)
 
+	//save raw data
 	raw := bson.M{projectName + ".results." + result.Module: data}
 	database.UpsertRawData(mgoSession, projectName, raw)
+
+	//save data in projects
+
 	return nil
 }
-
-// MAIN
-// func main() {
-// 	N := &Nmap{}
-// 	// ************************************
-// 	fmt.Println(strings.Repeat("#", 42))
-
-// 	// Main info
-// 	fmt.Println(N.Name())
-// 	fmt.Println(N.Version())
-// 	fmt.Println(N.Author())
-
-// 	fmt.Println(strings.Repeat("#", 42))
-// 	// ************************************
-
-// 	N.Run("")
-// 	data, err := N.Parse()
-// 	if err != nil {
-// 		log.Fatal("Error 3 !", err)
-// 	}
-// 	fmt.Println(data)
-// }
