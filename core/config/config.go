@@ -86,17 +86,16 @@ var Config ConfigToml
 func LoadConfig(file string) {
 	var configPath string
 
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-
-	path := filepath.Dir(ex)
-
 	if file == "" {
-		configPath = filepath.Join(path, "netm4ul.conf")
+		dir, err := os.Getwd()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		configPath = filepath.Join(dir, "netm4ul.conf")
 	} else {
-		configPath = filepath.Join(path, file)
+		configPath = file
 	}
 
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
