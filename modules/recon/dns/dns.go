@@ -16,21 +16,80 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+/*	A          []string
+	AAAA       []string
+	AFSDB      []string
+	ANY        []string
+	AVC        []string
+	CAA        []string
+	CDNSKEY    []string
+	CDS        []string
+	CERT       []string
+	CNAME      []string
+	CSYNC      []string
+	DHCID      []string
+	DLV        []string
+	DNAME      []string
+	DNSKEY     []string
+	DS         []string
+	EID        []string
+	EUI48      []string
+	EUI64      []string
+	GID        []string
+	GPOS       []string
+	HINFO      []string
+	HIP        []string
+	KEY        []string
+	KX         []string
+	L32        []string
+	L64        []string
+	LOC        []string
+	LP         []string
+	MB         []string
+	MD         []string
+	MF         []string
+	MG         []string
+	MINFO      []string
+	MR         []string
+	MX         []string
+	NAPTR      []string
+	NID        []string
+	NIMLOC     []string
+	NINFO      []string
+	NS         []string
+	NSAPPTR    []string
+	NSEC       []string
+	NSEC3      []string
+	NSEC3PARAM []string
+	OPENPGPKEY []string
+	OPT        []string
+	PTR        []string
+	PX         []string
+	RKEY       []string
+	RP         []string
+	RRSIG      []string
+	RT         []string
+	SIG        []string
+	SMIMEA     []string
+	SOA        []string
+	SPF        []string
+	SRV        []string
+	SSHFP      []string
+	TA         []string
+	TALINK     []string
+	TKEY       []string
+	TLSA       []string
+	TSIG       []string
+	TXT        []string
+	UID        []string
+	UINFO      []string
+	URI        []string
+	X25        []string*/
 // DnsResult represent the parsed ouput
 type DnsResult struct {
-	A      string
-	AA     string
-	CNAME  string
-	DNSKEY string
-	DS     string
-	KEY    string
-	MX     string
-	NS     string
-	PTR    string
-	TXT    string
-	SRV    string
-	SAO    string
-	err    string
+	Types    map[string][]string
+	resolver string
+	err      string
 }
 
 // ConfigToml : configuration model (from the toml file)
@@ -73,25 +132,17 @@ func (D Dns) DependsOn() []modules.Condition {
 	return []modules.Condition{}
 }
 
-// curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/dns
-// check db: Db.projects.find()
+/*
+curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/dns
+check db: Db.projects.find()
+db.projects.remove({})
+*/
 // Run : Main function of the module
 func (D Dns) Run(data []string) (modules.Result, error) {
 	fmt.Println("DNS world!")
 
 	/*
-		- [ ] A
-		- [ ] AA
-		- [ ] CNAME
-		- [ ] DNSKEY
-		- [ ] DS
-		- [ ] KEY
-		- [ ] MX
-		- [ ] NS
-		- [ ] PTR
-		- [ ] TXT
-		- [ ] SRV
-		- [ ] SAO
+		- [ ] DNS types
 		- [ ] DNS server IP in config file
 	*/
 
@@ -99,7 +150,7 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 	domain := "edznux.fr"
 	fqdnDomain := dns.Fqdn(domain)
 	// instanciate DnsResult
-	result := new(DnsResult)
+	result := DnsResult{}
 
 	// Get DNS IP address from our custom resolv.conf like file
 	config, _ := dns.ClientConfigFromFile("modules/recon/dns/resolv.conf")
@@ -111,47 +162,29 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 	// Set recursion to true
 	request.RecursionDesired = true
 
-	// Specify DNS field
-	request.SetQuestion(fqdnDomain, dns.TypeA)
+	// x := make(map[string][]string)
+	// x["key"] = append(x["key"], "value")
 
-	reply, _, err := cli.Exchange(request, config.Servers[0]+":"+config.Port)
+	for _, index := range dns.TypeToString {
+		request.SetQuestion(fqdnDomain, dns.StringToType[index])
 
-	if err != nil {
-		log.Println(err)
-	}
-	if reply.Rcode != dns.RcodeSuccess {
-		log.Println(reply.Rcode)
-		return modules.Result{Data: DnsResult{err: "Failure DNS"}, Timestamp: time.Now(), Module: D.Name()}, nil
-	}
-	for _, afield := range reply.Answer {
-		if a, ok := afield.(*dns.A); ok {
-			result.A = a.String()
-		}
-	}
-	log.Printf("Return %s\n", result.A)
-	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
+		//request.SetQuestion(fqdnDomain, dns.StringToType[index])
+		reply, _, err := cli.Exchange(request, config.Servers[0]+":"+config.Port)
 
-	/*
-		config, _ := dns.ClientConfigFromFile("modules/recon/dns/resolv.conf")
-		c := new(dns.Client)
-		m := new(dns.Msg)
-		m.SetQuestion(dns.Fqdn("edznux.fr"), dns.TypeA)
-		m.RecursionDesired = true
-		r, _, err := c.Exchange(m, config.Servers[0]+":"+config.Port)
 		if err != nil {
 			log.Println(err)
 		}
-		if r.Rcode != dns.RcodeSuccess {
-			log.Println(r.Rcode)
-			return modules.Result{Data: DnsResult{Test: "Failure DNS"}, Timestamp: time.Now(), Module: D.Name()}, nil
-		}
-		for _, afield := range r.Answer {
-			if a, ok := afield.(*dns.A); ok {
-				fmt.Printf("%s\n", a.String())
-			}
+		if reply.Rcode != dns.RcodeSuccess {
+			result.Types = make(map[string][]string)
+			result.Types[index] = append(result.Types[index], "None")
+			log.Println("DNS Request fail for ", index, " type.")
 		}
 
-		return modules.Result{Data: DnsResult{Test: "Zgeg"}, Timestamp: time.Now(), Module: D.Name()}, nil*/
+		for _, answer := range reply.Answer {
+			log.Println(answer)
+		}
+	}
+	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
 }
 
 // ParseConfig : Load the config from the config folder
