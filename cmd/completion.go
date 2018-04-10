@@ -32,7 +32,7 @@ var completionCmd = &cobra.Command{
 		}
 
 		switch args[0] {
-		case "sh":
+		case "bash":
 			rootCmd.GenBashCompletion(os.Stdout)
 		case "zsh":
 			rootCmd.GenZshCompletion(os.Stdout)

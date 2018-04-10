@@ -33,100 +33,62 @@ Requirement :
 vim netm4ul.conf # change the credentials (db, api, etc...) and ip / ports
 make
 
-./netm4ul -server # in one terminal
-./netm4ul -client # in  another terminal
+./netm4ul start server # in one terminal
+./netm4ul start client # in another terminal
 
 # netm4ul is running, you can control it directly with
 
-./netm4ul -targets <somedomain,ip,ip range(CIDR)>
+./netm4ul run <somedomain,ip,ip range(CIDR)>
 ```
 
 
 ### CLI
 
+
+Completion : 
+
+bash : `source <(./netm4ul completion bash)`
+zsh : `source <(./netm4ul completion zsh)`
+
 ```
-  -client           : Set the node as client
-  -completion       : Create bash autocompletion script
-  -config <string>  : Custom config file path (default "netm4ul.conf")
-  -info             : Prints infos
-  -mode <string>    : Mode of execution. Simple alias to list of module. See the config file (default "stealth")
-  -modules <string> : List of modules executed
-  -no-colors        : Disable color printing
-  -server           : Set the node as server
-  -targets <string> : List of targets, comma separated
-  -verbose          : Enable verbose output
-  -version          : Print the version
+Usage:
+  netm4ul [flags]
+  netm4ul [command]
+
+Available Commands:
+  completion  Generate autocompletion
+  create      Create the requested ressource
+  help        Help about any command
+  list        Return all results
+  run         Run scan on the defined target
+  start       Start the requested service
+  status      Show status of the requested service
+  version     Prints version
 ```
 
-You can add the autocompletion with `source <(./netm4ul -completion)` (bash only at the moment)
+Global flags : 
 
-Example :
+```
+  -c, --config string   Custom config file path (default "netm4ul.conf")
+  -h, --help            help for netm4ul
+      --no-colors       Disable color printing
+  -v, --verbose         verbose output
+```
 
-`./netm4ul -client -config netm4ul.custom.conf -verbose`
-
-`./netm4ul -version`
-
-`./netm4ul -targets 192.168.1.1,192.168.2.0/24,localhost.localdomain -modules traceroute`
-
+You can use -h on every subcommands.
 
 ## Contributing
 
 ### Structure
 
-```
-.
-├── cmd                         # Source folder
-│   ├── api                     # HTTP Api
-│   │   └── api.go
-│   ├── cli                     # Command line code (args parsing and cli interface)
-│   │   ├── args.go
-│   │   ├── cli.go
-│   │   ├── completion.go
-│   │   └── requests.go
-│   ├── client                  # Client (node) code
-│   │   └── client.go
-│   ├── colors                  # Colors package (TODO : change it to log.)
-│   │   └── colors.go
-│   ├── config                  # Configuration parsing
-│   │   ├── config.go
-│   │   └── config_test.go
-│   ├── handler.go              # Router for master, client or CLI
-│   ├── server                  # Server (master node) code
-│   │   ├── database            # Database connection
-│   │   │   ├── database.go
-│   │   │   └── helpers.go
-│   │   └── server.go
-│   └── session                 # Projects sessions : current projects settings (modules, name...)
-│       └── session.go
-├── config                      # Module config files.
-│   ├── dorks.conf
-│   ├── sqlmap.conf
-│   └── traceroute.conf
-├── docker-compose.yml
-├── Dockerfile
-├── Gopkg.lock
-├── Gopkg.toml
-├── LICENSE
-├── main.go
-├── Makefile
-├── modules                     # Modules folders.
-│   ├── exploit
-│   ├── modules.go
-│   ├── recon
-│   │   └── ...
-│   │   └── ...
-│   └── report
-├── netm4ul.conf
-├── netm4ul.conf.docker
-├── README.md
-```
-
 ### Core
 
-Located in the `cmd` folder, all the core components are there.
+Located in the `core` folder, all the core components are there.
 The `api` folder contains all the code for the REST api on the Master node.
 The `server` folder contains all the code for recieving and storing data in the DB. It's in charge of balancing all the modules on each client node.
 The `client` folder contains all the code for client connection to the master node.
+The `session` folder contains all the code for handling current session (loaded modules...).
+The `config` is used for parsing the config files.
 
 #### API
 
