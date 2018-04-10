@@ -23,3 +23,15 @@
 [[constraint]]
   name = "github.com/gorilla/mux"
   version = "1.6.1"
+
+[[constraint]]
+  name = "github.com/mattn/go-isatty"
+  version = "0.0.3"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
