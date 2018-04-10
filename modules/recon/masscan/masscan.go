@@ -1,6 +1,7 @@
 package masscan
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
 	"log"
@@ -72,9 +73,14 @@ func (M Masscan) DependsOn() []modules.Condition {
 func (M Masscan) Run(data []string) (modules.Result, error) {
 	fmt.Println("hello world") //Affiche hello world pour le fun
 	// "212.47.247.190" = edznux.fr
-	cmd := exec.Command("masscan", "212.47.247.190", "-p80")
-	fmt.Println(cmd)
-	//
+	cmd := exec.Command("sudo", "masscan", "212.47.247.190", "-p80")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf(out.String())
 	return modules.Result{Data: MasscanResult{IP: "212.47.247.190", Ports: 80}, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
