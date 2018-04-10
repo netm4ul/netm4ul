@@ -16,75 +16,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-/*	A          []string
-	AAAA       []string
-	AFSDB      []string
-	ANY        []string
-	AVC        []string
-	CAA        []string
-	CDNSKEY    []string
-	CDS        []string
-	CERT       []string
-	CNAME      []string
-	CSYNC      []string
-	DHCID      []string
-	DLV        []string
-	DNAME      []string
-	DNSKEY     []string
-	DS         []string
-	EID        []string
-	EUI48      []string
-	EUI64      []string
-	GID        []string
-	GPOS       []string
-	HINFO      []string
-	HIP        []string
-	KEY        []string
-	KX         []string
-	L32        []string
-	L64        []string
-	LOC        []string
-	LP         []string
-	MB         []string
-	MD         []string
-	MF         []string
-	MG         []string
-	MINFO      []string
-	MR         []string
-	MX         []string
-	NAPTR      []string
-	NID        []string
-	NIMLOC     []string
-	NINFO      []string
-	NS         []string
-	NSAPPTR    []string
-	NSEC       []string
-	NSEC3      []string
-	NSEC3PARAM []string
-	OPENPGPKEY []string
-	OPT        []string
-	PTR        []string
-	PX         []string
-	RKEY       []string
-	RP         []string
-	RRSIG      []string
-	RT         []string
-	SIG        []string
-	SMIMEA     []string
-	SOA        []string
-	SPF        []string
-	SRV        []string
-	SSHFP      []string
-	TA         []string
-	TALINK     []string
-	TKEY       []string
-	TLSA       []string
-	TSIG       []string
-	TXT        []string
-	UID        []string
-	UINFO      []string
-	URI        []string
-	X25        []string*/
 // DnsResult represent the parsed ouput
 type DnsResult struct {
 	Types    map[string][]string
@@ -133,12 +64,16 @@ func (D Dns) DependsOn() []modules.Condition {
 }
 
 /*
-curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/dns
-check db: Db.projects.find()
-db.projects.remove({})
+	Usefull command
+	curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/dns
+	check db: Db.projects.find()
+	db.projects.remove({})
 */
+
 // Run : Main function of the module
 func (D Dns) Run(data []string) (modules.Result, error) {
+
+	// Banner
 	fmt.Println("DNS world!")
 
 	/*
@@ -149,6 +84,7 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 	// Get fqdn of domain
 	domain := "edznux.fr"
 	fqdnDomain := dns.Fqdn(domain)
+
 	// instanciate DnsResult
 	result := DnsResult{}
 
@@ -157,33 +93,52 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 
 	// Set dns client parameters
 	cli := new(dns.Client)
+
 	// Create DNS request
 	request := new(dns.Msg)
+
 	// Set recursion to true
 	request.RecursionDesired = true
 
 	// x := make(map[string][]string)
 	// x["key"] = append(x["key"], "value")
 
+	// Map Types for DnsResult{} treatment
+	result.Types = make(map[string][]string)
+
+	// For all Type in dns library
 	for _, index := range dns.TypeToString {
+
+		// Set question with Type flag
 		request.SetQuestion(fqdnDomain, dns.StringToType[index])
 
-		//request.SetQuestion(fqdnDomain, dns.StringToType[index])
+		// Send request to DNS server
 		reply, _, err := cli.Exchange(request, config.Servers[0]+":"+config.Port)
 
+		// Catch error
 		if err != nil {
 			log.Println(err)
 		}
+
+		// Verify DNS flag (error/success)
 		if reply.Rcode != dns.RcodeSuccess {
-			result.Types = make(map[string][]string)
+			// If error, put "None" in result field
 			result.Types[index] = append(result.Types[index], "None")
+			// Log
 			log.Println("DNS Request fail for ", index, " type.")
 		}
 
+		// Retrieve all replies
 		for _, answer := range reply.Answer {
+			// Add into result field
+			result.Types[index] = append(result.Types[index], answer.String())
+			// Log
 			log.Println(answer)
 		}
+
 	}
+
+	// Return result (DnsResult{}) with timestamp and module name
 	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
 }
 
