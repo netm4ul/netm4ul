@@ -10,7 +10,7 @@ before_script:
   - dep ensure
 
 script:
-  - test -z $(gofmt -s -l $GO_FILES)
+  # - test -z $(gofmt -s -l $GO_FILES)
   - go test -v -race ./...
   - go vet ./...
 

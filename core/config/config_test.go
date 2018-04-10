@@ -1,62 +1,60 @@
 package config
 
 import (
-	"net"
 	"testing"
 )
 
+func init() {
+	LoadConfig("../../netm4ul.conf")
+}
+
 func TestParseServer(t *testing.T) {
-	var user string
-	var password string
-	var port uint16
-	var ip net.IP
 
-	user = Config.Server.User
-	password = Config.Server.Password
-	ip = net.ParseIP(Config.Server.IP)
-	port = Config.Server.Port
+	user := Config.Server.User
+	password := Config.Server.Password
+	ip := Config.Server.IP
+	port := Config.Server.Port
 
-	if user != "user" {
-		t.Error("Expected 'user', got ", user)
+	if user == "" {
+		t.Error("Expected user, got ", user)
 	}
-	if password != "password" {
-		t.Error("Expected 'password', got ", password)
+	if password == "" {
+		t.Error("Expected password, got ", password)
 	}
-	if !ip.Equal(net.ParseIP("127.0.0.1")) {
-		t.Error("Expected net.IP('127.0.0.1'), got ", ip)
+	if ip == "" {
+		t.Error("Expected ip or domain, got ", ip)
 	}
-	if port != 5672 {
-		t.Error("Expected 5672, got ", port)
+	if port == 0 {
+		t.Error("Expected port number, got ", port)
 	}
 }
 
 func TestParseAPI(t *testing.T) {
 	var port uint16
-	var user string
-	var password string
 
-	user = Config.API.User
+	user := Config.API.User
+	password := Config.API.Password
+
 	port = Config.API.Port
-	password = Config.API.Password
 
-	if user != "toto" {
-		t.Error("Expected 'toto', got ", user)
+	if user == "" {
+		t.Error("Expected user, got ", user)
 	}
-	if port != 8080 {
-		t.Error("Expected 8080, got ", port)
+	if port == 0 {
+		t.Error("Expected port, got ", port)
 	}
-	if password != "P@ssW0rd!" {
-		t.Error("Expected 'P@ssW0rd!', got ", password)
+	if password == "" {
+		t.Error("Expected password, got ", password)
 	}
 }
 
 func TestModules(t *testing.T) {
 	//	var enabled bool
 	moduleCount := len(Config.Modules)
-	if moduleCount != 3 {
-		t.Error("Expected 3 modules, got", moduleCount)
+	if moduleCount == 0 {
+		t.Error("Expected at least one module, got", moduleCount)
 	}
-	if !Config.Modules["shodan"].Enabled {
-		t.Error("Expected shodan to be enabled", Config.Modules["shodan"].Enabled)
+	if !Config.Modules["traceroute"].Enabled {
+		t.Error("Expected traceroute to be enabled", Config.Modules["traceroute"].Enabled)
 	}
 }
