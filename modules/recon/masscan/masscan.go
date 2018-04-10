@@ -1,9 +1,10 @@
-package traceroute
+package masscan
 
 import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"os/exec"
 	"time"
 
 	"os"
@@ -19,7 +20,7 @@ import (
 
 // MasscanResult represent the parsed ouput
 type MasscanResult struct {
-	Ip    string
+	IP    string
 	Ports int
 }
 
@@ -70,8 +71,11 @@ func (M Masscan) DependsOn() []modules.Condition {
 // Run : Main function of the module
 func (M Masscan) Run(data []string) (modules.Result, error) {
 	fmt.Println("hello world") //Affiche hello world pour le fun
-	// TO DO
-	return modules.Result{Data: MasscanResult{Ip: "SRC", Ports: 80}, Timestamp: time.Now(), Module: M.Name()}, nil
+	// "212.47.247.190" = edznux.fr
+	cmd := exec.Command("masscan", "212.47.247.190", "-p80")
+	fmt.Println(cmd)
+	//
+	return modules.Result{Data: MasscanResult{IP: "212.47.247.190", Ports: 80}, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
 // Parse : Parse the result of the execution
