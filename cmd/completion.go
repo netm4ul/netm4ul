@@ -1,38 +1,45 @@
+// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
-	"flag"
-	"fmt"
+	"log"
+	"os"
+
+	"github.com/spf13/cobra"
 )
 
-func generateBashCompletion() string {
+// completionCmd represents the completion command
+var completionCmd = &cobra.Command{
+	Use:   "completion",
+	Short: "Generate autocompletion",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Println("To few arguments, please provide your type of shell : sh or zsh")
+			os.Exit(1)
+		}
 
-	var formatedListArgs string
-	flag.VisitAll(func(f *flag.Flag) {
-		formatedListArgs += fmt.Sprintf("-%+v ", f.Name)
-	})
+		switch args[0] {
+		case "sh":
+			rootCmd.GenBashCompletion(os.Stdout)
+		case "zsh":
+			rootCmd.GenZshCompletion(os.Stdout)
+		}
+	},
+}
 
-	return `
-    _netmaul_complete()
-    {
-        local cur_word prev_word type_list
-    
-        # COMP_WORDS is an array of words in the current command line.
-        # COMP_CWORD is the index of the current word (the one the cursor is
-        # in). So COMP_WORDS[COMP_CWORD] is the current word; we also record
-        # the previous word here, although this specific script doesn't
-        # use it yet.
-        cur_word="${COMP_WORDS[COMP_CWORD]}"
-        prev_word="${COMP_WORDS[COMP_CWORD-1]}"
-        
-        # list of all args
-        type_list="` + formatedListArgs + `"
-    
-        COMPREPLY=( $(compgen -W "${type_list}" -- ${cur_word}) )
-        return 0
-    }
-    
-    # Register _netmaul_complete to provide completion for the following commands
-    complete -F _netmaul_complete netmaul netm4ul ./netm4ul
-    `
+func init() {
+	rootCmd.AddCommand(completionCmd)
 }

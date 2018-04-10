@@ -19,9 +19,9 @@ var (
 	DefaultMode = Modes[1] // uses first non-passive mode.
 
 	configPath string
-	targets    string
-	modules    string
-	mode       string
+	CLItargets []string
+	CLImodules []string
+	CLImode    string
 	verbose    bool
 	version    bool
 
@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 
 		config.Config.ConfigPath = configPath
 		config.Config.Verbose = verbose
-		config.Config.Mode = mode
+
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

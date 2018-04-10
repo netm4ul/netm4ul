@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/netm4ul/netm4ul/cmd/colors"
+	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
 )
 
@@ -25,21 +27,40 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run scan on the defined target",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		config.Config.Mode = CLImode
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			log.Fatalln("To few arguments ! Expecting target.")
 		}
 
-		targets, err := parseTargets(args[0])
+		targets, err := parseTargets(args)
 		if err != nil {
 			log.Println("Error while parsing targets :", err.Error())
 		}
-		fmt.Println("targets :", targets)
+
+		if config.Config.Verbose {
+			log.Println("targets :", targets)
+			log.Println("CLIModules :", CLImodules)
+			log.Println("Modules :", config.Config.Modules)
+			log.Println("CLIMode :", CLImode)
+			log.Println("Mode :", config.Config.Mode)
+		}
+
+		if len(CLImodules) > 0 {
+			mods, err := parseModules(CLImodules)
+			if err != nil {
+				fmt.Println(colors.Yellow(err.Error()))
+			}
+			addModules(mods)
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.PersistentFlags().StringArray("modules", []string{}, "Set custom module(s)")
-	runCmd.PersistentFlags().StringP("mode", "m", DefaultMode, "Use predefined mode")
+	runCmd.PersistentFlags().StringArrayVar(&CLImodules, "modules", []string{}, "Set custom module(s)")
+	runCmd.PersistentFlags().StringVarP(&CLImode, "mode", "m", DefaultMode, "Use predefined mode")
+
 }
