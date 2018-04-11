@@ -15,6 +15,11 @@ type API struct {
 	Password string `toml:"password"`
 }
 
+// DNS : Setup DNS resolver IP
+type DNS struct {
+	Resolvers []string `toml:"resolvers"`
+}
+
 // Keys : setup tocken & api keys
 type Keys struct {
 	Google string `toml:"google"`
@@ -52,6 +57,7 @@ type Node struct {
 type ConfigToml struct {
 	IsServer bool
 	API      API
+	DNS      DNS
 	Keys     Keys
 	Server   Server
 	Database Database

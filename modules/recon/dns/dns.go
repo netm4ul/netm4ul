@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/miekg/dns"
+	"github.com/netm4ul/netm4ul/cmd/config"
 	"github.com/netm4ul/netm4ul/cmd/server/database"
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
@@ -25,7 +27,7 @@ type DnsResult struct {
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	MaxHops int `toml:"max_hops"`
+	randomDNS string `toml:"randomDNS"`
 }
 
 // Dns "class"
@@ -77,8 +79,9 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 	fmt.Println("DNS world!")
 
 	/*
-		- [ ] DNS types
-		- [ ] DNS server IP in config file
+				- DNS server IP list in config file
+		 		- Use multiple DNS resolver
+		 		- Random DNS
 	*/
 
 	// Get fqdn of domain
@@ -87,6 +90,20 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 
 	// instanciate DnsResult
 	result := DnsResult{}
+
+	// Get DNS resolver from config file
+	log.Println(D.Config.randomDNS)
+
+	var cliconf map[int]*dns.ClientConfig
+
+	resolverList := config.Config.DNS.Resolvers
+	for i := 0; i < len(resolverList); i++ {
+		r := strings.NewReader(resolverList[i])
+		config, _ := dns.ClientConfigFromReader(r)
+		append(i, config)
+	}
+
+	log.Println(cliconf)
 
 	// Get DNS IP address from our custom resolv.conf like file
 	config, _ := dns.ClientConfigFromFile("modules/recon/dns/resolv.conf")
@@ -132,7 +149,7 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 		for _, answer := range reply.Answer {
 
 			// Add into result field
-			//result.Types[index] = append(result.Types[index], answer.String())
+			//result.Types[infdex] = append(result.Types[index], answer.String())
 			dnsParser(answer, index, result)
 		}
 
@@ -140,6 +157,33 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 
 	// Return result (DnsResult{}) with timestamp and module name
 	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
+}
+
+// ParseConfig : Load the config from the config folder
+func (D Dns) ParseConfig() error {
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	configPath := filepath.Join(exPath, "config", "dns.conf")
+
+	if _, err := toml.DecodeFile(configPath, &D.Config); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+// WriteDb : Save data
+func (D Dns) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+	log.Println("Write to the database.")
+	var data DnsResult
+	data = result.Data.(DnsResult)
+
+	raw := bson.M{projectName + ".results." + result.Module: data}
+	database.UpsertRawData(mgoSession, projectName, raw)
+	return nil
 }
 
 // Shit happens
@@ -287,32 +331,4 @@ func dnsParser(answer dns.RR, index string, result DnsResult) {
 	default:
 		result.Types[index] = append(result.Types[index], "DnsParserError")
 	}
-}
-
-// ParseConfig : Load the config from the config folder
-func (D Dns) ParseConfig() error {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "config", "dns.conf")
-
-	if _, err := toml.DecodeFile(configPath, &D.Config); err != nil {
-		fmt.Println(err)
-		return err
-	}
-	fmt.Println(D.Config.MaxHops)
-	return nil
-}
-
-// WriteDb : Save data
-func (D Dns) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Println("Write to the database.")
-	var data DnsResult
-	data = result.Data.(DnsResult)
-
-	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
-	return nil
 }
