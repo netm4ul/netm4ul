@@ -1,4 +1,4 @@
-package dns_bf
+package dnsbf
 
 import (
 
@@ -8,49 +8,49 @@ import (
 )
 
 //NewDns generate a new Dns module (type modules.Module)
-func NewDns_BF() modules.Module {
+func NewDnsBF() modules.Module {
 	gob.Register(DnsResult{}) // change var ?
 	var d modules.Module
-	d = Dns_bf{}
+	d = DnsBF{}
 	return d
 }
 
 // Name : name getter
-func (D Dns_bf) Name() string {
-	return "Dns_BF"
+func (D DnsBF) Name() string {
+	return "DnsBF"
 }
 
 // Author : Author getter
-func (D Dns_bf) Author() string {
+func (D DnsBF) Author() string {
 	return "Skawak"
 }
 
 // Version : Version  getter
-func (D Dns_bf) Version() string {
+func (D DnsBF) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (D Dns_bf) DependsOn() []modules.Condition {
+func (D DnsBF) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
 
 // Run : Main function of the module
-func (D Dns_bf) Run(data []string) (modules.Result, error) {
+func (D DnsBF) Run(data []string) (modules.Result, error) {
 
 	// Let's go
 
 }
 
 // ParseConfig : Load the config from the config folder
-func (D Dns_bf) ParseConfig() error {
+func (D DnsBF) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
 	}
 	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "config", "dns_bf.conf")
+	configPath := filepath.Join(exPath, "config", "dnsbf.conf")
 
 	if _, err := toml.DecodeFile(configPath, &D.Config); err != nil {
 		fmt.Println(err)
@@ -58,8 +58,8 @@ func (D Dns_bf) ParseConfig() error {
 	}
 	return nil
 
-WriteDb : Save data
-func (D Dns_bf) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+//WriteDb : Save data
+func (D DnsBF) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
 	log.Println("Write to the database.")
 	var data DnsResult // change var ?
 	data = result.Data.(DnsResult) // change var ?
