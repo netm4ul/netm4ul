@@ -27,11 +27,11 @@ type MasscanResult struct {
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	//MaxHops int `toml:"max_hops"`
-	Ports  int    `toml:"ports"`
+	Ports  string `toml:"ports"`
+	Banner bool   `toml:"banner"`
+	Source string `toml:"source"`
+	Rate   string `toml:"rate"`
 	Output string `toml:"output"`
-	Rate   int    `toml:"rate"`
-	Banner string `toml:"banner"`
 }
 
 // Masscan "class"
@@ -44,53 +44,94 @@ type Masscan struct {
 func NewMasscan() modules.Module {
 	gob.Register(MasscanResult{})
 	var t modules.Module
-	t = Masscan{}
+	t = &Masscan{}
 	return t
 }
 
 // Name : name getter
-func (M Masscan) Name() string {
+func (M *Masscan) Name() string {
 	return "Masscan"
 }
 
 // Author : Author getter
-func (M Masscan) Author() string {
+func (M *Masscan) Author() string {
 	return "soldat-ryan"
 }
 
 // Version : Version  getter
-func (M Masscan) Version() string {
+func (M *Masscan) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (M Masscan) DependsOn() []modules.Condition {
+func (M *Masscan) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
 
 // Run : Main function of the module
-func (M Masscan) Run(data []string) (modules.Result, error) {
-	fmt.Println("hello world") //Affiche hello world pour le fun
-	// "212.47.247.190" = edznux.fr
-	cmd := exec.Command("sudo", "masscan", "212.47.247.190", "-p80")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
+func (M *Masscan) Run(data []string) (modules.Result, error) {
+	fmt.Println("masscan hello world") //Affiche hello world pour le fun
+	M.ParseConfig()
+	var opt []string
+
+	fmt.Println("ports:", M.Config.Ports)
+	fmt.Println("rate:", M.Config.Rate)
+	fmt.Println("output:", M.Config.Output)
+	fmt.Println("banner:", M.Config.Banner)
+
+	// IP forced : 212.47.247.190 = edznux.fr
+	opt = append(opt, "212.47.247.190")
+
+	// Ports option
+	if M.Config.Ports != "" {
+		opt = append(opt, "-p"+M.Config.Ports)
+	} else {
+		opt = append(opt, "-p1-65535")
 	}
-	fmt.Printf(out.String())
+
+	// Banner option
+	if M.Config.Banner {
+		opt = append(opt, "--banners --source-ip", M.Config.Source)
+	}
+
+	// Rate option
+	if M.Config.Rate != "" {
+		opt = append(opt, "--rate="+M.Config.Rate)
+	}
+
+	// TO CHECK, JSON HAS TO BE FORCED ?
+	// Output option
+	if M.Config.Output != "" {
+		opt = append(opt, "-oJ", M.Config.Output)
+	}
+
+	cmd := exec.Command("masscan", opt...)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	fmt.Println("cmd ", cmd)
+	err := cmd.Run()
+	fmt.Println("out:", out)
+	fmt.Println("stdout:", cmd.Stdout)
+	fmt.Println("1", stderr.String())
+	if err != nil {
+		fmt.Println("2", cmd.Stderr)
+		fmt.Println(err)
+		//log.Fatal(err)
+	}
+	fmt.Println("coucou:", out.String())
 	return modules.Result{Data: MasscanResult{IP: "212.47.247.190", Ports: 80}, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
 // Parse : Parse the result of the execution
-func (M Masscan) Parse() (MasscanResult, error) {
+func (M *Masscan) Parse() (MasscanResult, error) {
 	return MasscanResult{}, nil
 }
 
 // ParseConfig : Load the config from the config folder
-func (M Masscan) ParseConfig() error {
+func (M *Masscan) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -106,7 +147,7 @@ func (M Masscan) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (M Masscan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+func (M *Masscan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
 	log.Println("Write to the database.")
 	var data MasscanResult
 	data = result.Data.(MasscanResult)
