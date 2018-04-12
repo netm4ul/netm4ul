@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"crypto/tls"
 )
 
 // API : Rest API config
@@ -77,6 +78,7 @@ type ConfigToml struct {
 	Database   Database
 	Nodes      map[string]Node
 	Modules    map[string]Module
+	TLSParams  tls.Config
 }
 
 // Config : exported config

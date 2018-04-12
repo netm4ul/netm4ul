@@ -20,6 +20,12 @@
   version = "v1.6.1"
 
 [[projects]]
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
@@ -50,6 +56,18 @@
   version = "v0.8.0"
 
 [[projects]]
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
+  version = "v0.0.2"
+
+[[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
@@ -70,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7d145ef90d12321d4b2dd97bd2a1f188f8c15188c7d148f0ea1301291f0de1be"
+  inputs-digest = "79eb333130a261ad8daca59ba54fbd92bc6206a0d7520723f899bd7a1fc1fd06"
   solver-name = "gps-cdcl"
   solver-version = 1

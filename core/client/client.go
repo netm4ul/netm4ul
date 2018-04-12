@@ -86,7 +86,7 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	var cmd server.Command
 
 	if config.Config.Verbose {
-		log.Println(colors.Yellow("Waiting for incomming data"))
+		log.Println(colors.Yellow("Waiting for incoming data"))
 	}
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
@@ -100,11 +100,11 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	}
 
 	if err != nil {
-		return server.Command{}, errors.New("Could not decode recieved message : " + err.Error())
+		return server.Command{}, errors.New("Could not decode received message : " + err.Error())
 	}
 
 	if config.Config.Verbose {
-		log.Printf(colors.Yellow("Recieved command %+v"), cmd)
+		log.Printf(colors.Yellow("Received command %+v"), cmd)
 	}
 	_, ok := SessionClient.Modules[cmd.Name]
 
