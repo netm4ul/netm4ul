@@ -20,7 +20,7 @@ const (
 // CreateServer : Initialise the infinite server loop on the master node
 func CreateServer(ipport string, conf *config.ConfigToml) {
 	server.ConfigServer = conf
-	server.Listen(ipport)
+	server.TLSListen(ipport, conf.TLSParams)
 }
 
 // CreateAPI : Initialise the infinite server loop on the master node
