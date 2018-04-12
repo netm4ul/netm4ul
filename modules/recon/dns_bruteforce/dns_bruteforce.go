@@ -21,14 +21,14 @@ type ConfigToml struct {
 	Threads         int      `toml:"Threads"`
 	Mode            string   `toml:"Mode"`
 	Wordlist        string   `toml:"Wordlist"`
-	codes           string   `toml:"codes"`
+	codes           string   `toml:"Codes"`
 	OutputFileName  string   `toml:"OutputFileName"`
 	Url             string   `toml:"Url"`
 	Username        string   `toml:"Username"`
 	Password        string   `toml:"Password"`
-	extensions      string   `toml:"extension"`
+	extensions      string   `toml:"Extension"`
 	UserAgent       string   `toml:"UserAgent"`
-	proxy           string   `toml:"proxy"`
+	proxy           string   `toml:"Proxy"`
 	Verbose         bool     `toml:"Verbose"`
 	ShowIPs         bool     `toml:"ShowIPs"`
 	ShowCNAME       bool     `toml:"ShowCNAME"`
@@ -96,7 +96,7 @@ func (D *DnsBF) Run(data []string) (modules.Result, error) {
 	case "dns":
 		D.ParseArgDNS()
 	default:
-		log.Println("Error, mode doesn't exist")
+		log.Println("Error, this mode doesn't exist")
 	}
 
 	return modules.Result{Data: D.Result, Timestamp: time.Now(), Module: D.Name()}//, err
