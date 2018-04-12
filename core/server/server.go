@@ -17,6 +17,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server/database"
 	"github.com/netm4ul/netm4ul/core/session"
+	"crypto/tls"
 )
 
 var (
@@ -59,9 +60,9 @@ func init() {
 }
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
-func Listen(ipport string) {
+func TLSListen(ipport string, conf tls.Config) {
 	log.Printf(colors.Green("Listenning on : %s"), ipport)
-	l, err := net.Listen("tcp", ipport)
+	l, err := tls.Listen("tcp", ipport, &conf)
 
 	if err != nil {
 		log.Println(colors.Red("Error listening : %s"), err.Error())
