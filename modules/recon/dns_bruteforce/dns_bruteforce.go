@@ -15,28 +15,28 @@ type DnsResult struct {
 
 //ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	Threads         int      `toml:"threads"`
-	Mode            string   `toml:"mode"`
-	Wordlist        string   `toml:"wordlist"`
+	Threads         int      `toml:"Threads"`
+	Mode            string   `toml:"Mode"`
+	Wordlist        string   `toml:"Wordlist"`
 	codes           string   `toml:"codes"`
-	OutputFileName  string   `toml:"output"`
-	Url             string   `toml:"url"`
-	Username        string   `toml:"username"`
-	Password        string   `toml:"password"`
+	OutputFileName  string   `toml:"OutputFileName"`
+	Url             string   `toml:"Url"`
+	Username        string   `toml:"Username"`
+	Password        string   `toml:"Password"`
 	extensions      string   `toml:"extension"`
-	UserAgent       string   `toml:"useragent"`
+	UserAgent       string   `toml:"UserAgent"`
 	proxy           string   `toml:"proxy"`
-	Verbose         bool     `toml:"verbose"`
-	ShowIPs         bool     `toml:"showips"`
-	ShowCNAME       bool     `toml:"showcname"`
-	FollowRedirect  bool     `toml:"followredirect"`
-	Quiet           bool     `toml:"quiet"`
-	Expanded        bool     `toml:"expanded"`
-	NoStatus        bool     `toml:"nostatus"`
-	IncludeLength   bool     `toml:"includelength"`
-	UseSlash        bool     `toml:"useslash"`
-	WildcardForced  bool     `toml:"wildcardforced"`
-	InsecureSSL     bool     `toml:"insecuressl"`
+	Verbose         bool     `toml:"Verbose"`
+	ShowIPs         bool     `toml:"ShowIPs"`
+	ShowCNAME       bool     `toml:"ShowCNAME"`
+	FollowRedirect  bool     `toml:"FollowRedirect"`
+	Quiet           bool     `toml:"Quiet"`
+	Expanded        bool     `toml:"Expanded"`
+	NoStatus        bool     `toml:"NoStatus"`
+	IncludeLength   bool     `toml:"IncludeLength"`
+	UseSlash        bool     `toml:"UseSlash"`
+	WildcardForced  bool     `toml:"WildcardForced"`
+	InsecureSSL     bool     `toml:"InsecureSSL"`
 }
 
 // DnsBF "class"
@@ -80,8 +80,98 @@ func (D *DnsBF) Run(data []string) (modules.Result, error) {
 	fmt.Println("DNS BruteForce")
 
 	// Let's go
-	
-	
+	D.ParseConfig()
+
+	s := libgobuster.InitState()
+
+	if D.Config.Threads {
+		s.Threads = D.Config.Threads
+	}
+
+	if D.Config.Mode {
+		s.Mode = D.Config.Mode
+	}
+
+	if D.Config.Wordlist {
+		s.Wordlist = D.Config.Wordlist
+	}
+
+	if D.Config.codes {
+		s.codes = D.Config.codes
+	}
+
+	if D.Config.OutputFileName {
+		s.OutputFileName = D.Config.OutputFileName
+	}
+
+	if D.Config.Url {
+		s.Url = D.Config.Url
+	}
+
+	if D.Config.Username {
+		s.Username = D.Config.Username
+	}
+
+	if D.Config.Password {
+		s.Password = D.Config.Password
+	}
+
+	if D.Config.extensions {
+		s.extensions = D.Config.extensions
+	}
+
+	if D.Config.UserAgent {
+		s.UserAgent = D.Config.UserAgent
+	}
+
+	if D.Config.proxy {
+		s.proxy = D.Config.proxy
+	}
+
+	if D.Config.Verbose {
+		s.Verbose = D.Config.Verbose
+	}
+
+	if D.Config.ShowIPs {
+		s.ShowIPs = D.Config.ShowIPs
+	}
+
+	if D.Config.ShowCNAME {
+		s.ShowCNAME = D.Config.ShowCNAME
+	}
+
+	if D.Config.FollowRedirect {
+		s.FollowRedirect = D.Config.FollowRedirect
+	}
+
+	if D.Config.Quiet {
+		s.Quiet = D.Config.Quiet
+	}
+
+	if D.Config.Expanded {
+		s.Expanded = D.Config.Expanded
+	}
+
+	if D.Config.NoStatus {
+		s.NoStatus = D.Config.NoStatus
+	}
+
+	if D.Config.IncludeLength {
+		s.IncludeLength = D.Config.IncludeLength
+	}
+
+	if D.Config.UseSlash {
+		s.UseSlash = D.Config.UseSlash
+	}
+
+	if D.Config.WildcardForced {
+		s.WildcardForced = D.Config.WildcardForced
+	}
+
+	if D.Config.InsecureSSL {
+		s.InsecureSSL = D.Config.InsecureSSL
+	}
+
 }
 
 // ParseConfig : Load the config from the config folder
