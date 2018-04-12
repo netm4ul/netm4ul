@@ -16,13 +16,13 @@ func TLSBuildServerConf() (tls.Config){
 	privKey := "certificates/Netm4ul_Server.pem"
 
 	// Read CA file and initialise
-	certBytes, err := ioutil.ReadFile(caCert)
+	caCertBytes, err := ioutil.ReadFile(caCert)
 	if err != nil {
 		log.Println(colors.Red("Unable to read %s : %s"), caCert, err.Error())
 	}
 
-	clientCertPool := x509.NewCertPool()
-	if ok := clientCertPool.AppendCertsFromPEM(certBytes); !ok {
+	caCertPool := x509.NewCertPool()
+	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
 		log.Println(colors.Red("Unable to add CA certificate to certificate pool"))
 	}
 
@@ -37,7 +37,7 @@ func TLSBuildServerConf() (tls.Config){
 		// Reject any TLS certificate that cannot be validated
 		ClientAuth: tls.RequireAndVerifyClientCert,
 		// Ensure that we only use our "CA" to validate certificates
-		ClientCAs: clientCertPool,
+		ClientCAs: caCertPool,
 		// PFS because we can
 		CipherSuites: []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256},
 		// Force it server side
