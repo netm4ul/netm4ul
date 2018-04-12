@@ -3,6 +3,9 @@ package dnsbf
 import (
 
 	"fmt"
+	"time"
+	"log"
+
 	"github.com/OJ/gobuster/libgobuster"
 	"github.com/BurntSushi/toml"
 
@@ -42,6 +45,7 @@ type ConfigToml struct {
 // DnsBF "class"
 type DnsBF struct {
 	Config ConfigToml
+	State *libgobuster.State
 }
 
 //NewDns generate a new Dns module (type modules.Module)
@@ -82,96 +86,141 @@ func (D *DnsBF) Run(data []string) (modules.Result, error) {
 	// Let's go
 	D.ParseConfig()
 
-	s := libgobuster.InitState()
+	D.State := libgobuster.InitState()
 
+	D.ParseArgGlobal()
+
+	switch D.Config.Mode {
+	case "dir":
+		D.ParseArgDIR()
+	case "dns":
+		D.ParseArgDNS()
+	default:
+		log.Println("Error, mode doesn't exist")
+	}
+
+	return modules.Result{Data: D.Result, Timestamp: time.Now(), Module: D.Name()}//, err
+
+}
+
+// ParseArgGlobal : verify global argument
+func (D *DnsBF) ParseArgGlobal() {
+	// Number of  threads
 	if D.Config.Threads {
-		s.Threads = D.Config.Threads
+		D.State.Threads = D.Config.Threads
 	}
 
-	if D.Config.Mode {
-		s.Mode = D.Config.Mode
-	}
-
+	// Wordlist to use
 	if D.Config.Wordlist {
-		s.Wordlist = D.Config.Wordlist
+		D.State.Wordlist = D.Config.Wordlist
 	}
 
-	if D.Config.codes {
-		s.codes = D.Config.codes
-	}
-
+	// Output file for results
 	if D.Config.OutputFileName {
-		s.OutputFileName = D.Config.OutputFileName
+		D.State.OutputFileName = D.Config.OutputFileName
 	}
 
+	// Target URL or domain
 	if D.Config.Url {
-		s.Url = D.Config.Url
+		D.State.Url = D.Config.Url
 	}
 
-	if D.Config.Username {
-		s.Username = D.Config.Username
-	}
-
-	if D.Config.Password {
-		s.Password = D.Config.Password
-	}
-
-	if D.Config.extensions {
-		s.extensions = D.Config.extensions
-	}
-
-	if D.Config.UserAgent {
-		s.UserAgent = D.Config.UserAgent
-	}
-
-	if D.Config.proxy {
-		s.proxy = D.Config.proxy
-	}
-
+	// Verbose output (errors)
 	if D.Config.Verbose {
-		s.Verbose = D.Config.Verbose
+		D.State.Verbose = D.Config.Verbose
 	}
 
-	if D.Config.ShowIPs {
-		s.ShowIPs = D.Config.ShowIPs
-	}
-
-	if D.Config.ShowCNAME {
-		s.ShowCNAME = D.Config.ShowCNAME
-	}
-
+	// Follow redirects
 	if D.Config.FollowRedirect {
-		s.FollowRedirect = D.Config.FollowRedirect
+		D.State.FollowRedirect = D.Config.FollowRedirect
 	}
 
+	// Don't print the original banner
 	if D.Config.Quiet {
-		s.Quiet = D.Config.Quiet
+		D.State.Quiet = D.Config.Quiet
 	}
 
+	// Expanded mode, print full URLs
 	if D.Config.Expanded {
-		s.Expanded = D.Config.Expanded
+		D.State.Expanded = D.Config.Expanded
 	}
 
+	// Don't print status codes
 	if D.Config.NoStatus {
-		s.NoStatus = D.Config.NoStatus
+		D.State.NoStatus = D.Config.NoStatus
 	}
 
-	if D.Config.IncludeLength {
-		s.IncludeLength = D.Config.IncludeLength
-	}
-
-	if D.Config.UseSlash {
-		s.UseSlash = D.Config.UseSlash
-	}
-
+	// Force continued operation when wildcard found
 	if D.Config.WildcardForced {
-		s.WildcardForced = D.Config.WildcardForced
+		D.State.WildcardForced = D.Config.WildcardForced
 	}
 
+	// Skip SSL certificate verification
 	if D.Config.InsecureSSL {
-		s.InsecureSSL = D.Config.InsecureSSL
+		D.State.InsecureSSL = D.Config.InsecureSSL
+	}
+}
+
+// ParseArgDIR : verify dir mode argument
+func (D *DnsBF) ParseArgDIR() {
+
+	D.State.Mode = "dir"
+
+	// Positive status codes (dir mode only)
+	if D.Config.codes {
+		D.State.codes = D.Config.codes
 	}
 
+	// Username for basic Auth (dir mode only)
+	if D.Config.Username {
+		D.State.Username = D.Config.Username
+	}
+
+	// Password for basic Auth (dir mode only)
+	if D.Config.Password {
+		D.State.Password = D.Config.Password
+	}
+
+	// File extention(s) to search for (dir mode only)
+	if D.Config.extensions {
+		D.State.extensions = D.Config.extensions
+	}
+
+	// Set the User-Agent (dir mode only)
+	if D.Config.UserAgent {
+		D.State.UserAgent = D.Config.UserAgent
+	}
+
+	// Proxy use for requests : http(s)://host:port (dir mode only)
+	if D.Config.proxy {
+		D.State.proxy = D.Config.proxy
+	}
+
+	// Include the length of the body in the output (dir mode only)
+	if D.Config.IncludeLength {
+		D.State.IncludeLength = D.Config.IncludeLength
+	}
+
+	// Appand a forward-slash to each directory request (dir mode only)
+	if D.Config.UseSlash {
+		D.State.UseSlash = D.Config.UseSlash
+	}
+}
+
+// ParseArgDNS : verify dns mode argument
+func (D *DnsBF) ParseArgDNS() {
+
+	D.State.Mode = "dns"
+
+	// Show IP adresses (dns mode only)
+	if D.Config.ShowIPs {
+		D.State.ShowIPs = D.Config.ShowIPs
+	}
+
+	// Show CNAME records (dns mode only)
+	if D.Config.ShowCNAME {
+		D.State.ShowCNAME = D.Config.ShowCNAME
+	}
 }
 
 // ParseConfig : Load the config from the config folder
