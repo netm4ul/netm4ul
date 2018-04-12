@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"time"
@@ -21,17 +22,39 @@ import (
 
 // MasscanResult represent the parsed ouput
 type MasscanResult struct {
+	Raw      string
+	Resultat Scan
+}
+
+// Scan represents the ip and ports output
+type Scan struct {
 	IP    string
-	Ports int
+	Ports Port
+}
+
+// Port represents the port, proto, service, ttl, reason and status output
+type Port struct {
+	Port    uint16
+	Proto   string
+	Service Service
+	TTL     int
+	Reason  string
+	Status  string
+}
+
+// Service represents the name and the banner output
+type Service struct {
+	Name   string
+	Banner string
 }
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	Ports  string `toml:"ports"`
-	Banner bool   `toml:"banner"`
-	Source string `toml:"source"`
-	Rate   string `toml:"rate"`
-	Output string `toml:"output"`
+	Ports   string `toml:"ports"`
+	Banner  bool   `toml:"banner"`
+	Source  string `toml:"source"`
+	Rate    string `toml:"rate"`
+	Verbose bool   `toml:"verbose"`
 }
 
 // Masscan "class"
@@ -69,21 +92,32 @@ func (M *Masscan) DependsOn() []modules.Condition {
 	return []modules.Condition{}
 }
 
+// Checks error
+func check(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
+}
+
 // Run : Main function of the module
 func (M *Masscan) Run(data []string) (modules.Result, error) {
-	fmt.Println("masscan hello world") //Affiche hello world pour le fun
-	M.ParseConfig()
 	var opt []string
+	outputfile := "output.json"
 
-	fmt.Println("ports:", M.Config.Ports)
-	fmt.Println("rate:", M.Config.Rate)
-	fmt.Println("output:", M.Config.Output)
-	fmt.Println("banner:", M.Config.Banner)
+	fmt.Println("hello world masscan") //Affiche hello world pour le fun
+	M.ParseConfig()
+
+	log.Printf("Verbose mode: %+v", M.Config.Verbose)
+	if M.Config.Verbose {
+		opt = append(opt, "-v")
+	}
 
 	// IP forced : 212.47.247.190 = edznux.fr
+	//opt = append(opt, data...)
 	opt = append(opt, "212.47.247.190")
 
 	// Ports option
+	log.Println(M.Config.Ports)
 	if M.Config.Ports != "" {
 		opt = append(opt, "-p"+M.Config.Ports)
 	} else {
@@ -91,38 +125,31 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	}
 
 	// Banner option
+	log.Println(M.Config.Banner)
 	if M.Config.Banner {
-		opt = append(opt, "--banners --source-ip", M.Config.Source)
+		opt = append(opt, "--banners")
 	}
 
 	// Rate option
+	log.Println(M.Config.Rate)
 	if M.Config.Rate != "" {
 		opt = append(opt, "--rate="+M.Config.Rate)
 	}
 
-	// TO CHECK, JSON HAS TO BE FORCED ?
 	// Output option
-	if M.Config.Output != "" {
-		opt = append(opt, "-oJ", M.Config.Output)
-	}
+	opt = append(opt, "-oJ", outputfile)
 
 	cmd := exec.Command("masscan", opt...)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	fmt.Println("cmd ", cmd)
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
 	err := cmd.Run()
-	fmt.Println("out:", out)
-	fmt.Println("stdout:", cmd.Stdout)
-	fmt.Println("1", stderr.String())
-	if err != nil {
-		fmt.Println("2", cmd.Stderr)
-		fmt.Println(err)
-		//log.Fatal(err)
-	}
-	fmt.Println("coucou:", out.String())
-	return modules.Result{Data: MasscanResult{IP: "212.47.247.190", Ports: 80}, Timestamp: time.Now(), Module: M.Name()}, nil
+	check(err)
+
+	content, err := ioutil.ReadFile(outputfile)
+	check(err)
+	fmt.Printf("data: %s", string(content))
+
+	return modules.Result{Data: MasscanResult{Raw: string(content)}, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
 // Parse : Parse the result of the execution
