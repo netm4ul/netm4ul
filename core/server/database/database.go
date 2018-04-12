@@ -5,7 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/netm4ul/netm4ul/cmd/config"
+	"github.com/netm4ul/netm4ul/cmd/colors"
+	"github.com/netm4ul/netm4ul/core/config"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -54,9 +55,10 @@ type IP struct {
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	Name      string        `json:"name,omitempty" bson:"Name"`
-	UpdatedAt int64         `json:"updated_at,omitempty" bson:"UpdatedAt,omitempty"`
-	IPs       []interface{} `json:"ips,omitempty" bson:"omitempty"`
+	Name        string `json:"name" bson:"Name"`
+	Description string `json:"description" bson:"Description,omitempty"`
+	UpdatedAt   int64  `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	IPs         []IP   `json:"ips" bson:"omitempty"`
 }
 
 var db *mgo.Database
@@ -67,7 +69,6 @@ const DBname = "netm4ul"
 
 // Connect to the database and return a session
 func Connect() *mgo.Session {
-	log.Println("config.Config.Database.IP :", config.Config.Database.IP)
 	mongoDBDialInfo := &mgo.DialInfo{
 		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
@@ -79,19 +80,24 @@ func Connect() *mgo.Session {
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
-		log.Fatal("Error connecting with the database", err)
+		log.Fatalf(colors.Red("Error connecting with the database : %s"), err.Error())
 	}
+	log.Printf(colors.Green("Connected to the database : %s"), config.Config.Database.IP)
 	return session
 }
 
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string) {
 	// mongodb will create collection on use.
-	log.Println("Should add " + projectName + " to the collections 'projects'")
 	c := session.DB(DBname).C("projects")
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
-	log.Println(info)
+
+	if config.Config.Verbose && info.Updated == 1 {
+		log.Printf(colors.Yellow("Info : %+v"), info)
+		log.Printf(colors.Yellow("Adding %s to the collections 'projects'"), projectName)
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +107,7 @@ func CreateProject(session *mgo.Session, projectName string) {
 func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
 	c := session.DB(DBname).C("projects")
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
-	log.Printf("%+v", info)
+	log.Printf(colors.Yellow("Info : %+v"), info)
 	if err != nil {
 		log.Fatal(err)
 	}

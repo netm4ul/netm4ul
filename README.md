@@ -32,59 +32,63 @@ Requirement :
 ```
 vim netm4ul.conf # change the credentials (db, api, etc...) and ip / ports
 make
-./netm4ul -server # in one terminal
-./netm4ul # in the other terminal
+
+./netm4ul start server # in one terminal
+./netm4ul start client # in another terminal
+
+# netm4ul is running, you can control it directly with
+
+./netm4ul run <somedomain,ip,ip range(CIDR)>
 ```
+
+
+### CLI
+
+
+Completion : 
+
+bash : `source <(./netm4ul completion bash)`
+zsh : `source <(./netm4ul completion zsh)`
+
+```
+Usage:
+  netm4ul [flags]
+  netm4ul [command]
+
+Available Commands:
+  completion  Generate autocompletion
+  create      Create the requested ressource
+  help        Help about any command
+  list        Return all results
+  run         Run scan on the defined target
+  start       Start the requested service
+  status      Show status of the requested service
+  version     Prints version
+```
+
+Global flags : 
+
+```
+  -c, --config string   Custom config file path (default "netm4ul.conf")
+  -h, --help            help for netm4ul
+      --no-colors       Disable color printing
+  -v, --verbose         verbose output
+```
+
+You can use -h on every subcommands.
 
 ## Contributing
 
 ### Structure
 
-```
-.
-├── cmd
-│   ├── api
-│   │   └── api.go
-│   ├── client
-│   │   └── client.go
-│   ├── config
-│   │   ├── config.go
-│   │   └── config_test.go
-│   ├── handler.go
-│   └── server
-│       ├── database
-│       │   ├── database.go
-│       │   └── helpers.go
-│       └── server.go
-├── config
-│   ├── dorks.conf
-│   ├── sqlmap.conf
-│   └── traceroute.conf
-├── docker-compose.yml
-├── Dockerfile
-├── Gopkg.lock
-├── Gopkg.toml
-├── LICENSE
-├── main.go
-├── Makefile
-├── modules
-│   ├── exploit
-│   ├── modules.go
-│   ├── recon
-│   │   └── traceroute
-│   │       └── traceroute.go
-│   └── report
-├── netm4ul
-├── netm4ul.conf
-└── README.md
-```
-
 ### Core
 
-Located in the `cmd` folder, all the core components are there.
+Located in the `core` folder, all the core components are there.
 The `api` folder contains all the code for the REST api on the Master node.
 The `server` folder contains all the code for recieving and storing data in the DB. It's in charge of balancing all the modules on each client node.
 The `client` folder contains all the code for client connection to the master node.
+The `session` folder contains all the code for handling current session (loaded modules...).
+The `config` is used for parsing the config files.
 
 #### API
 

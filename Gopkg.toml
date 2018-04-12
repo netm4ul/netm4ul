@@ -24,5 +24,22 @@ branch = "master"
 name = "github.com/lair-framework/go-nmap"
 
 [[constraint]]
+<<<<<<< HEAD
 name = "github.com/gorilla/mux"
 version = "1.6.1"
+=======
+  name = "github.com/gorilla/mux"
+  version = "1.6.1"
+
+[[constraint]]
+  name = "github.com/mattn/go-isatty"
+  version = "0.0.3"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+>>>>>>> develop
