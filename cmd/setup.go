@@ -15,9 +15,10 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"log"
+	"os"
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/config"
@@ -53,6 +54,12 @@ to quickly create a Cobra application.`,
 	},
 }
 
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // setupDB => create user in db for future requests
 func setupDB() {
 
@@ -67,9 +74,8 @@ func setupDB() {
 
 	err := c.UpsertUser(&u)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	check(err)
+
 	modifyDBConnect()
 }
 
@@ -77,14 +83,40 @@ func modifyDBConnect() {
 	config.Config.Database.User = setupUser
 	config.Config.Database.Password = setupPassword
 
-	fmt.Println(config.Config)
+	//Open current config file
+	srcFile, err := os.Open(config.Config.ConfigPath)
+	check(err)
+	defer srcFile.Close()
 
-	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(config.Config); err != nil {
+	//Create bkp file
+	destFile, err := os.Create(config.Config.ConfigPath + ".old") // creates if file doesn't exist
+	check(err)
+	defer destFile.Close()
+
+	//Copy content of current into bkp
+	_, err = io.Copy(destFile, srcFile) // check first var for number of bytes copied
+	check(err)
+
+	err = destFile.Sync()
+	check(err)
+
+	//Remove old config file
+	err = os.Remove(config.Config.ConfigPath)
+	check(err)
+
+	//Create new config file
+	file, err := os.OpenFile(
+		config.Config.ConfigPath,
+		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
+		0666,
+	)
+	check(err)
+	defer file.Close()
+
+	//Write new config to new config file
+	if err := toml.NewEncoder(file).Encode(config.Config); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(buf.String())
-
 }
 
 func init() {

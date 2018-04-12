@@ -30,8 +30,8 @@ IsClient = false
   port = 5672
 
 [Database]
-  user = "root"
-  password = "root"
+  user = "admin"
+  password = "password"
   ip = "localhost"
   port = 27017
 
