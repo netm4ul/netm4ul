@@ -22,6 +22,7 @@ import (
 	"github.com/netm4ul/netm4ul/core"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
+	"github.com/netm4ul/netm4ul/core/server"
 )
 
 // startCmd represents the start command
@@ -42,6 +43,7 @@ var startServerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Config.IsServer = isServer
 		config.Config.Nodes = make(map[string]config.Node)
+		config.Config.TLSParams = server.TLSBuildServerConf()
 
 		// listen on all interface + Server port
 		addr := ":" + strconv.FormatUint(uint64(config.Config.Server.Port), 10)
