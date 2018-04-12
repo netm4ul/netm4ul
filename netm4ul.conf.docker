@@ -1,7 +1,3 @@
-[project]
-name = "FirstProject"
-description = "This is an awesome first project"
-
 [api]
 port=8080
 user="toto"
@@ -14,19 +10,14 @@ shodan="apikey" # needed for passive port scan
 [server]
 user = "user"
 password = "password"
-ip = "localhost"
+ip = "netmaulserver"
 port = 5672
 
 [database]
-ip = "localhost"
+ip = "mongodb"
 port = 27017
 user = "NetM4ul"
 password = "NetM4ul"
-
-[versions]
-api = "v1"
-server = "0.1"
-client = "0.1"
 
 [modules]
     [modules.shodan]

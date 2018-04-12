@@ -4,6 +4,9 @@
 *.so
 *.dylib
 
+# dep lock file
+*.lock
+
 # Test binary, build with `go test -c`
 *.test
 
@@ -16,5 +19,8 @@ netm4ul
 
 # vim backup file
 *.swp
+
+# Remove project folder
 vendor/
 .idea/
+data/

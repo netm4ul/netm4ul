@@ -1,0 +1,20 @@
+language: go
+
+go:
+  - 1.9
+  - master
+
+before_script:
+  - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
+  - go get -u github.com/golang/dep/...
+  - dep ensure
+
+script:
+  # - test -z $(gofmt -s -l $GO_FILES)
+  - go test -v -race ./...
+  - go vet ./...
+
+notifications:
+  slack:
+    rooms:
+      secure: 1KDiji1iZhcepDRebDzaB9LvDD+0RbYqr6Ftrq5p6bUA4mM9yNIc4VQt5zOLV8Nggfd+lVfWst2kwsQ94nq7VHiCRqtEFsmdp4fU0nXb7AzYiWpwHy+TSQqMr8tiyliYKVJJvhHkV/Ejnrc4DWOmxA4C47I04RVcNGvI7lJD3UlELNg5G8CE0pgnJ2b5bRw1Md/PHOSB2Jn1ZY97Nq7l2A5C6fpQXRhToaJf6vr64fRU10rN/j9y1pna2si2+bem+JYv3DEn8edLW6x3J0s+0zQ0UtzfjxC/SVQd3fCyqyUKXPtfB2fv0i4LPA66t+F1kcDCuk9hIzXExW4kZ5OLmDf8y/SrQ7/5y63gnPgvCE2fjZQCalBqfsaGaSMIxp6eR5TEBYw4ro/kYrKsdBTQD6VyJbvl/QhkVkt1xZTY8YdkY0CXP6o3mI7FnZcTZ1+5Lc1DcjXtwh9de2RarDHgNCepbSUU8gv0btMxL2hltly0TxD1dLGZVPDl384GCRwd6z8Gd8++I7msmed6uvOOQ6gGCH6jcNV0uEpBbhDoVcakp40MchW1hSwQ8NJksDeRNTMiIADvUN+78U3AFD7dsNo/iczqAOlXpr9wQLEzDqtWM5KcfHy7XOhjY2NnGt6UQPeat5kMPDncAwrIK0tAA4xb9udt/36l613p/hmGlYQ=
