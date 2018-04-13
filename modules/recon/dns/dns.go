@@ -72,6 +72,45 @@ func (D Dns) DependsOn() []modules.Condition {
 	remove all data: db.projects.remove({})
 */
 
+//
+func requestRoutine(index string, result DnsResult, fqdn string, config *dns.ClientConfig) {
+	// Set dns client parameters
+	cli := new(dns.Client)
+
+	// Create DNS request
+	request := new(dns.Msg)
+
+	// Set recursion to true
+	request.RecursionDesired = true
+
+	// Set question with Type flag
+	request.SetQuestion(fqdn, dns.StringToType[index])
+
+	// Send request to DNS server
+	reply, _, err := cli.Exchange(request, config.Servers[0]+":"+config.Port)
+
+	// Catch error
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Verify DNS flag (error/success)
+	if reply.Rcode != dns.RcodeSuccess {
+		// If error, put "None" in result field
+		result.Types[index] = append(result.Types[index], "None")
+		// Log
+		log.Println("DNS Request fail.", fqdn, "has no", index, "type.")
+	}
+
+	// Retrieve all replies
+	for _, answer := range reply.Answer {
+
+		// Add into result field
+		//result.Types[infdex] = append(result.Types[index], answer.String())
+		dnsParser(answer, index, result)
+	}
+}
+
 // Run : Main function of the module
 func (D Dns) Run(data []string) (modules.Result, error) {
 
@@ -86,7 +125,7 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 
 	// Get fqdn of domain
 	domain := "edznux.fr"
-	fqdnDomain := dns.Fqdn(domain)
+	fqdn := dns.Fqdn(domain)
 
 	// instanciate DnsResult
 	result := DnsResult{}
@@ -94,65 +133,31 @@ func (D Dns) Run(data []string) (modules.Result, error) {
 	// Get DNS resolver from config file
 	log.Println(D.Config.randomDNS)
 
-	var cliconf map[int]*dns.ClientConfig
+	// Get DNS IP address from our config file
+	resolverConfig := make(map[int]*dns.ClientConfig)
 
-	resolverList := config.Config.DNS.Resolvers
+	resolverList := strings.Split(config.Config.DNS.Resolvers, ",")
 	for i := 0; i < len(resolverList); i++ {
-		r := strings.NewReader(resolverList[i])
+		// DNS gog library need resolv.conf entry (nameserver server_ip)
+		dnsEntry := "nameserver " + resolverList[i]
+		r := strings.NewReader(dnsEntry)
 		config, _ := dns.ClientConfigFromReader(r)
-		append(i, config)
+		resolverConfig[i] = config
 	}
-
-	log.Println(cliconf)
-
-	// Get DNS IP address from our custom resolv.conf like file
-	config, _ := dns.ClientConfigFromFile("modules/recon/dns/resolv.conf")
-
-	// Set dns client parameters
-	cli := new(dns.Client)
-
-	// Create DNS request
-	request := new(dns.Msg)
-
-	// Set recursion to true
-	request.RecursionDesired = true
-
-	// x := make(map[string][]string)
-	// x["key"] = append(x["key"], "value")
 
 	// Map Types for DnsResult{} treatment
 	result.Types = make(map[string][]string)
 
 	// For all Type in dns library
+	i := 0
 	for _, index := range dns.TypeToString {
-
-		// Set question with Type flag
-		request.SetQuestion(fqdnDomain, dns.StringToType[index])
-
-		// Send request to DNS server
-		reply, _, err := cli.Exchange(request, config.Servers[0]+":"+config.Port)
-
-		// Catch error
-		if err != nil {
-			log.Println(err)
+		// Get config
+		if i == len(resolverConfig) {
+			i = 0
 		}
-
-		// Verify DNS flag (error/success)
-		if reply.Rcode != dns.RcodeSuccess {
-			// If error, put "None" in result field
-			result.Types[index] = append(result.Types[index], "None")
-			// Log
-			log.Println("DNS Request fail for ", index, " type.")
-		}
-
-		// Retrieve all replies
-		for _, answer := range reply.Answer {
-
-			// Add into result field
-			//result.Types[infdex] = append(result.Types[index], answer.String())
-			dnsParser(answer, index, result)
-		}
-
+		config := resolverConfig[i]
+		requestRoutine(index, result, fqdn, config)
+		i++
 	}
 
 	// Return result (DnsResult{}) with timestamp and module name

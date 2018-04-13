@@ -17,7 +17,7 @@ type API struct {
 
 // DNS : Setup DNS resolver IP
 type DNS struct {
-	Resolvers []string `toml:"resolvers"`
+	Resolvers string `toml:"resolvers"`
 }
 
 // Keys : setup tocken & api keys
