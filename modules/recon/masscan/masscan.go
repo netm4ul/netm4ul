@@ -10,6 +10,7 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"time"
 
 	"os"
@@ -52,32 +53,27 @@ type Service struct {
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	Verbose     bool   `toml:"verbose"`
-	VeryVerbose bool   `toml:"very-verbose"`
-	Rate        string `toml:"rate"`
-	//Offline           bool   `toml:"offline"`
-	Adapter    string `toml:"adapter"`
-	AdapterIP  string `toml:"adapter-ip"`
-	AdapterMAC string `toml:"adapter-mac"`
-	RouterMAC  string `toml:"router-mac"`
-	//Retries           int    `toml:"retries"`
-	//ToptenPorts       bool   `toml:"toptenPorts"`
-	//MinPacket         int    `toml:"min-packet"`
+	Verbose           bool   `toml:"verbose"`
+	VeryVerbose       bool   `toml:"very-verbose"`
+	Rate              int    `toml:"rate"`
+	Ping              bool   `toml:"ping"`
+	Seed              int    `tom:"seed"`
+	Adapter           string `toml:"adapter"`
+	AdapterIP         string `toml:"adapter-ip"`
+	AdapterMAC        string `toml:"adapter-mac"`
+	AdapterVLAN       string `toml:"adapter-vlan"`
+	RouterMAC         string `toml:"router-mac"`
+	Retries           int    `toml:"retries"`
+	MinPacket         int    `toml:"min-packet"`
+	HTTPUserAgent     string `toml:"http-user-agent"`
 	RandomizeHosts    bool   `toml:"randomize-hosts"`
 	Exclude           string `toml:"exclude"`
-	NoPing            bool   `toml:"no-ping"`
-	NoResolution      bool   `toml:"no-resolution"`
-	TCPSYN            bool   `toml:"tcp-syn"`
 	Banners           bool   `toml:"banners"`
 	Ports             string `toml:"ports"`
 	ConnectionTimeout int    `toml:"connection-timeout"`
 	SourcePort        int    `toml:"source-port"`
-	SourceIP          string `toml:"source-ip"`
-	Interface         string `toml:"interface"`
 	TTL               int    `toml:"ttl"`
-	//SpoofMAC          string `toml:"spoof-MAC"`
-	Sendeth       bool `toml:"send-eth"`
-	VersionNumber bool `toml:"version-number"`
+	Wait              string `toml:"wait"`
 }
 
 // Masscan "class"
@@ -146,11 +142,15 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	opt = append(target, opt...)
 
 	cmd := exec.Command("masscan", opt...)
+	fmt.Printf("cmd:%+v\n", cmd)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
-	err := cmd.Run()
-	check(err)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 
+	err := cmd.Run()
+	fmt.Println(stderr.String())
+	check(err)
 	res, err := M.Parse(outputfile)
 	fmt.Println("M4sscan done.")
 	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
@@ -160,29 +160,93 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 func (M *Masscan) ParseOptions() []string {
 	var opt []string
 
-	M.ParseConfig()
+	err := M.ParseConfig()
+	check(err)
 
-	// Verbose option
 	if M.Config.Verbose {
 		opt = append(opt, "-v")
 	}
-	// Ports option
+
+	if M.Config.VeryVerbose {
+		opt = append(opt, "-vv")
+	}
+
+	if M.Config.Rate != 0 {
+		opt = append(opt, "--rate="+strconv.Itoa(M.Config.Rate))
+	}
+
+	if M.Config.Ping {
+		opt = append(opt, "--ping")
+	}
+
+	if M.Config.Seed != 0 {
+		opt = append(opt, "--seed="+strconv.Itoa(M.Config.Seed))
+	}
+
+	if M.Config.HTTPUserAgent != "" {
+		opt = append(opt, "--http-user-agent="+M.Config.HTTPUserAgent)
+	}
+
+	if M.Config.Adapter != "" {
+		opt = append(opt, "--adapter="+M.Config.Adapter)
+	}
+
+	if M.Config.AdapterIP != "" {
+		opt = append(opt, "--adapter-ip="+M.Config.AdapterIP)
+	}
+
+	if M.Config.AdapterMAC != "" {
+		opt = append(opt, "--adapter-mac="+M.Config.AdapterMAC)
+	}
+
+	if M.Config.AdapterVLAN != "" {
+		opt = append(opt, "--adapter-vlan="+M.Config.AdapterVLAN)
+	}
+
+	if M.Config.RouterMAC != "" {
+		opt = append(opt, "--router-mac="+M.Config.RouterMAC)
+	}
+
+	if !M.Config.RandomizeHosts {
+		opt = append(opt, "--randomize-hosts="+strconv.FormatBool(M.Config.RandomizeHosts))
+	}
+
+	if M.Config.Exclude != "" {
+		opt = append(opt, "--exclude="+M.Config.Exclude)
+	}
+
+	if M.Config.Banners {
+		opt = append(opt, "--banners")
+	}
+
 	if M.Config.Ports != "" {
 		opt = append(opt, "-p"+M.Config.Ports)
 	} else {
 		opt = append(opt, "-p0-65535")
 	}
-	// Banner option
-	if M.Config.Banner {
-		opt = append(opt, "--banners")
-	}
-	// Connection-time option
+
 	if M.Config.ConnectionTimeout != 0 {
-		opt = append(opt, "--connection-timeout", string(M.Config.ConnectionTimeout))
+		opt = append(opt, "--connection-timeout="+strconv.Itoa(M.Config.ConnectionTimeout))
 	}
-	// Rate option
-	if M.Config.Rate != "" {
-		opt = append(opt, "--rate="+M.Config.Rate)
+
+	if M.Config.Retries != 0 {
+		opt = append(opt, "--retries="+strconv.Itoa(M.Config.Retries))
+	}
+
+	if M.Config.MinPacket != 0 {
+		opt = append(opt, "--min-packet="+strconv.Itoa(M.Config.MinPacket))
+	}
+
+	if M.Config.SourcePort != 0 {
+		opt = append(opt, "--source-port="+strconv.Itoa(M.Config.SourcePort))
+	}
+
+	if M.Config.TTL != 0 {
+		opt = append(opt, "--ttl="+strconv.Itoa(M.Config.TTL))
+	}
+
+	if M.Config.Wait != "" {
+		opt = append(opt, "--wait="+M.Config.Wait)
 	}
 
 	return opt
