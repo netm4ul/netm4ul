@@ -17,6 +17,9 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
@@ -55,7 +58,19 @@ var runCmd = &cobra.Command{
 			}
 			addModules(mods)
 		}
+		runModules(args[0])
 	},
+}
+
+func runModules(target string) {
+	url := "http://" + config.Config.Server.IP + ":" + strconv.FormatUint(uint64(config.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run/"
+	for i := range config.Config.Modules {
+		resp, err := http.Post(url+i+"?options="+target, "application/text", strings.NewReader("127.0.0.1"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(resp)
+	}
 }
 
 func init() {

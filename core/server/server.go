@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -229,7 +230,7 @@ func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bo
 	}
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 	projectName, err := getProjectByNodeIP(ip)
-
+	fmt.Printf("%+v", data)
 	err = module.WriteDb(data, mgoSession, projectName)
 
 	if err != nil {

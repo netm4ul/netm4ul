@@ -320,10 +320,11 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	// name := vars["name"]
 	module := vars["module"]
+	options := r.URL.Query()["options"]
 
 	var res Result
 
-	cmd := server.Command{Name: module, Options: []string{"option1", "option2"}}
+	cmd := server.Command{Name: module, Options: options}
 
 	if config.Config.Verbose {
 		log.Printf(colors.Yellow("RunModule for cmd : %+v"), cmd)
