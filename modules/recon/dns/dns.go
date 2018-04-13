@@ -21,9 +21,7 @@ import (
 
 // DnsResult represent the parsed ouput
 type DnsResult struct {
-	Types    map[string][]string
-	resolver string
-	err      string
+	Types map[string][]string
 }
 
 // ConfigToml : configuration model (from the toml file)
@@ -97,7 +95,11 @@ func (D *Dns) Run(data []string) (modules.Result, error) {
 		// DNS gog library need resolv.conf entry (nameserver server_ip)
 		dnsEntry := "nameserver " + resolverList[i]
 		r := strings.NewReader(dnsEntry)
-		config, _ := dns.ClientConfigFromReader(r)
+		config, err := dns.ClientConfigFromReader(r)
+		if err != nil {
+			log.Println(err)
+			break
+		}
 		resolverConfig[i] = config
 	}
 
@@ -106,7 +108,7 @@ func (D *Dns) Run(data []string) (modules.Result, error) {
 
 	// For all Type in dns library
 
-	if D.Config.RandomDns == true {
+	if D.Config.RandomDns {
 		// random DNS resolver
 		for _, index := range dns.TypeToString {
 			config := resolverConfig[rand.Intn(len(resolverConfig))]
