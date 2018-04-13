@@ -9,7 +9,7 @@ import (
 )
 
 // Build the TLS configuration for server
-func TLSBuildClientConf() (tls.Config){
+func TLSBuildClientConf() tls.Config {
 
 	caCert := "certificates/Netm4ul_CA.crt"
 	publKey := "certificates/Netm4ul_Client.crt"
@@ -43,3 +43,6 @@ func TLSBuildClientConf() (tls.Config){
 
 	return tlsConfig
 }
+
+
+

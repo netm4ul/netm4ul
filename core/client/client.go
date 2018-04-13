@@ -13,6 +13,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
+	"crypto/tls"
 )
 
 const (
@@ -28,10 +29,9 @@ var (
 )
 
 // Connect : Setup the connection to the master node
-func Connect(ipport string) (*net.TCPConn, error) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", ipport)
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	conn.SetKeepAlive(true)
+func Connect(ipport string, config tls.Config) (*tls.Conn, error) {
+	conn, err := tls.Dial("tcp", ipport, &config)
+	// conn.SetKeepAlive(true) // This could potentially be buggy : tls.Conn does not offer a SetKeepAllive equivalent
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Dialing "+ipport+" failed")
