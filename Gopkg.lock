@@ -98,14 +98,14 @@
   revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
 
 [[projects]]
-  name = "gopkg.in/ns3777k/go-shodan.v2"
+  name = "gopkg.in/ns3777k/go-shodan.v3"
   packages = ["shodan"]
-  revision = "38cfc7f2172c882f18fe02955de4f450be6f8f3c"
-  version = "v2.0.4"
+  revision = "c1bc298e2b11df7a72949191c4102d5935ede169"
+  version = "v3.0.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0ce749595b218d57a15bb95797c5b9ed607eb1e5e366322b9f30a61b3d76c525"
+  inputs-digest = "bd9ce15b56a29b629624cd04acde9dc5522819f1eb67ffe7446894de325ec052"
   solver-name = "gps-cdcl"
   solver-version = 1

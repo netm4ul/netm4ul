@@ -1,6 +1,7 @@
 package shodan
 
 import (
+	"context"
 	"encoding/gob"
 	"fmt"
 	"log"
@@ -14,7 +15,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"gopkg.in/ns3777k/go-shodan.v2/shodan"
+	"gopkg.in/ns3777k/go-shodan.v3/shodan"
 )
 
 // ConfigToml : configuration model (from the toml file)
@@ -23,7 +24,9 @@ type ConfigToml struct {
 }
 
 type ShodanResult struct {
-	Test string
+	IP    string
+	Ports []int
+	Host  *shodan.Host
 }
 
 // Shodan "class"
@@ -77,16 +80,48 @@ func (S Shodan) Run(data []string) (modules.Result, error) {
 
 	fmt.Println("Shodan World!")
 
-	client := shodan.NewClient(nil, config.Config.Keys.Shodan)
-	dns, err := client.GetDNSResolve([]string{"google.com", "edznux.fr"})
+	// Instanciate shodanResult
+	shodanResult := ShodanResult{}
 
+	// Create client
+	shodanClient := shodan.NewClient(nil, config.Config.Keys.Shodan)
+
+	// Get IP adress
+	shodanContext := context.Background()
+	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{"google.com", "edznux.fr"})
 	if err != nil {
 		log.Panic(err)
 	} else {
-		log.Println(*dns["edznux.fr"])
+		// shodanResult.IP = *dns["edznux.fr"]
+		myIP := *dns["edznux.fr"]
+		shodanResult.IP = myIP.String()
 	}
 
-	return modules.Result{Data: ShodanResult{Test: "Zgeg"}, Timestamp: time.Now(), Module: S.Name()}, nil
+	hostServiceOption := shodan.HostServicesOptions{}
+
+	// Get services of shodanResult.IP
+	// log.Println(shodanResult.IP)
+	host, err := shodanClient.GetServicesForHost(shodanContext, shodanResult.IP, &hostServiceOption)
+	if err != nil {
+		log.Panicln(err)
+	}
+	shodanResult.Host = host
+	printHost(*host)
+	return modules.Result{Data: shodanResult, Timestamp: time.Now(), Module: S.Name()}, err
+}
+
+func printHost(host shodan.Host) {
+	log.Println(host.OS)
+	log.Println(host.Ports)
+	log.Println(host.IP)
+	log.Println(host.ISP)
+	log.Println(host.Hostnames)
+	log.Println(host.Organization)
+	log.Println(host.Vulnerabilities)
+	log.Println(host.ASN)
+	log.Println(host.LastUpdate)
+	log.Println(host.Data)
+	log.Println(host.HostLocation)
 }
 
 // HandleMQ : Recv data from the MQ
