@@ -110,20 +110,20 @@ func (D *Dns) Run(data []string) (modules.Result, error) {
 
 	if D.Config.RandomDns {
 		// random DNS resolver
-		for _, index := range dns.TypeToString {
+		for _, dnsType := range dns.TypeToString {
 			config := resolverConfig[rand.Intn(len(resolverConfig))]
-			requestRoutine(index, result, fqdn, config)
+			requestRoutine(dnsType, result, fqdn, config)
 		}
 	} else {
 		// Normal iteration of DNS resolvers
 		i := 0
-		for _, index := range dns.TypeToString {
+		for _, dnsType := range dns.TypeToString {
 			// Get config
 			if i == len(resolverConfig) {
 				i = 0
 			}
 			config := resolverConfig[i]
-			requestRoutine(index, result, fqdn, config)
+			requestRoutine(dnsType, result, fqdn, config)
 			i++
 		}
 	}
@@ -132,8 +132,8 @@ func (D *Dns) Run(data []string) (modules.Result, error) {
 	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
 }
 
-// Forge and send DNS request for index type
-func requestRoutine(index string, result DnsResult, fqdn string, config *dns.ClientConfig) {
+// Forge and send DNS request for dnsType type
+func requestRoutine(dnsType string, result DnsResult, fqdn string, config *dns.ClientConfig) {
 	// Set dns client parameters
 	cli := new(dns.Client)
 
@@ -144,7 +144,7 @@ func requestRoutine(index string, result DnsResult, fqdn string, config *dns.Cli
 	request.RecursionDesired = true
 
 	// Set question with Type flag
-	request.SetQuestion(fqdn, dns.StringToType[index])
+	request.SetQuestion(fqdn, dns.StringToType[dnsType])
 
 	// Send request to DNS server
 	reply, _, err := cli.Exchange(request, config.Servers[0]+":"+config.Port)
@@ -157,16 +157,16 @@ func requestRoutine(index string, result DnsResult, fqdn string, config *dns.Cli
 	// Verify DNS flag (error/success)
 	if reply.Rcode != dns.RcodeSuccess {
 		// If error, put "None" in result field
-		result.Types[index] = append(result.Types[index], "None")
+		result.Types[dnsType] = append(result.Types[dnsType], "None")
 		// Log
-		log.Println("DNS Request fail. No", index, "type.")
+		log.Println("DNS Request fail. No", dnsType, "type.")
 	}
 
 	// Retrieve all replies
 	for _, answer := range reply.Answer {
 
 		// Add into result field
-		dnsParser(answer, index, result)
+		dnsParser(answer, dnsType, result)
 	}
 }
 
@@ -200,147 +200,147 @@ func (D *Dns) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNam
 
 // Shit happens
 // DNS parser
-func dnsParser(answer dns.RR, index string, result DnsResult) {
+func dnsParser(answer dns.RR, dnsType string, result DnsResult) {
 	switch t := answer.(type) {
 	case *dns.A:
-		result.Types[index] = append(result.Types[index], t.A.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.A.String())
 	case *dns.AAAA:
-		result.Types[index] = append(result.Types[index], t.AAAA.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.AAAA.String())
 	case *dns.AFSDB:
-		result.Types[index] = append(result.Types[index], t.Hostname)
+		result.Types[dnsType] = append(result.Types[dnsType], t.Hostname)
 	case *dns.ANY:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.AVC:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.CAA:
-		result.Types[index] = append(result.Types[index], t.Value)
+		result.Types[dnsType] = append(result.Types[dnsType], t.Value)
 	case *dns.CDNSKEY:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.CDS:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.CERT:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.CNAME:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.CSYNC:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.DHCID:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.DLV:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.DNAME:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.DNSKEY:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.DS:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.EID:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.EUI48:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.EUI64:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.GID:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.GPOS:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.HINFO:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.HIP:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.KEY:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.KX:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.L32:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.L64:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.LOC:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.LP:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.MB:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.MD:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.MF:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.MG:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.MINFO:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.MR:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.MX:
-		result.Types[index] = append(result.Types[index], t.Mx)
+		result.Types[dnsType] = append(result.Types[dnsType], t.Mx)
 	case *dns.NAPTR:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.NID:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.NIMLOC:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.NINFO:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.NS:
-		result.Types[index] = append(result.Types[index], t.Ns)
+		result.Types[dnsType] = append(result.Types[dnsType], t.Ns)
 	case *dns.NSAPPTR:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.NSEC:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.NSEC3:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.NSEC3PARAM:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.OPENPGPKEY:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.OPT:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.PTR:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.PX:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.RKEY:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.RP:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.RRSIG:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.RT:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.SIG:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.SMIMEA:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.SOA:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.SPF:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.SRV:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.SSHFP:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.TA:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.TALINK:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.TKEY:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.TLSA:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.TSIG:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.TXT:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.UID:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.UINFO:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.URI:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	case *dns.X25:
-		result.Types[index] = append(result.Types[index], t.String())
+		result.Types[dnsType] = append(result.Types[dnsType], t.String())
 	default:
-		result.Types[index] = append(result.Types[index], "DnsParserError")
+		result.Types[dnsType] = append(result.Types[dnsType], "DnsParserError")
 	}
 }
