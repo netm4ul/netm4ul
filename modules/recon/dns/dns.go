@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,7 +28,7 @@ type DnsResult struct {
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	randomDNS string `toml:"randomDNS"`
+	RandomDns bool `toml:"randomDNS"`
 }
 
 // Dns "class"
@@ -40,27 +41,27 @@ type Dns struct {
 func NewDns() modules.Module {
 	gob.Register(DnsResult{})
 	var d modules.Module
-	d = Dns{}
+	d = &Dns{}
 	return d
 }
 
 // Name : name getter
-func (D Dns) Name() string {
+func (D *Dns) Name() string {
 	return "Dns"
 }
 
 // Author : Author getter
-func (D Dns) Author() string {
+func (D *Dns) Author() string {
 	return "Rzbaa"
 }
 
 // Version : Version  getter
-func (D Dns) Version() string {
+func (D *Dns) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (D Dns) DependsOn() []modules.Condition {
+func (D *Dns) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
@@ -72,7 +73,64 @@ func (D Dns) DependsOn() []modules.Condition {
 	remove all data: db.projects.remove({})
 */
 
-//
+// Run : Main function of the module
+func (D *Dns) Run(data []string) (modules.Result, error) {
+
+	// Banner
+	fmt.Println("DNS world!")
+
+	// Generate config file
+	D.ParseConfig()
+
+	// Get fqdn of domain
+	domain := "edznux.fr"
+	fqdn := dns.Fqdn(domain)
+
+	// instanciate DnsResult
+	result := DnsResult{}
+
+	// Get DNS IP address from our config file
+	resolverConfig := make(map[int]*dns.ClientConfig)
+
+	resolverList := strings.Split(config.Config.DNS.Resolvers, ",")
+	for i := 0; i < len(resolverList); i++ {
+		// DNS gog library need resolv.conf entry (nameserver server_ip)
+		dnsEntry := "nameserver " + resolverList[i]
+		r := strings.NewReader(dnsEntry)
+		config, _ := dns.ClientConfigFromReader(r)
+		resolverConfig[i] = config
+	}
+
+	// Map Types for DnsResult{} treatment
+	result.Types = make(map[string][]string)
+
+	// For all Type in dns library
+
+	if D.Config.RandomDns == true {
+		// random DNS resolver
+		for _, index := range dns.TypeToString {
+			config := resolverConfig[rand.Intn(len(resolverConfig))]
+			requestRoutine(index, result, fqdn, config)
+		}
+	} else {
+		// Normal iteration of DNS resolvers
+		i := 0
+		for _, index := range dns.TypeToString {
+			// Get config
+			if i == len(resolverConfig) {
+				i = 0
+			}
+			config := resolverConfig[i]
+			requestRoutine(index, result, fqdn, config)
+			i++
+		}
+	}
+
+	// Return result (DnsResult{}) with timestamp and module name
+	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
+}
+
+// Forge and send DNS request for index type
 func requestRoutine(index string, result DnsResult, fqdn string, config *dns.ClientConfig) {
 	// Set dns client parameters
 	cli := new(dns.Client)
@@ -99,73 +157,19 @@ func requestRoutine(index string, result DnsResult, fqdn string, config *dns.Cli
 		// If error, put "None" in result field
 		result.Types[index] = append(result.Types[index], "None")
 		// Log
-		log.Println("DNS Request fail.", fqdn, "has no", index, "type.")
+		log.Println("DNS Request fail. No", index, "type.")
 	}
 
 	// Retrieve all replies
 	for _, answer := range reply.Answer {
 
 		// Add into result field
-		//result.Types[infdex] = append(result.Types[index], answer.String())
 		dnsParser(answer, index, result)
 	}
 }
 
-// Run : Main function of the module
-func (D Dns) Run(data []string) (modules.Result, error) {
-
-	// Banner
-	fmt.Println("DNS world!")
-
-	/*
-				- DNS server IP list in config file
-		 		- Use multiple DNS resolver
-		 		- Random DNS
-	*/
-
-	// Get fqdn of domain
-	domain := "edznux.fr"
-	fqdn := dns.Fqdn(domain)
-
-	// instanciate DnsResult
-	result := DnsResult{}
-
-	// Get DNS resolver from config file
-	log.Println(D.Config.randomDNS)
-
-	// Get DNS IP address from our config file
-	resolverConfig := make(map[int]*dns.ClientConfig)
-
-	resolverList := strings.Split(config.Config.DNS.Resolvers, ",")
-	for i := 0; i < len(resolverList); i++ {
-		// DNS gog library need resolv.conf entry (nameserver server_ip)
-		dnsEntry := "nameserver " + resolverList[i]
-		r := strings.NewReader(dnsEntry)
-		config, _ := dns.ClientConfigFromReader(r)
-		resolverConfig[i] = config
-	}
-
-	// Map Types for DnsResult{} treatment
-	result.Types = make(map[string][]string)
-
-	// For all Type in dns library
-	i := 0
-	for _, index := range dns.TypeToString {
-		// Get config
-		if i == len(resolverConfig) {
-			i = 0
-		}
-		config := resolverConfig[i]
-		requestRoutine(index, result, fqdn, config)
-		i++
-	}
-
-	// Return result (DnsResult{}) with timestamp and module name
-	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
-}
-
 // ParseConfig : Load the config from the config folder
-func (D Dns) ParseConfig() error {
+func (D *Dns) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -177,11 +181,12 @@ func (D Dns) ParseConfig() error {
 		fmt.Println(err)
 		return err
 	}
+	// log.Println(D.Config.RandomDNS)
 	return nil
 }
 
 // WriteDb : Save data
-func (D Dns) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+func (D *Dns) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
 	log.Println("Write to the database.")
 	var data DnsResult
 	data = result.Data.(DnsResult)
