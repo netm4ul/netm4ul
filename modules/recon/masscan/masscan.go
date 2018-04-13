@@ -84,7 +84,7 @@ func (M *Masscan) Author() string {
 
 // Version : Version  getter
 func (M *Masscan) Version() string {
-	return "0.1"
+	return "0.2"
 }
 
 // DependsOn : Generate the dependencies requirement
@@ -108,7 +108,7 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	opt := M.ParseOptions()
 	opt = append(opt, "-oJ", outputfile)
 
-	// IP forced : 212.47.247.190 = edznux.fr
+	// Temporary IP forced : 212.47.247.190 = edznux.fr
 	//opt = append(opt, data...)
 	opt = append([]string{"212.47.247.190"}, opt...)
 
