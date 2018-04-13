@@ -8,6 +8,12 @@
   version = "v0.3.0"
 
 [[projects]]
+  name = "github.com/derekparker/delve"
+  packages = ["pkg/config"]
+  revision = "279a8a792e2748ba07be9ca15688d1871c0f1a5f"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -20,11 +26,11 @@
   version = "v1.6.1"
 
 [[projects]]
-  name = "github.com/miekg/dns"
+  name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
-  revision = "83c435cc65d2862736428b9b4d07d0ab10ad3e4d"
-  version = "v1.0.5"
-  
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
 [[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
@@ -36,6 +42,12 @@
   packages = ["."]
   revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
   version = "v0.0.2"
+
+[[projects]]
+  name = "github.com/miekg/dns"
+  packages = ["."]
+  revision = "83c435cc65d2862736428b9b4d07d0ab10ad3e4d"
+  version = "v1.0.5"
 
 [[projects]]
   branch = "master"
@@ -56,6 +68,18 @@
   version = "v0.8.0"
 
 [[projects]]
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
+  version = "v0.0.2"
+
+[[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
+  version = "v1.0.1"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
@@ -74,9 +98,9 @@
     "ipv4",
     "ipv6"
   ]
-  
-[[projects]]
   revision = "61147c48b25b599e5b561d2e9c4f3e1ef489ca41"
+
+[[projects]]
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
@@ -93,13 +117,15 @@
   ]
   revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
 
+[[projects]]
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-<<<<<<< HEAD
-  inputs-digest = "6dc982fcce477f3464a6b1057b701b27e951e2cbb11c7407502369f3cc349126"
-=======
-  inputs-digest = "7d145ef90d12321d4b2dd97bd2a1f188f8c15188c7d148f0ea1301291f0de1be"
->>>>>>> develop
+  inputs-digest = "c2d0ce8f0fefe350ac141285256999b27b292d4bc5eee4e44661888b9a87c855"
   solver-name = "gps-cdcl"
   solver-version = 1

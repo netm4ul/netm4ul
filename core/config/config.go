@@ -67,16 +67,6 @@ type Project struct {
 
 // ConfigToml is the global config object
 type ConfigToml struct {
-<<<<<<< HEAD:cmd/config/config.go
-	IsServer bool
-	API      API
-	DNS      DNS
-	Keys     Keys
-	Server   Server
-	Database Database
-	Nodes    map[string]Node
-	Modules  map[string]Module
-=======
 	Project    Project
 	Versions   Versions
 	Verbose    bool
@@ -87,12 +77,12 @@ type ConfigToml struct {
 	IsClient   bool
 	Targets    []string
 	API        API
+	DNS        DNS
 	Keys       Keys
 	Server     Server
 	Database   Database
 	Nodes      map[string]Node
 	Modules    map[string]Module
->>>>>>> develop:core/config/config.go
 }
 
 // Config : exported config

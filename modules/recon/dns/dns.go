@@ -12,8 +12,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/miekg/dns"
-	"github.com/netm4ul/netm4ul/cmd/config"
-	"github.com/netm4ul/netm4ul/cmd/server/database"
+	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server/database"
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"

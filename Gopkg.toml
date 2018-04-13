@@ -28,10 +28,10 @@ name = "github.com/lair-framework/go-nmap"
   version = "1.6.1"
 
 [[constraint]]
-<<<<<<< HEAD
   name = "github.com/miekg/dns"
   version = "1.0.5"
-=======
+
+[[constraint]]
   name = "github.com/mattn/go-isatty"
   version = "0.0.3"
 
@@ -42,4 +42,3 @@ name = "github.com/lair-framework/go-nmap"
 [[constraint]]
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
->>>>>>> develop
