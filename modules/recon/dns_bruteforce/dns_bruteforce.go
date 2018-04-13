@@ -93,14 +93,28 @@ func (D *DnsBF) Run(data []string) (modules.Result, error) {
 	switch D.Config.Mode {
 	case "dir":
 		D.ParseArgDIR()
+		res = D.Execute()
 	case "dns":
 		D.ParseArgDNS()
+		res = D.Execute()
 	default:
 		log.Println("Error, this mode doesn't exist")
 	}
 
-	return modules.Result{Data: D.Result, Timestamp: time.Now(), Module: D.Name()}//, err
+	fmt.Println("Result")
+	fmt.Println(res)
 
+	//return modules.Result{Data: D.Result, Timestamp: time.Now(), Module: D.Name()}//, err
+
+}
+
+func (D *DnsBF) Execute() {
+	if err := libgobuster.ValidateState(D.State, extensions, codes, proxy); err.ErrorOrNil() != nil {
+		fmt.Printf("%s\n", err.Error())
+		//return nil
+	} else {
+		libgobuster.Process(D.State)
+	}
 }
 
 // ParseArgGlobal : verify global argument
