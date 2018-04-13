@@ -52,11 +52,32 @@ type Service struct {
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
+	Verbose     bool   `toml:"verbose"`
+	VeryVerbose bool   `toml:"very-verbose"`
+	Rate        string `toml:"rate"`
+	//Offline           bool   `toml:"offline"`
+	Adapter    string `toml:"adapter"`
+	AdapterIP  string `toml:"adapter-ip"`
+	AdapterMAC string `toml:"adapter-mac"`
+	RouterMAC  string `toml:"router-mac"`
+	//Retries           int    `toml:"retries"`
+	//ToptenPorts       bool   `toml:"toptenPorts"`
+	//MinPacket         int    `toml:"min-packet"`
+	RandomizeHosts    bool   `toml:"randomize-hosts"`
+	Exclude           string `toml:"exclude"`
+	NoPing            bool   `toml:"no-ping"`
+	NoResolution      bool   `toml:"no-resolution"`
+	TCPSYN            bool   `toml:"tcp-syn"`
+	Banners           bool   `toml:"banners"`
 	Ports             string `toml:"ports"`
-	Banner            bool   `toml:"banner"`
 	ConnectionTimeout int    `toml:"connection-timeout"`
-	Rate              string `toml:"rate"`
-	Verbose           bool   `toml:"verbose"`
+	SourcePort        int    `toml:"source-port"`
+	SourceIP          string `toml:"source-ip"`
+	Interface         string `toml:"interface"`
+	TTL               int    `toml:"ttl"`
+	//SpoofMAC          string `toml:"spoof-MAC"`
+	Sendeth       bool `toml:"send-eth"`
+	VersionNumber bool `toml:"version-number"`
 }
 
 // Masscan "class"
@@ -149,7 +170,7 @@ func (M *Masscan) ParseOptions() []string {
 	if M.Config.Ports != "" {
 		opt = append(opt, "-p"+M.Config.Ports)
 	} else {
-		opt = append(opt, "-p1-65535")
+		opt = append(opt, "-p0-65535")
 	}
 	// Banner option
 	if M.Config.Banner {
