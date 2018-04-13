@@ -78,8 +78,10 @@ func (D *Dns) Run(data []string) (modules.Result, error) {
 	fmt.Println("DNS world!")
 
 	// Generate config file
-	D.ParseConfig()
-
+	err := D.ParseConfig()
+	if err != nil {
+		log.Println(err)
+	}
 	// Get fqdn of domain
 	domain := "edznux.fr"
 	fqdn := dns.Fqdn(domain)
