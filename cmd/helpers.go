@@ -17,7 +17,7 @@ import (
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 )

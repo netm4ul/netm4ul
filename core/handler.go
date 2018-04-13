@@ -11,6 +11,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
+	"github.com/netm4ul/netm4ul/core/session"
 )
 
 const (
@@ -18,26 +19,31 @@ const (
 )
 
 // CreateServer : Initialise the infinite server loop on the master node
-func CreateServer(ipport string, conf *config.ConfigToml) {
-	server.ConfigServer = conf
-	server.Listen(ipport)
+func CreateServer(conf config.ConfigToml) {
+	s := session.NewSession(conf)
+	server.InitServer(s)
+	server.Listen()
 }
 
 // CreateAPI : Initialise the infinite server loop on the master node
-func CreateAPI(ipport string, conf *config.ConfigToml) {
-	// api.ConfigServer = conf
-	api.Start(ipport, conf)
+func CreateAPI(conf config.ConfigToml) {
+	s := session.NewSession(conf)
+	api.InitApi(s)
+	api.Start()
 }
 
 // CreateClient : Connect the node to the master server
-func CreateClient(ipport string, conf *config.ConfigToml) {
-	client.InitModule()
+func CreateClient(conf config.ConfigToml) {
+
+	s := session.NewSession(conf)
+	client.Create(s)
 
 	log.Println(colors.Green("Modules enabled :"), client.ListModuleEnabled)
 	var err error
 	var conn *net.TCPConn
 
 	for tries := 0; tries < maxRetry; tries++ {
+		ipport := s.GetServerIPPort()
 		conn, err = client.Connect(ipport)
 		if err != nil {
 			log.Println(colors.Red("Could not connect :"), err)

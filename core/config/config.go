@@ -98,7 +98,6 @@ func LoadConfig(file string) {
 	} else {
 		configPath = filepath.Join(path, file)
 	}
-
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
 		log.Fatalln(err)
 	}

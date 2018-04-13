@@ -40,15 +40,20 @@ func Connect(ipport string) (*net.TCPConn, error) {
 	return conn, nil
 }
 
+func Create(s *session.Session) {
+	SessionClient = s
+	InitModule()
+}
+
 // InitModule : Update ListModule & ListModuleEnabled variable
 func InitModule() {
-	SessionClient = session.NewSession()
-	if config.Config.Verbose {
+
+	if SessionClient.Config.Verbose {
 		log.Printf(colors.Yellow("Session client : %+v"), SessionClient)
 	}
-	for m := range config.Config.Modules {
+	for m := range SessionClient.Config.Modules {
 		ListModule = append(ListModule, m)
-		if config.Config.Modules[m].Enabled {
+		if SessionClient.Config.Modules[m].Enabled {
 			ListModuleEnabled = append(ListModuleEnabled, m)
 		}
 	}
@@ -61,10 +66,9 @@ func SendHello(conn *net.TCPConn) error {
 
 	enc := gob.NewEncoder(rw)
 
-	module := ListModuleEnabled
-	node := config.Node{Modules: module, Project: "FirstProject"}
+	node := config.Node{Modules: ListModuleEnabled, Project: SessionClient.Config.Project.Name}
 
-	if config.Config.Verbose {
+	if SessionClient.Config.Verbose {
 		log.Printf(colors.Yellow("Node : %+v"), node)
 	}
 
@@ -85,7 +89,7 @@ func SendHello(conn *net.TCPConn) error {
 func Recv(conn *net.TCPConn) (server.Command, error) {
 	var cmd server.Command
 
-	if config.Config.Verbose {
+	if SessionClient.Config.Verbose {
 		log.Println(colors.Yellow("Waiting for incomming data"))
 	}
 
@@ -103,7 +107,7 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 		return server.Command{}, errors.New("Could not decode recieved message : " + err.Error())
 	}
 
-	if config.Config.Verbose {
+	if SessionClient.Config.Verbose {
 		log.Printf(colors.Yellow("Recieved command %+v"), cmd)
 	}
 	_, ok := SessionClient.Modules[cmd.Name]
@@ -118,7 +122,7 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 // Execute runs modules with the right options and handle errors.
 func Execute(module modules.Module, cmd server.Command) (modules.Result, error) {
 
-	if config.Config.Verbose {
+	if SessionClient.Config.Verbose {
 		log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
 	}
 	//TODO
@@ -145,5 +149,4 @@ func SendResult(conn *net.TCPConn, res modules.Result) error {
 	}
 
 	return nil
-
 }

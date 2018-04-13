@@ -15,14 +15,14 @@ import (
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/session"
 )
 
 var (
-	Version = config.Config.Versions.Server
+	Version string
 	// ConfigServer : Global config for the server. Must be goroutine safe
-	ConfigServer *config.ConfigToml
+	// ConfigServer *config.ConfigToml
 	//Nodes represent a map to net.Conn
 	Nodes map[string]net.Conn
 	//SessionServer represent the server side's session. Hold all the modules
@@ -54,12 +54,17 @@ type Command struct {
 
 func init() {
 	Nodes = make(map[string]net.Conn)
-
-	SessionServer = session.NewSession()
+}
+func InitServer(s *session.Session) {
+	SessionServer = s
 }
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
-func Listen(ipport string) {
+func Listen() {
+
+	Version = SessionServer.Config.Versions.Server
+	ipport := SessionServer.GetServerIPPort()
+
 	log.Printf(colors.Green("Listenning on : %s"), ipport)
 	l, err := net.Listen("tcp", ipport)
 
@@ -70,6 +75,8 @@ func Listen(ipport string) {
 
 	// Close the listener when the application closes.
 	defer l.Close()
+
+	database.InitDatabase(&SessionServer.Config)
 	mgoSession := database.Connect()
 
 	for {
@@ -113,22 +120,25 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter, session *mgo.Session) {
 
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
-	if config.Config.Verbose {
-		if _, ok := ConfigServer.Nodes[ip]; ok {
+	if SessionServer.Config.Verbose {
+		if _, ok := SessionServer.Config.Nodes[ip]; ok {
 			log.Println(colors.Yellow("Node known. Updating"))
 		} else {
 			log.Println(colors.Yellow("Unknown node. Creating"))
 		}
 	}
 
-	ConfigServer.Nodes[ip] = node
+	SessionServer.Config.Nodes = make(map[string]config.Node)
+	SessionServer.Config.Modules = make(map[string]config.Module)
+
+	SessionServer.Config.Nodes[ip] = node
 	Nodes[ip] = conn
 	database.CreateProject(session, node.Project)
 
 	p := database.GetProjects(session)
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("Nodes : %+v"), ConfigServer.Nodes)
+	if SessionServer.Config.Verbose {
+		log.Printf(colors.Yellow("Nodes : %+v"), SessionServer.Config.Nodes)
 		log.Printf(colors.Yellow("Projects : %+v"), p)
 	}
 
@@ -138,7 +148,7 @@ func getProjectByNodeIP(ip string) (string, error) {
 
 	var err error
 
-	n, ok := ConfigServer.Nodes[ip]
+	n, ok := SessionServer.Config.Nodes[ip]
 	if !ok {
 		return "", errors.New("Unknown node ! Could not get project name")
 	}
@@ -165,7 +175,7 @@ func SendCmd(command Command) error {
 
 	conns, err := getAvailableNodes(command.Requirements)
 
-	if config.Config.Verbose {
+	if SessionServer.Config.Verbose {
 		log.Printf(colors.Yellow("Available node(s) : %d"), len(conns))
 	}
 	if err != nil {

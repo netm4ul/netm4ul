@@ -18,12 +18,13 @@ var (
 	Modes       = []string{"passive", "stealth", "aggressive"}
 	DefaultMode = Modes[1] // uses first non-passive mode.
 
-	configPath string
-	CLItargets []string
-	CLImodules []string
-	CLImode    string
-	verbose    bool
-	version    bool
+	configPath     string
+	CLItargets     []string
+	CLImodules     []string
+	CLImode        string
+	CLIProjectName string
+	verbose        bool
+	version        bool
 
 	isServer   bool
 	isClient   bool
@@ -34,6 +35,7 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", DefaultConfigPath, "Custom config file path")
+	rootCmd.PersistentFlags().StringVarP(&CLIProjectName, "project", "p", DefaultConfigPath, "Uses the provided project name")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
 }
@@ -47,6 +49,7 @@ var rootCmd = &cobra.Command{
 
 		config.Config.ConfigPath = configPath
 		config.Config.Verbose = verbose
+		config.Config.Project.Name = CLIProjectName
 
 	},
 	Run: func(cmd *cobra.Command, args []string) {

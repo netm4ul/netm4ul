@@ -17,7 +17,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/netm4ul/netm4ul/core"
 	"github.com/netm4ul/netm4ul/core/config"
@@ -44,12 +43,10 @@ var startServerCmd = &cobra.Command{
 		config.Config.Nodes = make(map[string]config.Node)
 
 		// listen on all interface + Server port
-		addr := ":" + strconv.FormatUint(uint64(config.Config.Server.Port), 10)
-		go core.CreateServer(addr, &config.Config)
+		go core.CreateServer(config.Config)
 
 		//TODO flag enable / disable api
-		addrAPI := ":" + strconv.FormatUint(uint64(config.Config.API.Port), 10)
-		go core.CreateAPI(addrAPI, &config.Config)
+		go core.CreateAPI(config.Config)
 
 		gracefulShutdown()
 
@@ -62,11 +59,7 @@ var startClientCmd = &cobra.Command{
 	Short: "Start the client",
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Config.IsClient = isClient
-
-		ip := config.Config.Server.IP
-		port := strconv.FormatUint(uint64(config.Config.Server.Port), 10)
-		addr := ip + ":" + port
-		go core.CreateClient(addr, &config.Config)
+		go core.CreateClient(config.Config)
 
 		gracefulShutdown()
 	},

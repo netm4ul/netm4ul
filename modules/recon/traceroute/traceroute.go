@@ -11,7 +11,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
@@ -105,7 +105,7 @@ func (T Traceroute) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T Traceroute) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+func (T Traceroute) WriteDb(result modules.Result, sessionDB *mgo.Session, projectName string) error {
 	if config.Config.Verbose {
 		log.Println(colors.Yellow("Writing to the database."))
 	}
@@ -113,6 +113,6 @@ func (T Traceroute) WriteDb(result modules.Result, mgoSession *mgo.Session, proj
 	data = result.Data.(TracerouteResult)
 
 	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
+	database.UpsertRawData(sessionDB, projectName, raw)
 	return nil
 }
