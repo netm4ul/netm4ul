@@ -2,6 +2,7 @@ package masscan
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -100,17 +101,28 @@ func check(e error) {
 	}
 }
 
+// Generate uuid name for output file
+func generateUUID() string {
+	uuid := make([]byte, 16)
+	_, err := rand.Read(uuid)
+	check(err)
+
+	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:])
+}
+
 // Run : Main function of the module
 func (M *Masscan) Run(data []string) (modules.Result, error) {
 	fmt.Println("H3ll-0 M4sscan")
 
-	outputfile := "output.json"
+	// Temporary IP forced : 212.47.247.190 = edznux.fr
+	target := []string{"212.47.247.190"}
+	uuid := generateUUID()
+	outputfile := "/tmp/" + uuid + ".json"
+
 	opt := M.ParseOptions()
 	opt = append(opt, "-oJ", outputfile)
-
-	// Temporary IP forced : 212.47.247.190 = edznux.fr
-	//opt = append(opt, data...)
-	opt = append([]string{"212.47.247.190"}, opt...)
+	// opt = append(opt, data...)
+	opt = append(target, opt...)
 
 	cmd := exec.Command("masscan", opt...)
 	var stdout bytes.Buffer
@@ -119,7 +131,7 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	check(err)
 
 	res, err := M.Parse(outputfile)
-
+	fmt.Println("M4sscan done.")
 	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
@@ -167,6 +179,8 @@ func (M *Masscan) Parse(file string) (MasscanResult, error) {
 	fileReformatted := "[" + re.ReplaceAllString(string(data), "]")
 
 	err = json.Unmarshal([]byte(fileReformatted), &scans)
+	check(err)
+	err = os.Remove(file)
 	check(err)
 
 	return MasscanResult{Resultat: scans}, nil
