@@ -246,7 +246,7 @@ type PortUsed struct {
 // OsClass contains vendor information for an Os.
 type OsClass struct {
 	Vendor   string `xml:"vendor,attr" json:"vendor"`
-	OsGen    string `xml"osgen,attr"`
+	OsGen    string `xml:"osgen,attr"`
 	Type     string `xml:"type,attr" json:"type"`
 	Accuracy string `xml:"accurancy,attr" json:"accurancy"`
 	OsFamily string `xml:"osfamily,attr" json:"osfamily"`
