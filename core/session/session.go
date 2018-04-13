@@ -1,9 +1,12 @@
 package session
 
 import (
-	"github.com/netm4ul/netm4ul/modules"
-	"github.com/netm4ul/netm4ul/modules/recon/traceroute"
 	"strings"
+
+	"github.com/netm4ul/netm4ul/modules"
+	"github.com/netm4ul/netm4ul/modules/recon/dns"
+	"github.com/netm4ul/netm4ul/modules/recon/nmap"
+	"github.com/netm4ul/netm4ul/modules/recon/traceroute"
 )
 
 type Session struct {
@@ -25,4 +28,6 @@ func (p *Session) Register(m modules.Module) {
 
 func (p *Session) loadModule() {
 	p.Register(traceroute.NewTraceroute())
+	p.Register(dns.NewDns())
+	p.Register(nmap.NewNmap())
 }

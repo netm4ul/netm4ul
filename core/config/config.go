@@ -16,6 +16,11 @@ type API struct {
 	Password string `toml:"password"`
 }
 
+// DNS : Setup DNS resolver IP
+type DNS struct {
+	Resolvers string `toml:"resolvers"`
+}
+
 // Keys : setup tocken & api keys
 type Keys struct {
 	Google string `toml:"google"`
@@ -73,6 +78,7 @@ type ConfigToml struct {
 	IsClient   bool
 	Targets    []string
 	API        API
+	DNS        DNS
 	Keys       Keys
 	Server     Server
 	Database   Database
@@ -88,17 +94,16 @@ var Config ConfigToml
 func LoadConfig(file string) {
 	var configPath string
 
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-
-	path := filepath.Dir(ex)
-
 	if file == "" {
-		configPath = filepath.Join(path, "netm4ul.conf")
+		dir, err := os.Getwd()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		configPath = filepath.Join(dir, "netm4ul.conf")
 	} else {
-		configPath = filepath.Join(path, file)
+		configPath = file
 	}
 
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
