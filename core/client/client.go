@@ -5,8 +5,6 @@ import (
 	"encoding/gob"
 	"io"
 	"log"
-	"net"
-
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
@@ -55,7 +53,7 @@ func InitModule() {
 }
 
 // SendHello : Send node info (modules list, project name,...)
-func SendHello(conn *net.TCPConn) error {
+func SendHello(conn *tls.Conn) error {
 	var err error
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 
@@ -82,7 +80,7 @@ func SendHello(conn *net.TCPConn) error {
 }
 
 // Recv read the incomming data from the server. The server use the server.Command struct.
-func Recv(conn *net.TCPConn) (server.Command, error) {
+func Recv(conn *tls.Conn) (server.Command, error) {
 	var cmd server.Command
 
 	if config.Config.Verbose {
@@ -127,7 +125,7 @@ func Execute(module modules.Module, cmd server.Command) (modules.Result, error) 
 }
 
 // SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
-func SendResult(conn *net.TCPConn, res modules.Result) error {
+func SendResult(conn *tls.Conn, res modules.Result) error {
 	var err error
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 	enc := gob.NewEncoder(rw)

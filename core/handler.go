@@ -11,6 +11,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
+	"crypto/tls"
 )
 
 const (
@@ -33,12 +34,13 @@ func CreateAPI(ipport string, conf *config.ConfigToml) {
 func CreateClient(ipport string, conf *config.ConfigToml) {
 	client.InitModule()
 
+
 	log.Println(colors.Green("Modules enabled :"), client.ListModuleEnabled)
 	var err error
-	var conn *net.TCPConn
+	var conn *tls.Conn
 
 	for tries := 0; tries < maxRetry; tries++ {
-		conn, err = client.Connect(ipport)
+		conn, err = client.Connect(ipport, conf.TLSParams)
 		if err != nil {
 			log.Println(colors.Red("Could not connect :"), err)
 			log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
