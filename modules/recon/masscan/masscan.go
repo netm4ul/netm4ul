@@ -3,10 +3,12 @@ package masscan
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os/exec"
+	"regexp"
 	"time"
 
 	"os"
@@ -22,39 +24,38 @@ import (
 
 // MasscanResult represent the parsed ouput
 type MasscanResult struct {
-	Raw      string
-	Resultat Scan
+	Resultat []Scan
 }
 
 // Scan represents the ip and ports output
 type Scan struct {
-	IP    string
-	Ports Port
+	IP    string `json:"ip"`
+	Ports []Port `json:"ports"`
 }
 
 // Port represents the port, proto, service, ttl, reason and status output
 type Port struct {
-	Port    uint16
-	Proto   string
-	Service Service
-	TTL     int
-	Reason  string
-	Status  string
+	Port    uint16  `json:"port"`
+	Proto   string  `json:"proto"`
+	Service Service `json:"service,omitempty"`
+	TTL     int     `json:"ttl"`
+	Reason  string  `json:"reason"`
+	Status  string  `json:"status"`
 }
 
 // Service represents the name and the banner output
 type Service struct {
-	Name   string
-	Banner string
+	Name   string `json:"name"`
+	Banner string `json:"banner"`
 }
 
 // ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
-	Ports   string `toml:"ports"`
-	Banner  bool   `toml:"banner"`
-	Source  string `toml:"source"`
-	Rate    string `toml:"rate"`
-	Verbose bool   `toml:"verbose"`
+	Ports             string `toml:"ports"`
+	Banner            bool   `toml:"banner"`
+	ConnectionTimeout int    `toml:"connection-timeout"`
+	Rate              string `toml:"rate"`
+	Verbose           bool   `toml:"verbose"`
 }
 
 // Masscan "class"
@@ -101,43 +102,15 @@ func check(e error) {
 
 // Run : Main function of the module
 func (M *Masscan) Run(data []string) (modules.Result, error) {
-	var opt []string
+	fmt.Println("H3ll-0 M4sscan")
+
 	outputfile := "output.json"
-
-	fmt.Println("hello world masscan") //Affiche hello world pour le fun
-	M.ParseConfig()
-
-	log.Printf("Verbose mode: %+v", M.Config.Verbose)
-	if M.Config.Verbose {
-		opt = append(opt, "-v")
-	}
+	opt := M.ParseOptions()
+	opt = append(opt, "-oJ", outputfile)
 
 	// IP forced : 212.47.247.190 = edznux.fr
 	//opt = append(opt, data...)
-	opt = append(opt, "212.47.247.190")
-
-	// Ports option
-	log.Println(M.Config.Ports)
-	if M.Config.Ports != "" {
-		opt = append(opt, "-p"+M.Config.Ports)
-	} else {
-		opt = append(opt, "-p1-65535")
-	}
-
-	// Banner option
-	log.Println(M.Config.Banner)
-	if M.Config.Banner {
-		opt = append(opt, "--banners")
-	}
-
-	// Rate option
-	log.Println(M.Config.Rate)
-	if M.Config.Rate != "" {
-		opt = append(opt, "--rate="+M.Config.Rate)
-	}
-
-	// Output option
-	opt = append(opt, "-oJ", outputfile)
+	opt = append([]string{"212.47.247.190"}, opt...)
 
 	cmd := exec.Command("masscan", opt...)
 	var stdout bytes.Buffer
@@ -145,16 +118,58 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	err := cmd.Run()
 	check(err)
 
-	content, err := ioutil.ReadFile(outputfile)
-	check(err)
-	fmt.Printf("data: %s", string(content))
+	res, err := M.Parse(outputfile)
 
-	return modules.Result{Data: MasscanResult{Raw: string(content)}, Timestamp: time.Now(), Module: M.Name()}, nil
+	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
+}
+
+// ParseOptions : Parse the args in according to masscan.conf
+func (M *Masscan) ParseOptions() []string {
+	var opt []string
+
+	M.ParseConfig()
+
+	// Verbose option
+	if M.Config.Verbose {
+		opt = append(opt, "-v")
+	}
+	// Ports option
+	if M.Config.Ports != "" {
+		opt = append(opt, "-p"+M.Config.Ports)
+	} else {
+		opt = append(opt, "-p1-65535")
+	}
+	// Banner option
+	if M.Config.Banner {
+		opt = append(opt, "--banners")
+	}
+	// Connection-time option
+	if M.Config.ConnectionTimeout != 0 {
+		opt = append(opt, "--connection-timeout", string(M.Config.ConnectionTimeout))
+	}
+	// Rate option
+	if M.Config.Rate != "" {
+		opt = append(opt, "--rate="+M.Config.Rate)
+	}
+
+	return opt
 }
 
 // Parse : Parse the result of the execution
-func (M *Masscan) Parse() (MasscanResult, error) {
-	return MasscanResult{}, nil
+func (M *Masscan) Parse(file string) (MasscanResult, error) {
+	var scans []Scan
+
+	data, err := ioutil.ReadFile(file)
+	check(err)
+
+	// JSON reformatted
+	re := regexp.MustCompile(",\n{finished:.*}")
+	fileReformatted := "[" + re.ReplaceAllString(string(data), "]")
+
+	err = json.Unmarshal([]byte(fileReformatted), &scans)
+	check(err)
+
+	return MasscanResult{Resultat: scans}, nil
 }
 
 // ParseConfig : Load the config from the config folder
