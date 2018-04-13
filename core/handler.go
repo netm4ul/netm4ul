@@ -3,7 +3,6 @@ package core
 import (
 	"io"
 	"log"
-	"net"
 	"time"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
