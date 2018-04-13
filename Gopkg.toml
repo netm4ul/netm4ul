@@ -19,6 +19,9 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+[[constraint]]
+branch = "master"
+name = "github.com/lair-framework/go-nmap"
 
 [[constraint]]
   name = "github.com/gorilla/mux"
@@ -27,3 +30,15 @@
 [[constraint]]
   name = "gopkg.in/ns3777k/go-shodan.v2"
   version = "2.0.4"
+
+[[constraint]]
+  name = "github.com/mattn/go-isatty"
+  version = "0.0.3"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"

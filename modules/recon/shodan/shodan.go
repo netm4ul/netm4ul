@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/netm4ul/netm4ul/cmd/config"
-	"github.com/netm4ul/netm4ul/cmd/server/database"
+	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server/database"
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -60,6 +60,13 @@ func NewShodan() modules.Module {
 	s = Shodan{}
 	return s
 }
+
+/*
+	Usefull command
+	curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/shodan
+	check db: Db.projects.find()
+	remove all data: db.projects.remove({})
+*/
 
 // Run : Main function of the module
 func (S Shodan) Run(data []string) (modules.Result, error) {
