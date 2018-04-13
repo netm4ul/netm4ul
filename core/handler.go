@@ -5,12 +5,12 @@ import (
 	"log"
 	"time"
 
+	"crypto/tls"
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
-	"crypto/tls"
 )
 
 const (
@@ -32,7 +32,6 @@ func CreateAPI(ipport string, conf *config.ConfigToml) {
 // CreateClient : Connect the node to the master server
 func CreateClient(ipport string, conf *config.ConfigToml) {
 	client.InitModule()
-
 
 	log.Println(colors.Green("Modules enabled :"), client.ListModuleEnabled)
 	var err error

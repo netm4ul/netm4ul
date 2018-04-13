@@ -2,18 +2,18 @@ package client
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"io/ioutil"
 	"log"
-	"github.com/netm4ul/netm4ul/cmd/colors"
-	"crypto/x509"
 )
 
 // Build the TLS configuration for server
-func TLSBuildClientConf() tls.Config {
+func TLSBuildClientConf() *tls.Config {
 
-	caCert := "certificates/Netm4ul_CA.crt"
-	publKey := "certificates/Netm4ul_Client.crt"
-	privKey := "certificates/Netm4ul_Client.pem"
+	caCert := "certificates/NetM4ul_CA.crt"
+	publKey := "certificates/NetM4ul_Client.crt"
+	privKey := "certificates/NetM4ul_Client.pem"
 
 	// Read CA file and initialise
 	certBytes, err := ioutil.ReadFile(caCert)
@@ -32,7 +32,7 @@ func TLSBuildClientConf() tls.Config {
 		log.Println(colors.Red("Unable to read Client X509KeyPair : %s"), err.Error())
 	}
 
-	tlsConfig := tls.Config{
+	tlsConfig := &tls.Config{
 		// Ensure that we only use our "CA" to validate certificates
 		RootCAs: caCertPool,
 		// Server Key Material
@@ -43,6 +43,3 @@ func TLSBuildClientConf() tls.Config {
 
 	return tlsConfig
 }
-
-
-

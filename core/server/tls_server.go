@@ -2,18 +2,18 @@ package server
 
 import (
 	"crypto/tls"
-	"io/ioutil"
-	"log"
 	"crypto/x509"
 	"github.com/netm4ul/netm4ul/cmd/colors"
+	"io/ioutil"
+	"log"
 )
 
 // Build the TLS configuration for server
-func TLSBuildServerConf() (tls.Config){
+func TLSBuildServerConf() *tls.Config {
 
-	caCert := "certificates/Netm4ul_CA.crt"
-	publKey := "certificates/Netm4ul_Server.crt"
-	privKey := "certificates/Netm4ul_Server.pem"
+	caCert := "certificates/NetM4ul_CA.crt"
+	publKey := "certificates/NetM4ul_Server.crt"
+	privKey := "certificates/NetM4ul_Server.pem"
 
 	// Read CA file and initialise
 	caCertBytes, err := ioutil.ReadFile(caCert)
@@ -33,7 +33,7 @@ func TLSBuildServerConf() (tls.Config){
 		log.Println(colors.Red("Unable to read X509KeyPair : %s"), err.Error())
 	}
 
-	tlsConfig := tls.Config{
+	tlsConfig := &tls.Config{
 		// Reject any TLS certificate that cannot be validated
 		ClientAuth: tls.RequireAndVerifyClientCert,
 		// Ensure that we only use our "CA" to validate certificates
@@ -47,7 +47,7 @@ func TLSBuildServerConf() (tls.Config){
 		// Server Key Material
 		Certificates: []tls.Certificate{cert},
 		// Set preferences for used curves (but certs should already have been made)
-		CurvePreferences: []tls.CurveID{ tls.X25519, tls.CurveP256, tls.CurveP384},
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256, tls.CurveP384},
 	}
 
 	return tlsConfig

@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"crypto/tls"
+	"github.com/BurntSushi/toml"
 )
 
 // API : Rest API config
@@ -78,7 +78,7 @@ type ConfigToml struct {
 	Database   Database
 	Nodes      map[string]Node
 	Modules    map[string]Module
-	TLSParams  tls.Config
+	TLSParams  *tls.Config
 }
 
 // Config : exported config

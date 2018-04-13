@@ -2,16 +2,16 @@ package client
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/gob"
-	"io"
-	"log"
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
-	"crypto/tls"
+	"io"
+	"log"
 )
 
 const (
@@ -27,8 +27,8 @@ var (
 )
 
 // Connect : Setup the connection to the master node
-func Connect(ipport string, config tls.Config) (*tls.Conn, error) {
-	conn, err := tls.Dial("tcp", ipport, &config)
+func Connect(ipport string, config *tls.Config) (*tls.Conn, error) {
+	conn, err := tls.Dial("tcp", ipport, config)
 	// conn.SetKeepAlive(true) // This could potentially be buggy : tls.Conn does not offer a SetKeepAllive equivalent
 
 	if err != nil {

@@ -20,10 +20,10 @@ import (
 	"strconv"
 
 	"github.com/netm4ul/netm4ul/core"
-	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/spf13/cobra"
-	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/client"
+	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server"
+	"github.com/spf13/cobra"
 )
 
 // startCmd represents the start command
