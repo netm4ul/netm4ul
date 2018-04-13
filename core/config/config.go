@@ -47,14 +47,27 @@ type Module struct {
 	Enabled bool `toml:"enabled" json:"enabled"`
 }
 
+// Versions : Store the version
+type Versions struct {
+	Api    string `toml:"api" json:"api"`
+	Server string `toml:"server" json:"server"`
+	Client string `toml:"client" json:"client"`
+}
+
 // Node : Node info
 type Node struct {
 	Modules []string `json:"modules"`
 	Project string   `json:"project"`
 }
 
+type Project struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 // ConfigToml is the global config object
 type ConfigToml struct {
+<<<<<<< HEAD:cmd/config/config.go
 	IsServer bool
 	API      API
 	DNS      DNS
@@ -63,24 +76,45 @@ type ConfigToml struct {
 	Database Database
 	Nodes    map[string]Node
 	Modules  map[string]Module
+=======
+	Project    Project
+	Versions   Versions
+	Verbose    bool
+	NoColors   bool
+	ConfigPath string
+	Mode       string
+	IsServer   bool
+	IsClient   bool
+	Targets    []string
+	API        API
+	Keys       Keys
+	Server     Server
+	Database   Database
+	Nodes      map[string]Node
+	Modules    map[string]Module
+>>>>>>> develop:core/config/config.go
 }
 
 // Config : exported config
 var Config ConfigToml
 
-//	Get the executable path.
-//	From there, get the config.
-func init() {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
+// LoadConfig load the configuration file !
+func LoadConfig(file string) {
+	var configPath string
+
+	if file == "" {
+		dir, err := os.Getwd()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		configPath = filepath.Join(dir, "netm4ul.conf")
+	} else {
+		configPath = file
 	}
 
-	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "netm4ul.conf")
-
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
-		log.Println(err)
-		return
+		log.Fatalln(err)
 	}
 }
