@@ -57,7 +57,7 @@ type ConfigToml struct {
 	VeryVerbose       bool   `toml:"very-verbose"`
 	Rate              int    `toml:"rate"`
 	Ping              bool   `toml:"ping"`
-	Seed              int    `tom:"seed"`
+	Seed              int    `toml:"seed"`
 	Adapter           string `toml:"adapter"`
 	AdapterIP         string `toml:"adapter-ip"`
 	AdapterMAC        string `toml:"adapter-mac"`
