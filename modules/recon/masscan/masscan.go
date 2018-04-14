@@ -129,12 +129,11 @@ func generateUUID() string {
 
 // Run : Main function of the module
 func (M *Masscan) Run(data []string) (modules.Result, error) {
-	fmt.Println("H3ll-0 M4sscan")
+	log.Println("H3ll-0 M4sscan")
 
 	// Temporary IP forced : 212.47.247.190 = edznux.fr
 	target := []string{"212.47.247.190"}
-	uuid := generateUUID()
-	outputfile := "/tmp/" + uuid + ".json"
+	outputfile := "/tmp/" + generateUUID() + ".json"
 
 	opt := M.ParseOptions()
 	opt = append(opt, "-oJ", outputfile)
@@ -142,7 +141,7 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	opt = append(target, opt...)
 
 	cmd := exec.Command("masscan", opt...)
-	fmt.Printf("cmd:%+v\n", cmd)
+	log.Printf("cmd:%+v\n", cmd)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	var stderr bytes.Buffer
@@ -152,7 +151,8 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	fmt.Println(stderr.String())
 	check(err)
 	res, err := M.Parse(outputfile)
-	fmt.Println("M4sscan done.")
+	check(err)
+	log.Println("M4sscan done.")
 	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
@@ -219,10 +219,10 @@ func (M *Masscan) ParseOptions() []string {
 		opt = append(opt, "--banners")
 	}
 
-	if M.Config.Ports != "" {
-		opt = append(opt, "-p"+M.Config.Ports)
-	} else {
+	if M.Config.Ports == "" {
 		opt = append(opt, "-p0-65535")
+	} else {
+		opt = append(opt, "-p"+M.Config.Ports)
 	}
 
 	if M.Config.ConnectionTimeout != 0 {
