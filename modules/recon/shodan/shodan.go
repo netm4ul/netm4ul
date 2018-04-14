@@ -24,9 +24,9 @@ type ConfigToml struct {
 }
 
 type ShodanResult struct {
-	IP    string
-	Ports []int
-	Host  *shodan.Host
+	IP   string
+	Host *shodan.Host
+	// Services *Services
 }
 
 // Shodan "class"
@@ -58,11 +58,25 @@ func (S Shodan) DependsOn() []modules.Condition {
 
 // NewShodan : Generate shodan object
 func NewShodan() modules.Module {
+	gob.Register(map[string]interface{}{})
+	gob.Register([]interface{}{})
 	gob.Register(ShodanResult{})
 	var s modules.Module
-	s = Shodan{}
+	s = &Shodan{}
 	return s
 }
+
+// Parsing
+/*
+type Services struct {
+	Product      string
+	Organization string
+	Data         string
+	ASN          string
+	Port         int
+	Location     *shodan.HostLocation
+}
+*/
 
 /*
 	Usefull command
@@ -78,7 +92,7 @@ func (S Shodan) Run(data []string) (modules.Result, error) {
 		TODO: Not implemented yet
 	*/
 
-	fmt.Println("Shodan World!")
+	log.Println("Shodan World!")
 
 	// Instanciate shodanResult
 	shodanResult := ShodanResult{}
@@ -105,8 +119,20 @@ func (S Shodan) Run(data []string) (modules.Result, error) {
 	if err != nil {
 		log.Panicln(err)
 	}
+
 	shodanResult.Host = host
-	printHost(*host)
+
+	// for debug
+	if config.Config.Verbose {
+		printHost(*host)
+		for _, servicesData := range host.Data {
+			log.Println(servicesData)
+		}
+	}
+
+	// Exit message
+	log.Println("Shodan module executed. See u, in hell!!")
+
 	return modules.Result{Data: shodanResult, Timestamp: time.Now(), Module: S.Name()}, err
 }
 
