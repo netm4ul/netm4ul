@@ -44,6 +44,12 @@
   version = "v0.0.2"
 
 [[projects]]
+  name = "github.com/miekg/dns"
+  packages = ["."]
+  revision = "83c435cc65d2862736428b9b4d07d0ab10ad3e4d"
+  version = "v1.0.5"
+
+[[projects]]
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
@@ -81,6 +87,26 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = [
+    "ed25519",
+    "ed25519/internal/edwards25519"
+  ]
+  revision = "beb2a9779c3b677077c41673505f150149fce895"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = [
+    "bpf",
+    "internal/iana",
+    "internal/socket",
+    "ipv4",
+    "ipv6"
+  ]
+  revision = "61147c48b25b599e5b561d2e9c4f3e1ef489ca41"
+
+[[projects]]
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
@@ -106,6 +132,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bd9ce15b56a29b629624cd04acde9dc5522819f1eb67ffe7446894de325ec052"
+  inputs-digest = "b5834a148c9fd7a62319ea9a01fb4c6b593da4d27daf0c86067aa110297d71e2"
   solver-name = "gps-cdcl"
   solver-version = 1
