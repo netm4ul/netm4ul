@@ -45,7 +45,7 @@ var startServerCmd = &cobra.Command{
 		var err error
 		config.Config.IsServer = isServer
 		config.Config.Nodes = make(map[string]config.Node)
-		config.Config.TLSParams, err = config.TLSBuildServerConf()
+		config.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
 		if err != nil {
 			log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
 			gracefulShutdown()
@@ -71,7 +71,7 @@ var startClientCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		config.Config.IsClient = isClient
-		config.Config.TLSParams, err = config.TLSBuildClientConf()
+		config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()
 		if err != nil {
 			log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
 			gracefulShutdown()

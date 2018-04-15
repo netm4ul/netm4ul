@@ -39,6 +39,22 @@ type Server struct {
 	Port     uint16 `toml:"port"`
 }
 
+// TLS Certificates and keys
+type TLSParams struct {
+
+	// TLS Configuration to be set later
+	TLSConfig	*tls.Config
+
+	// Certifcation Authority and Server Certificates
+	CaCert     string `toml:"caCert"`
+	ServerCert string `toml:"serverCert"`
+
+	// These will later be deleted to be load dynamically for server and clients
+	ServerPrivateKey 	string `toml:"serverPrivateKey"`
+	ClientCert			string `toml:"clientCert"`
+	ClientPrivateKey	string `toml:"clientPrivateKey"`
+}
+
 // Database : Mongodb config
 type Database struct {
 	User     string `toml:"user"`
@@ -88,7 +104,7 @@ type ConfigToml struct {
 	Database   Database
 	Nodes      map[string]Node
 	Modules    map[string]Module
-	TLSParams  *tls.Config
+	TLSParams  TLSParams
 }
 
 // Config : exported config
@@ -144,25 +160,20 @@ func TLSReadCAFile(caCert string) (*x509.CertPool, error){
 // Build the TLS configuration for server
 func TLSBuildServerConf() (*tls.Config, error) {
 
-	caCert := "certificates/NetM4ul_CA.crt"
-	publKey := "certificates/NetM4ul_Server.crt"
-	privKey := "certificates/NetM4ul_Server.pem"
-
 	var err error
 	var caCertPool *x509.CertPool
 
-
 	// Get CA file
-	caCertPool, err = TLSReadCAFile(caCert)
+	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to read X509KeyPair : %s"), traceFunc(), err.Error())
+		log.Println(colors.Red("%s : Unable to load CA : %s"), traceFunc(), err.Error())
 		return nil, err
 	}
 
 	// Read own KeyPair
-	cert, err := tls.LoadX509KeyPair(publKey, privKey)
+	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ServerCert, Config.TLSParams.ServerPrivateKey)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to read X509KeyPair : %s"), traceFunc(), err.Error())
+		log.Println(colors.Red("%s : Unable to read X509KeyPair at %s : %s"), traceFunc(), Config.TLSParams.ServerCert, err.Error())
 		return nil, err
 	}
 
@@ -189,22 +200,18 @@ func TLSBuildServerConf() (*tls.Config, error) {
 // Build the TLS configuration for server
 func TLSBuildClientConf() (*tls.Config, error) {
 
-	caCert := "certificates/NetM4ul_CA.crt"
-	publKey := "certificates/NetM4ul_Client.crt"
-	privKey := "certificates/NetM4ul_Client.pem"
-
 	var err error
 	var caCertPool *x509.CertPool
 
 	// Read CA file and initialise
-	caCertPool, err = TLSReadCAFile(caCert)
+	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to read CA file %s : %s"), traceFunc(), caCert, err.Error())
+		log.Println(colors.Red("%s : Unable to read CA file : %s"), traceFunc(), err.Error())
 		return nil, err
 	}
 
 	// Read own KeyPair
-	cert, err := tls.LoadX509KeyPair(publKey, privKey)
+	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ClientCert, Config.TLSParams.ClientPrivateKey)
 	if err != nil {
 		log.Println(colors.Red("%s : Unable to read Client X509KeyPair : %s"), traceFunc(), err.Error())
 		return nil, err

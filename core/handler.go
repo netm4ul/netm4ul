@@ -20,7 +20,7 @@ const (
 // CreateServer : Initialise the infinite server loop on the master node
 func CreateServer(ipport string, conf *config.ConfigToml) {
 	server.ConfigServer = conf
-	server.TLSListen(ipport, conf.TLSParams)
+	server.TLSListen(ipport, conf.TLSParams.TLSConfig)
 }
 
 // CreateAPI : Initialise the infinite server loop on the master node
@@ -38,7 +38,7 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 	var conn *tls.Conn
 
 	for tries := 0; tries < maxRetry; tries++ {
-		conn, err = client.Connect(ipport, conf.TLSParams)
+		conn, err = client.Connect(ipport, conf.TLSParams.TLSConfig)
 		if err != nil {
 			log.Println(colors.Red("Could not connect :"), err)
 			log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
