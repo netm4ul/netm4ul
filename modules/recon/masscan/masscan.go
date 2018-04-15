@@ -31,8 +31,9 @@ type MasscanResult struct {
 
 // Scan represents the ip and ports output
 type Scan struct {
-	IP    string `json:"ip"`
-	Ports []Port `json:"ports"`
+	IP        string `json:"ip"`
+	Timestamp string `json:"timestamp"`
+	Ports     []Port `json:"ports"`
 }
 
 // Port represents the port, proto, service, ttl, reason and status output
@@ -135,11 +136,13 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	target := []string{"212.47.247.190"}
 	outputfile := "/tmp/" + generateUUID() + ".json"
 
+	// Get arguments
 	opt := M.ParseOptions()
 	opt = append(opt, "-oJ", outputfile)
-	// opt = append(opt, data...)
+	//opt = append(opt, data...)
 	opt = append(target, opt...)
 
+	// Command execution
 	cmd := exec.Command("masscan", opt...)
 	log.Printf("cmd:%+v\n", cmd)
 	var stdout bytes.Buffer
@@ -152,7 +155,9 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	check(err)
 	res, err := M.Parse(outputfile)
 	check(err)
+
 	log.Println("M4sscan done.")
+
 	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
@@ -255,13 +260,13 @@ func (M *Masscan) ParseOptions() []string {
 // Parse : Parse the result of the execution
 func (M *Masscan) Parse(file string) (MasscanResult, error) {
 	var scans []Scan
-
 	data, err := ioutil.ReadFile(file)
 	check(err)
+	fileReformatted := string(data)
 
 	// JSON reformatted
-	re := regexp.MustCompile(",\n{finished:.*}")
-	fileReformatted := "[" + re.ReplaceAllString(string(data), "]")
+	re := regexp.MustCompile(" },\n]\n")
+	fileReformatted = re.ReplaceAllString(string(data), " }\n]\n")
 
 	err = json.Unmarshal([]byte(fileReformatted), &scans)
 	check(err)
