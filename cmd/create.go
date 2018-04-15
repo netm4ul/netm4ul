@@ -24,6 +24,10 @@ import (
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create the requested ressource",
+
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
 	},

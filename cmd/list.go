@@ -35,6 +35,9 @@ var listCmd = &cobra.Command{
 var listProjectsCmd = &cobra.Command{
 	Use:   "projects",
 	Short: "Return list of projects",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listProjectsCmd called")
 		printProjectsInfo(CLISession)
@@ -44,6 +47,9 @@ var listProjectsCmd = &cobra.Command{
 var listProjectCmd = &cobra.Command{
 	Use:   "project",
 	Short: "Return project info",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listProjectCmd called")
 		// no argument, read from config
@@ -64,6 +70,9 @@ var listProjectCmd = &cobra.Command{
 var listIPCmd = &cobra.Command{
 	Use:   "ip",
 	Short: "Return ip info",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listIPCmd called")
 	},
@@ -72,6 +81,9 @@ var listIPCmd = &cobra.Command{
 var listPortCmd = &cobra.Command{
 	Use:   "port",
 	Short: "Return port info",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listPortCmd called")
 	},

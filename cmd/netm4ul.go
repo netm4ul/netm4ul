@@ -43,19 +43,20 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
 }
 
+func createSessionBase() {
+	config.LoadConfig(configPath)
+	CLISession = session.NewSession(config.Config)
+	CLISession.Config.ConfigPath = configPath
+	CLISession.Config.Verbose = verbose
+	CLISession.Config.Project.Name = CLIProjectName
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "netm4ul",
 	Short: "netm4ul : Distributed recon made easy",
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		config.LoadConfig(configPath)
-
-		config.Config.ConfigPath = configPath
-		config.Config.Verbose = verbose
-		config.Config.Project.Name = CLIProjectName
-
-		CLISession = session.NewSession(config.Config)
-
+		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

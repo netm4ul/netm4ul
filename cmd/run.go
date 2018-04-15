@@ -22,8 +22,6 @@ import (
 	"strings"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/spf13/cobra"
 )
 
@@ -31,9 +29,9 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run scan on the defined target",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		config.Config.Mode = CLImode
-		CLISession = session.NewSession(config.Config)
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+		CLISession.Config.Mode = CLImode
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -65,8 +63,8 @@ var runCmd = &cobra.Command{
 }
 
 func runModules(target string) {
-	url := "http://" + config.Config.Server.IP + ":" + strconv.FormatUint(uint64(config.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run/"
-	for i := range config.Config.Modules {
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run/"
+	for i := range CLISession.Config.Modules {
 		resp, err := http.Post(url+i+"?options="+target, "application/text", strings.NewReader("127.0.0.1"))
 		if err != nil {
 			log.Fatal(err)

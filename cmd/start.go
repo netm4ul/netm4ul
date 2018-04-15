@@ -16,13 +16,14 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
-	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/spf13/cobra"
 )
 
@@ -41,19 +42,37 @@ var startCmd = &cobra.Command{
 var startServerCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the server",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+
+		var err error
+		// init session...
+		// there is no chaining of persistent pre run ... so we are doing it manualy...
+		createSessionBase()
+
+		CLISession.Config.IsServer = isServer
+		CLISession.Config.Nodes = make(map[string]config.Node)
+
+		if CLISession.Config.TLSParams.UseTLS {
+			CLISession.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
+
+			if err != nil {
+				log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
+				os.Exit(1)
+			}
+		}
+
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 
-		config.Config.IsServer = isServer
-		config.Config.Nodes = make(map[string]config.Node)
-
-		ss := session.NewSession(config.Config)
-
+		// TODO : not sure if we should use the CLI session or a new one ...
+		// ss := session.NewSession(config.Config)
 		// listen on all interface + Server port
-		go server.CreateServer(ss)
+		go server.CreateServer(CLISession)
 
-		//TODO flag enable / disable api
-		sa := session.NewSession(config.Config)
-		go api.CreateAPI(sa)
+		// TODO flag enable / disable api
+		// TODO : not sure if we should use the CLI session or a new one ...
+		// sa := session.NewSession(config.Config)
+		go api.CreateAPI(CLISession)
 
 		gracefulShutdown()
 
@@ -64,13 +83,28 @@ var startServerCmd = &cobra.Command{
 var startClientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Start the client",
-	Run: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+
+		var err error
+		// init session
+		// there is no chaining of persistent pre run ... so we are doing it manualy...
+		createSessionBase()
 
 		config.Config.IsClient = isClient
 
-		sc := session.NewSession(config.Config)
+		if CLISession.Config.TLSParams.UseTLS {
+			config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()
 
-		go client.CreateClient(sc)
+			if err != nil {
+				log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
+				os.Exit(1)
+			}
+		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		// TODO : not sure if we should use the CLI session or a new one ...
+		// sc := session.NewSession(config.Config)
+		go client.CreateClient(CLISession)
 
 		gracefulShutdown()
 	},

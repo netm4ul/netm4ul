@@ -1,6 +1,8 @@
 package session
 
 import (
+	"crypto/tls"
+	"net"
 	"strconv"
 	"strings"
 
@@ -12,10 +14,17 @@ import (
 	mgo "gopkg.in/mgo.v2"
 )
 
+// Connection type, to handle either use of TLS or not
+type Connector struct {
+	TLSConn *tls.Conn
+	Conn    net.Conn
+}
+
 type Session struct {
 	Modules      map[string]modules.Module
 	Config       config.ConfigToml
 	ConnectionDB *mgo.Session
+	Connector    Connector
 }
 
 func NewSession(c config.ConfigToml) *Session {

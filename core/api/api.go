@@ -340,7 +340,7 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 		log.Printf(colors.Yellow("RunModule for cmd : %+v"), cmd)
 	}
 
-	err := server.SendCmd(cmd)
+	err := server.SendCmd(cmd, SessionAPI)
 	if err != nil {
 		res = Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	}
