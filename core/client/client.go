@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
@@ -16,7 +17,8 @@ import (
 )
 
 const (
-	Version = "0.1"
+	Version  = "0.1"
+	maxRetry = 3
 )
 
 var (
@@ -26,6 +28,68 @@ var (
 	// ListModuleEnabled : global list of enabled modules
 	ListModuleEnabled []string
 )
+
+// CreateClient : Connect the node to the master server
+func CreateClient(s *session.Session) {
+
+	var err error
+	var conn *net.TCPConn
+
+	SessionClient = s
+	InitModule()
+
+	log.Println(colors.Green("Modules enabled :"), ListModuleEnabled)
+
+	for tries := 0; tries < maxRetry; tries++ {
+		ipport := s.GetServerIPPort()
+		conn, err = Connect(ipport)
+
+		// no error, exit retry loop
+		if err == nil {
+			break
+		}
+
+		log.Println(colors.Red("Could not connect :"), err)
+		log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
+		time.Sleep(1 * time.Second)
+	}
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = SendHello(conn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Recieve data
+	go handleData(conn)
+}
+
+func handleData(conn *net.TCPConn) {
+	for {
+		cmd, err := Recv(conn)
+
+		// kill on socket closed.
+		if err == io.EOF {
+			log.Fatalf(colors.Red("Connection closed : %s"), err.Error())
+		}
+
+		if err != nil {
+			log.Println(colors.Red(err.Error()))
+			continue
+		}
+
+		// must exist, if it doesn't, this line shouldn't be executed (checks above)
+		module := SessionClient.Modules[cmd.Name]
+
+		//TODO
+		// send data back to the server
+		data, err := Execute(module, cmd)
+		SendResult(conn, data)
+	}
+}
 
 // Connect : Setup the connection to the master node
 func Connect(ipport string) (*net.TCPConn, error) {
@@ -38,11 +102,6 @@ func Connect(ipport string) (*net.TCPConn, error) {
 	}
 
 	return conn, nil
-}
-
-func Create(s *session.Session) {
-	SessionClient = s
-	InitModule()
 }
 
 // InitModule : Update ListModule & ListModuleEnabled variable

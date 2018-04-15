@@ -21,8 +21,6 @@ import (
 
 var (
 	Version string
-	// ConfigServer : Global config for the server. Must be goroutine safe
-	// ConfigServer *config.ConfigToml
 	//Nodes represent a map to net.Conn
 	Nodes map[string]net.Conn
 	//SessionServer represent the server side's session. Hold all the modules
@@ -55,8 +53,11 @@ type Command struct {
 func init() {
 	Nodes = make(map[string]net.Conn)
 }
-func InitServer(s *session.Session) {
+
+// CreateServer : Initialise the infinite server loop on the master node
+func CreateServer(s *session.Session) {
 	SessionServer = s
+	Listen()
 }
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)

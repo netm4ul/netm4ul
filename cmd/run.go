@@ -20,6 +20,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +30,7 @@ var runCmd = &cobra.Command{
 	Short: "Run scan on the defined target",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		config.Config.Mode = CLImode
+		CLISession = session.NewSession(config.Config)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -40,20 +42,20 @@ var runCmd = &cobra.Command{
 			log.Println("Error while parsing targets :", err.Error())
 		}
 
-		if config.Config.Verbose {
+		if CLISession.Config.Verbose {
 			log.Println("targets :", targets)
 			log.Println("CLIModules :", CLImodules)
-			log.Println("Modules :", config.Config.Modules)
+			log.Println("Modules :", CLISession.Config.Modules)
 			log.Println("CLIMode :", CLImode)
-			log.Println("Mode :", config.Config.Mode)
+			log.Println("Mode :", CLISession.Config.Mode)
 		}
 
 		if len(CLImodules) > 0 {
-			mods, err := parseModules(CLImodules)
+			mods, err := parseModules(CLImodules, CLISession)
 			if err != nil {
 				fmt.Println(colors.Yellow(err.Error()))
 			}
-			addModules(mods)
+			addModules(mods, CLISession)
 		}
 	},
 }

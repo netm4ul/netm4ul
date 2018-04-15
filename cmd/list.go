@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +37,7 @@ var listProjectsCmd = &cobra.Command{
 	Short: "Return list of projects",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listProjectsCmd called")
-		printProjectsInfo()
+		printProjectsInfo(CLISession)
 	},
 }
 
@@ -49,12 +48,12 @@ var listProjectCmd = &cobra.Command{
 		fmt.Println("listProjectCmd called")
 		// no argument, read from config
 		if len(args) == 0 {
-			printProjectInfo(config.Config.Project.Name)
+			printProjectInfo(CLISession.Config.Project.Name, CLISession)
 			os.Exit(0)
 		}
 		// 1 arguments, use it
 		if len(args) == 1 {
-			printProjectInfo(args[0])
+			printProjectInfo(args[0], CLISession)
 		} else {
 			fmt.Println("Too many arguments expected 1, got", len(args))
 		}

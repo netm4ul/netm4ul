@@ -18,8 +18,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/netm4ul/netm4ul/core"
+	"github.com/netm4ul/netm4ul/core/api"
+	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server"
+	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/spf13/cobra"
 )
 
@@ -39,14 +42,18 @@ var startServerCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the server",
 	Run: func(cmd *cobra.Command, args []string) {
+
 		config.Config.IsServer = isServer
 		config.Config.Nodes = make(map[string]config.Node)
 
+		ss := session.NewSession(config.Config)
+
 		// listen on all interface + Server port
-		go core.CreateServer(config.Config)
+		go server.CreateServer(ss)
 
 		//TODO flag enable / disable api
-		go core.CreateAPI(config.Config)
+		sa := session.NewSession(config.Config)
+		go api.CreateAPI(sa)
 
 		gracefulShutdown()
 
@@ -58,8 +65,12 @@ var startClientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Start the client",
 	Run: func(cmd *cobra.Command, args []string) {
+
 		config.Config.IsClient = isClient
-		go core.CreateClient(config.Config)
+
+		sc := session.NewSession(config.Config)
+
+		go client.CreateClient(sc)
 
 		gracefulShutdown()
 	},

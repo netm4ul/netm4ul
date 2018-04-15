@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/netm4ul/netm4ul/core/session"
+
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +33,7 @@ var (
 	noColors   bool
 	info       string
 	completion bool
+	CLISession *session.Session
 )
 
 func init() {
@@ -50,6 +53,8 @@ var rootCmd = &cobra.Command{
 		config.Config.ConfigPath = configPath
 		config.Config.Verbose = verbose
 		config.Config.Project.Name = CLIProjectName
+
+		CLISession = session.NewSession(config.Config)
 
 	},
 	Run: func(cmd *cobra.Command, args []string) {

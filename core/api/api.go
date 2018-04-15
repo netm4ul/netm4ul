@@ -48,8 +48,10 @@ type Metadata struct {
 	API   API                    `json:"api"`
 }
 
-func InitApi(s *session.Session) {
+// CreateAPI : Initialise the infinite server loop on the master node
+func CreateAPI(s *session.Session) {
 	SessionAPI = s
+	Start()
 }
 
 //Start the API and route endpoints to functions
