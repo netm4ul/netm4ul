@@ -115,28 +115,55 @@ func LoadConfig(file string) {
 	}
 }
 
+// Returns the calling functions name for error printing
+func traceFunc() string{
+	pc := make([]uintptr, 10)  // at least 1 entry needed
+	runtime.Callers(2, pc)
+	f := runtime.FuncForPC(pc[0])
+	return f.Name()
+}
+
+// Read CA file and initialise
+func TLSReadCAFile(caCert string) (*x509.CertPool, error){
+
+	caCertBytes, err := ioutil.ReadFile(caCert)
+	if err != nil {
+		log.Println(colors.Red("%s : Unable to read CA file %s : %s"), traceFunc(), caCert, err.Error())
+		return nil, err
+	}
+
+	caCertPool := x509.NewCertPool()
+	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
+		log.Println(colors.Red("%s : Unable to add CA certificate to certificate pool"), traceFunc())
+		return nil, err
+	}
+
+	return caCertPool, nil
+}
+
 // Build the TLS configuration for server
-func TLSBuildServerConf() *tls.Config {
+func TLSBuildServerConf() (*tls.Config, error) {
 
 	caCert := "certificates/NetM4ul_CA.crt"
 	publKey := "certificates/NetM4ul_Server.crt"
 	privKey := "certificates/NetM4ul_Server.pem"
 
-	// Read CA file and initialise
-	caCertBytes, err := ioutil.ReadFile(caCert)
-	if err != nil {
-		log.Println(colors.Red("Unable to read %s : %s"), caCert, err.Error())
-	}
+	var err error
+	var caCertPool *x509.CertPool
 
-	caCertPool := x509.NewCertPool()
-	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
-		log.Println(colors.Red("Unable to add CA certificate to certificate pool"))
+
+	// Get CA file
+	caCertPool, err = TLSReadCAFile(caCert)
+	if err != nil {
+		log.Println(colors.Red("%s : Unable to read X509KeyPair : %s"), traceFunc(), err.Error())
+		return nil, err
 	}
 
 	// Read own KeyPair
 	cert, err := tls.LoadX509KeyPair(publKey, privKey)
 	if err != nil {
-		log.Println(colors.Red("Unable to read X509KeyPair : %s"), err.Error())
+		log.Println(colors.Red("%s : Unable to read X509KeyPair : %s"), traceFunc(), err.Error())
+		return nil, err
 	}
 
 	tlsConfig := &tls.Config{
@@ -156,31 +183,31 @@ func TLSBuildServerConf() *tls.Config {
 		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256, tls.CurveP384},
 	}
 
-	return tlsConfig
+	return tlsConfig, nil
 }
 
 // Build the TLS configuration for server
-func TLSBuildClientConf() *tls.Config {
+func TLSBuildClientConf() (*tls.Config, error) {
 
 	caCert := "certificates/NetM4ul_CA.crt"
 	publKey := "certificates/NetM4ul_Client.crt"
 	privKey := "certificates/NetM4ul_Client.pem"
 
-	// Read CA file and initialise
-	certBytes, err := ioutil.ReadFile(caCert)
-	if err != nil {
-		log.Println(colors.Red("Unable to read %s : %s"), caCert, err.Error())
-	}
+	var err error
+	var caCertPool *x509.CertPool
 
-	caCertPool := x509.NewCertPool()
-	if ok := caCertPool.AppendCertsFromPEM(certBytes); !ok {
-		log.Println(colors.Red("Unable to add CA certificate to certificate pool"))
+	// Read CA file and initialise
+	caCertPool, err = TLSReadCAFile(caCert)
+	if err != nil {
+		log.Println(colors.Red("%s : Unable to read CA file %s : %s"), traceFunc(), caCert, err.Error())
+		return nil, err
 	}
 
 	// Read own KeyPair
 	cert, err := tls.LoadX509KeyPair(publKey, privKey)
 	if err != nil {
-		log.Println(colors.Red("Unable to read Client X509KeyPair : %s"), err.Error())
+		log.Println(colors.Red("%s : Unable to read Client X509KeyPair : %s"), traceFunc(), err.Error())
+		return nil, err
 	}
 
 	tlsConfig := &tls.Config{
@@ -192,5 +219,5 @@ func TLSBuildClientConf() *tls.Config {
 
 	tlsConfig.BuildNameToCertificate()
 
-	return tlsConfig
+	return tlsConfig, nil
 }
