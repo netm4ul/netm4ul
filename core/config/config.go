@@ -5,7 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/cmd/colors"
+	"io/ioutil"
+	"net"
 )
 
 // API : Rest API config
@@ -32,6 +37,31 @@ type Server struct {
 	Password string `toml:"password"`
 	IP       string `toml:"ip"`
 	Port     uint16 `toml:"port"`
+}
+
+// TLS Certificates and keys
+type TLSParams struct {
+
+	// Enable TLS communications or not
+	UseTLS bool `toml:"usetls"`
+
+	// TLS Configuration to be set later
+	TLSConfig *tls.Config
+
+	// Certifcation Authority and Server Certificates
+	CaCert     string `toml:"caCert"`
+	ServerCert string `toml:"serverCert"`
+
+	// These will later be deleted to be load dynamically for server and clients
+	ServerPrivateKey string `toml:"serverPrivateKey"`
+	ClientCert       string `toml:"clientCert"`
+	ClientPrivateKey string `toml:"clientPrivateKey"`
+}
+
+// Connection type, to handle either use of TLS or not
+type Connector struct {
+	TLSConn *tls.Conn
+	Conn    net.Conn
 }
 
 // Database : Mongodb config
@@ -83,6 +113,8 @@ type ConfigToml struct {
 	Database   Database
 	Nodes      map[string]Node
 	Modules    map[string]Module
+	Connector  Connector
+	TLSParams  TLSParams
 }
 
 // Config : exported config
@@ -107,4 +139,86 @@ func LoadConfig(file string) {
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+// Read CA file and initialise
+func TLSReadCAFile(caCert string) (*x509.CertPool, error) {
+
+	caCertBytes, err := ioutil.ReadFile(caCert)
+	if err != nil {
+		log.Printf(colors.Red("Unable to read CA file %s : %s"), caCert, err.Error())
+		return nil, err
+	}
+
+	caCertPool := x509.NewCertPool()
+	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
+		log.Println(colors.Red("Unable to add CA certificate to certificate pool"))
+		return nil, err
+	}
+
+	return caCertPool, nil
+}
+
+// Build the TLS configuration for server
+func TLSBuildServerConf() (*tls.Config, error) {
+
+	// Get CA file
+	caCertPool, err := TLSReadCAFile(Config.TLSParams.CaCert)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read own KeyPair
+	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ServerCert, Config.TLSParams.ServerPrivateKey)
+	if err != nil {
+		log.Printf(colors.Red("Unable to read X509KeyPair at %s : %s"), Config.TLSParams.ServerCert, err.Error())
+		return nil, err
+	}
+
+	tlsConfig := &tls.Config{
+		// Reject any TLS certificate that cannot be validated
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		// Ensure that we only use our "CA" to validate certificates
+		ClientCAs: caCertPool,
+		// PFS because we can
+		CipherSuites: []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256},
+		// Force it server side
+		PreferServerCipherSuites: true,
+		// TLS 1.2 because we can
+		MinVersion: tls.VersionTLS12,
+		// Server Key Material
+		Certificates: []tls.Certificate{cert},
+		// Set preferences for used curves (but certs should already have been made)
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256, tls.CurveP384},
+	}
+
+	return tlsConfig, nil
+}
+
+// Build the TLS configuration for server
+func TLSBuildClientConf() (*tls.Config, error) {
+
+	// Read CA file and initialise
+	caCertPool, err := TLSReadCAFile(Config.TLSParams.CaCert)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read own KeyPair
+	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ClientCert, Config.TLSParams.ClientPrivateKey)
+	if err != nil {
+		log.Printf(colors.Red("Unable to read Client X509KeyPair : %s"), err.Error())
+		return nil, err
+	}
+
+	tlsConfig := &tls.Config{
+		// Ensure that we only use our "CA" to validate certificates
+		RootCAs: caCertPool,
+		// Server Key Material
+		Certificates: []tls.Certificate{cert},
+	}
+
+	tlsConfig.BuildNameToCertificate()
+
+	return tlsConfig, nil
 }

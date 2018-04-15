@@ -14,6 +14,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 
+	"crypto/tls"
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server/database"
@@ -60,9 +61,17 @@ func init() {
 }
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
-func Listen(ipport string) {
-	log.Printf(colors.Green("Listenning on : %s"), ipport)
-	l, err := net.Listen("tcp", ipport)
+func TLSListen(ipport string) {
+
+	var err error
+	var l net.Listener
+
+	if config.Config.TLSParams.UseTLS {
+		l, err = tls.Listen("tcp", ipport, config.Config.TLSParams.TLSConfig)
+
+	} else {
+		l, err = net.Listen("tcp", ipport)
+	}
 
 	if err != nil {
 		log.Println(colors.Red("Error listening : %s"), err.Error())
@@ -72,6 +81,8 @@ func Listen(ipport string) {
 	// Close the listener when the application closes.
 	defer l.Close()
 	mgoSession := database.Connect()
+
+	log.Printf(colors.Green("Listenning on : %s"), ipport)
 
 	for {
 		// Listen for an incoming connection.

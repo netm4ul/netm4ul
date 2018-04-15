@@ -3,7 +3,6 @@ package core
 import (
 	"io"
 	"log"
-	"net"
 	"time"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
@@ -20,7 +19,7 @@ const (
 // CreateServer : Initialise the infinite server loop on the master node
 func CreateServer(ipport string, conf *config.ConfigToml) {
 	server.ConfigServer = conf
-	server.Listen(ipport)
+	server.TLSListen(ipport)
 }
 
 // CreateAPI : Initialise the infinite server loop on the master node
@@ -30,15 +29,14 @@ func CreateAPI(ipport string, conf *config.ConfigToml) {
 }
 
 // CreateClient : Connect the node to the master server
-func CreateClient(ipport string, conf *config.ConfigToml) {
+func CreateClient(ipport string) {
 	client.InitModule()
 
 	log.Println(colors.Green("Modules enabled :"), client.ListModuleEnabled)
 	var err error
-	var conn *net.TCPConn
 
 	for tries := 0; tries < maxRetry; tries++ {
-		conn, err = client.Connect(ipport)
+		err = client.Connect(ipport)
 		if err != nil {
 			log.Println(colors.Red("Could not connect :"), err)
 			log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
@@ -52,7 +50,7 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 		log.Fatal(err)
 	}
 
-	err = client.SendHello(conn)
+	err = client.SendHello(&config.Config.Connector)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,7 +58,7 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 	// Recieve data
 	go func() {
 		for {
-			cmd, err := client.Recv(conn)
+			cmd, err := client.Recv(&config.Config.Connector)
 
 			// kill on socket closed.
 			if err == io.EOF {
@@ -78,7 +76,7 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 			//TODO
 			// send data back to the server
 			data, err := client.Execute(module, cmd)
-			client.SendResult(conn, data)
+			client.SendResult(&config.Config.Connector, data)
 		}
 	}()
 }

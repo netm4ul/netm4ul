@@ -19,9 +19,11 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 // startCmd represents the start command
@@ -40,8 +42,14 @@ var startServerCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the server",
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
 		config.Config.IsServer = isServer
 		config.Config.Nodes = make(map[string]config.Node)
+		config.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
+		if err != nil {
+			log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
+			os.Exit(1)
+		}
 
 		// listen on all interface + Server port
 		addr := ":" + strconv.FormatUint(uint64(config.Config.Server.Port), 10)
@@ -61,12 +69,18 @@ var startClientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Start the client",
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
 		config.Config.IsClient = isClient
+		config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()
+		if err != nil {
+			log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
+			os.Exit(1)
+		}
 
 		ip := config.Config.Server.IP
 		port := strconv.FormatUint(uint64(config.Config.Server.Port), 10)
 		addr := ip + ":" + port
-		go core.CreateClient(addr, &config.Config)
+		go core.CreateClient(addr)
 
 		gracefulShutdown()
 	},

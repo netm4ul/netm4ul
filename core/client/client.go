@@ -2,17 +2,17 @@ package client
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/gob"
-	"io"
-	"log"
-	"net"
-
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
+	"io"
+	"log"
+	"net"
 )
 
 const (
@@ -28,16 +28,26 @@ var (
 )
 
 // Connect : Setup the connection to the master node
-func Connect(ipport string) (*net.TCPConn, error) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", ipport)
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	conn.SetKeepAlive(true)
+func Connect(ipport string) error {
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Dialing "+ipport+" failed")
+	var err error
+
+	if config.Config.TLSParams.UseTLS {
+		config.Config.Connector.TLSConn, err = tls.Dial("tcp", ipport, config.Config.TLSParams.TLSConfig)
+		if err != nil {
+			return errors.Wrap(err, "Dialing "+ipport+" failed")
+		}
+
+		return nil
+	} else {
+		config.Config.Connector.Conn, err = net.Dial("tcp", ipport)
+		if err != nil {
+			return errors.Wrap(err, "Dialing "+ipport+" failed")
+		}
+
+		return nil
 	}
 
-	return conn, nil
 }
 
 // InitModule : Update ListModule & ListModuleEnabled variable
@@ -55,9 +65,14 @@ func InitModule() {
 }
 
 // SendHello : Send node info (modules list, project name,...)
-func SendHello(conn *net.TCPConn) error {
-	var err error
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+func SendHello(conn *config.Connector) error {
+	var rw *bufio.ReadWriter
+
+	if conn.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	} else {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+	}
 
 	enc := gob.NewEncoder(rw)
 
@@ -68,7 +83,7 @@ func SendHello(conn *net.TCPConn) error {
 		log.Printf(colors.Yellow("Node : %+v"), node)
 	}
 
-	err = enc.Encode(node)
+	err := enc.Encode(node)
 	if err != nil {
 		return err
 	}
@@ -82,14 +97,20 @@ func SendHello(conn *net.TCPConn) error {
 }
 
 // Recv read the incomming data from the server. The server use the server.Command struct.
-func Recv(conn *net.TCPConn) (server.Command, error) {
+func Recv(conn *config.Connector) (server.Command, error) {
 	var cmd server.Command
 
 	if config.Config.Verbose {
-		log.Println(colors.Yellow("Waiting for incomming data"))
+		log.Println(colors.Yellow("Waiting for incoming data"))
 	}
 
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	var rw *bufio.ReadWriter
+
+	if conn.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	} else {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+	}
 
 	dec := gob.NewDecoder(rw)
 	err := dec.Decode(&cmd)
@@ -100,11 +121,11 @@ func Recv(conn *net.TCPConn) (server.Command, error) {
 	}
 
 	if err != nil {
-		return server.Command{}, errors.New("Could not decode recieved message : " + err.Error())
+		return server.Command{}, errors.New("Could not decode received message : " + err.Error())
 	}
 
 	if config.Config.Verbose {
-		log.Printf(colors.Yellow("Recieved command %+v"), cmd)
+		log.Printf(colors.Yellow("Received command %+v"), cmd)
 	}
 	_, ok := SessionClient.Modules[cmd.Name]
 
@@ -127,11 +148,16 @@ func Execute(module modules.Module, cmd server.Command) (modules.Result, error) 
 }
 
 // SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
-func SendResult(conn *net.TCPConn, res modules.Result) error {
-	var err error
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+func SendResult(conn *config.Connector, res modules.Result) error {
+	var rw *bufio.ReadWriter
+
+	if conn.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	} else {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+	}
 	enc := gob.NewEncoder(rw)
-	err = enc.Encode(res)
+	err := enc.Encode(res)
 
 	if err != nil {
 		log.Println(colors.Red("Error :"), err)

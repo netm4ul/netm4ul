@@ -27,3 +27,6 @@ data/
 
 # personnal conf
 netm4ul.conf.my
+
+# Don't include certs
+certificates/*
