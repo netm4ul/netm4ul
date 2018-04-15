@@ -168,7 +168,6 @@ func TLSBuildServerConf() (*tls.Config, error) {
 	// Get CA file
 	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
-		log.Printf(colors.Red("Unable to load CA : %s"), err.Error())
 		return nil, err
 	}
 
@@ -208,7 +207,6 @@ func TLSBuildClientConf() (*tls.Config, error) {
 	// Read CA file and initialise
 	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
-		log.Printf(colors.Red("Unable to read CA file : %s"), err.Error())
 		return nil, err
 	}
 

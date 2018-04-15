@@ -19,7 +19,7 @@ const (
 // CreateServer : Initialise the infinite server loop on the master node
 func CreateServer(ipport string, conf *config.ConfigToml) {
 	server.ConfigServer = conf
-	server.TLSListen(ipport, conf)
+	server.TLSListen(ipport)
 }
 
 // CreateAPI : Initialise the infinite server loop on the master node
@@ -29,14 +29,14 @@ func CreateAPI(ipport string, conf *config.ConfigToml) {
 }
 
 // CreateClient : Connect the node to the master server
-func CreateClient(ipport string, conf *config.ConfigToml) {
+func CreateClient(ipport string) {
 	client.InitModule()
 
 	log.Println(colors.Green("Modules enabled :"), client.ListModuleEnabled)
 	var err error
 
 	for tries := 0; tries < maxRetry; tries++ {
-		err = client.Connect(ipport, conf)
+		err = client.Connect(ipport)
 		if err != nil {
 			log.Println(colors.Red("Could not connect :"), err)
 			log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
@@ -50,7 +50,7 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 		log.Fatal(err)
 	}
 
-	err = client.SendHello(&conf.Connector)
+	err = client.SendHello(&config.Config.Connector)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 	// Recieve data
 	go func() {
 		for {
-			cmd, err := client.Recv(&conf.Connector)
+			cmd, err := client.Recv(&config.Config.Connector)
 
 			// kill on socket closed.
 			if err == io.EOF {
@@ -76,7 +76,7 @@ func CreateClient(ipport string, conf *config.ConfigToml) {
 			//TODO
 			// send data back to the server
 			data, err := client.Execute(module, cmd)
-			client.SendResult(&conf.Connector, data)
+			client.SendResult(&config.Config.Connector, data)
 		}
 	}()
 }

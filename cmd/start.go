@@ -80,7 +80,7 @@ var startClientCmd = &cobra.Command{
 		ip := config.Config.Server.IP
 		port := strconv.FormatUint(uint64(config.Config.Server.Port), 10)
 		addr := ip + ":" + port
-		go core.CreateClient(addr, &config.Config)
+		go core.CreateClient(addr)
 
 		gracefulShutdown()
 	},

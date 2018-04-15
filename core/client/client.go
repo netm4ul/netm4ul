@@ -28,19 +28,19 @@ var (
 )
 
 // Connect : Setup the connection to the master node
-func Connect(ipport string, conf *config.ConfigToml) error {
+func Connect(ipport string) error {
 
 	var err error
 
-	if conf.TLSParams.UseTLS {
-		conf.Connector.TLSConn, err = tls.Dial("tcp", ipport, conf.TLSParams.TLSConfig)
+	if config.Config.TLSParams.UseTLS {
+		config.Config.Connector.TLSConn, err = tls.Dial("tcp", ipport, config.Config.TLSParams.TLSConfig)
 		if err != nil {
 			return errors.Wrap(err, "Dialing "+ipport+" failed")
 		}
 
 		return nil
 	} else {
-		conf.Connector.Conn, err = net.Dial("tcp", ipport)
+		config.Config.Connector.Conn, err = net.Dial("tcp", ipport)
 		if err != nil {
 			return errors.Wrap(err, "Dialing "+ipport+" failed")
 		}
