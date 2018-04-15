@@ -22,7 +22,6 @@ import (
 	"github.com/netm4ul/netm4ul/core"
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +43,7 @@ var startServerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Config.IsServer = isServer
 		config.Config.Nodes = make(map[string]config.Node)
-		config.Config.TLSParams = server.TLSBuildServerConf()
+		config.Config.TLSParams = config.TLSBuildServerConf()
 
 		// listen on all interface + Server port
 		addr := ":" + strconv.FormatUint(uint64(config.Config.Server.Port), 10)
@@ -65,7 +64,7 @@ var startClientCmd = &cobra.Command{
 	Short: "Start the client",
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Config.IsClient = isClient
-		config.Config.TLSParams = client.TLSBuildClientConf()
+		config.Config.TLSParams = config.TLSBuildClientConf()
 
 		ip := config.Config.Server.IP
 		port := strconv.FormatUint(uint64(config.Config.Server.Port), 10)
