@@ -162,11 +162,8 @@ func TLSReadCAFile(caCert string) (*x509.CertPool, error) {
 // Build the TLS configuration for server
 func TLSBuildServerConf() (*tls.Config, error) {
 
-	var err error
-	var caCertPool *x509.CertPool
-
 	// Get CA file
-	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
+	caCertPool, err := TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
 		return nil, err
 	}
@@ -201,11 +198,8 @@ func TLSBuildServerConf() (*tls.Config, error) {
 // Build the TLS configuration for server
 func TLSBuildClientConf() (*tls.Config, error) {
 
-	var err error
-	var caCertPool *x509.CertPool
-
 	// Read CA file and initialise
-	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
+	caCertPool, err := TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
 		return nil, err
 	}

@@ -48,7 +48,7 @@ var startServerCmd = &cobra.Command{
 		config.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
 		if err != nil {
 			log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
-			gracefulShutdown()
+			os.Exit(1)
 		}
 
 		// listen on all interface + Server port
@@ -74,7 +74,7 @@ var startClientCmd = &cobra.Command{
 		config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()
 		if err != nil {
 			log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
-			gracefulShutdown()
+			os.Exit(1)
 		}
 
 		ip := config.Config.Server.IP
