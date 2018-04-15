@@ -4,22 +4,26 @@ import (
 	"bufio"
 	"crypto/tls"
 	"encoding/gob"
+	"io"
+	"log"
+	"net"
+	"time"
+
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
-	"io"
-	"log"
-	"net"
 )
 
 const (
-	Version = "0.1"
+	Version  = "0.1"
+	maxRetry = 3
 )
 
 var (
+	//SessionClient : !! TO FIX : global var for state vs args of each func ?
 	SessionClient *session.Session
 	// ListModule : global list of modules
 	ListModule []string
@@ -27,59 +31,118 @@ var (
 	ListModuleEnabled []string
 )
 
-// Connect : Setup the connection to the master node
-func Connect(ipport string) error {
+// CreateClient : Connect the node to the master server
+func CreateClient(s *session.Session) {
 
 	var err error
+	SessionClient = s
 
-	if config.Config.TLSParams.UseTLS {
-		config.Config.Connector.TLSConn, err = tls.Dial("tcp", ipport, config.Config.TLSParams.TLSConfig)
-		if err != nil {
-			return errors.Wrap(err, "Dialing "+ipport+" failed")
+	InitModule(s)
+
+	log.Println(colors.Green("Modules enabled :"), ListModuleEnabled)
+
+	for tries := 0; tries < maxRetry; tries++ {
+		err = Connect(s)
+
+		// no error, exit retry loop
+		if err == nil {
+			break
 		}
 
-		return nil
-	} else {
-		config.Config.Connector.Conn, err = net.Dial("tcp", ipport)
-		if err != nil {
-			return errors.Wrap(err, "Dialing "+ipport+" failed")
-		}
-
-		return nil
+		log.Println(colors.Red("Could not connect :"), err)
+		log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
+		time.Sleep(1 * time.Second)
 	}
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = SendHello(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Recieve data
+	go handleData(s)
+}
+
+func handleData(s *session.Session) {
+
+	for {
+		cmd, err := Recv(s)
+
+		// kill on socket closed.
+		if err == io.EOF {
+			log.Fatalf(colors.Red("Connection closed : %s"), err.Error())
+		}
+
+		if err != nil {
+			log.Println(colors.Red(err.Error()))
+			continue
+		}
+
+		// must exist, if it doesn't, this line shouldn't be executed (checks above)
+		module := s.Modules[cmd.Name]
+
+		//TODO
+		// send data back to the server
+		data, err := Execute(s, module, cmd)
+		SendResult(s, data)
+	}
+}
+
+// Connect : Setup the connection to the master node
+func Connect(s *session.Session) error {
+
+	var err error
+	ipport := s.GetServerIPPort()
+
+	if s.Config.TLSParams.UseTLS {
+		s.Connector.TLSConn, err = tls.Dial("tcp", ipport, s.Config.TLSParams.TLSConfig)
+		if err != nil {
+			return errors.Wrap(err, "Dialing "+ipport+" failed")
+		}
+	} else {
+		s.Connector.Conn, err = net.Dial("tcp", ipport)
+		if err != nil {
+			return errors.Wrap(err, "Dialing "+ipport+" failed")
+		}
+	}
+
+	return nil
 
 }
 
 // InitModule : Update ListModule & ListModuleEnabled variable
-func InitModule() {
-	SessionClient = session.NewSession()
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("Session client : %+v"), SessionClient)
+func InitModule(s *session.Session) {
+
+	if s.Config.Verbose {
+		log.Printf(colors.Yellow("Session client : %+v"), s)
 	}
-	for m := range config.Config.Modules {
+	for m := range s.Config.Modules {
 		ListModule = append(ListModule, m)
-		if config.Config.Modules[m].Enabled {
+		if s.Config.Modules[m].Enabled {
 			ListModuleEnabled = append(ListModuleEnabled, m)
 		}
 	}
 }
 
 // SendHello : Send node info (modules list, project name,...)
-func SendHello(conn *config.Connector) error {
+func SendHello(s *session.Session) error {
 	var rw *bufio.ReadWriter
 
-	if conn.TLSConn == nil {
-		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	if s.Connector.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.Conn), bufio.NewWriter(s.Connector.Conn))
 	} else {
-		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.TLSConn), bufio.NewWriter(s.Connector.TLSConn))
 	}
 
 	enc := gob.NewEncoder(rw)
 
-	module := ListModuleEnabled
-	node := config.Node{Modules: module, Project: "FirstProject"}
+	node := config.Node{Modules: ListModuleEnabled, Project: s.Config.Project.Name}
 
-	if config.Config.Verbose {
+	if s.Config.Verbose {
 		log.Printf(colors.Yellow("Node : %+v"), node)
 	}
 
@@ -97,19 +160,19 @@ func SendHello(conn *config.Connector) error {
 }
 
 // Recv read the incomming data from the server. The server use the server.Command struct.
-func Recv(conn *config.Connector) (server.Command, error) {
+func Recv(s *session.Session) (server.Command, error) {
 	var cmd server.Command
 
-	if config.Config.Verbose {
-		log.Println(colors.Yellow("Waiting for incoming data"))
+	if s.Config.Verbose {
+		log.Println(colors.Yellow("Waiting for incomming data"))
 	}
 
 	var rw *bufio.ReadWriter
 
-	if conn.TLSConn == nil {
-		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	if s.Connector.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.Conn), bufio.NewWriter(s.Connector.Conn))
 	} else {
-		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.TLSConn), bufio.NewWriter(s.Connector.TLSConn))
 	}
 
 	dec := gob.NewDecoder(rw)
@@ -124,10 +187,10 @@ func Recv(conn *config.Connector) (server.Command, error) {
 		return server.Command{}, errors.New("Could not decode received message : " + err.Error())
 	}
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("Received command %+v"), cmd)
+	if s.Config.Verbose {
+		log.Printf(colors.Yellow("Recieved command %+v"), cmd)
 	}
-	_, ok := SessionClient.Modules[cmd.Name]
+	_, ok := s.Modules[cmd.Name]
 
 	if !ok {
 		return server.Command{}, errors.New("Unsupported (or unknown) command : " + cmd.Name)
@@ -137,9 +200,9 @@ func Recv(conn *config.Connector) (server.Command, error) {
 }
 
 // Execute runs modules with the right options and handle errors.
-func Execute(module modules.Module, cmd server.Command) (modules.Result, error) {
+func Execute(s *session.Session, module modules.Module, cmd server.Command) (modules.Result, error) {
 
-	if config.Config.Verbose {
+	if s.Config.Verbose {
 		log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
 	}
 	//TODO
@@ -148,14 +211,15 @@ func Execute(module modules.Module, cmd server.Command) (modules.Result, error) 
 }
 
 // SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
-func SendResult(conn *config.Connector, res modules.Result) error {
+func SendResult(s *session.Session, res modules.Result) error {
 	var rw *bufio.ReadWriter
 
-	if conn.TLSConn == nil {
-		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	if s.Connector.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.Conn), bufio.NewWriter(s.Connector.Conn))
 	} else {
-		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.TLSConn), bufio.NewWriter(s.Connector.TLSConn))
 	}
+
 	enc := gob.NewEncoder(rw)
 	err := enc.Encode(res)
 
@@ -171,5 +235,4 @@ func SendResult(conn *config.Connector, res modules.Result) error {
 	}
 
 	return nil
-
 }

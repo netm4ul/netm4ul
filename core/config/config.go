@@ -7,10 +7,10 @@ import (
 
 	"crypto/tls"
 	"crypto/x509"
+	"io/ioutil"
+
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"io/ioutil"
-	"net"
 )
 
 // API : Rest API config
@@ -56,12 +56,6 @@ type TLSParams struct {
 	ServerPrivateKey string `toml:"serverPrivateKey"`
 	ClientCert       string `toml:"clientCert"`
 	ClientPrivateKey string `toml:"clientPrivateKey"`
-}
-
-// Connection type, to handle either use of TLS or not
-type Connector struct {
-	TLSConn *tls.Conn
-	Conn    net.Conn
 }
 
 // Database : Mongodb config
@@ -113,7 +107,6 @@ type ConfigToml struct {
 	Database   Database
 	Nodes      map[string]Node
 	Modules    map[string]Module
-	Connector  Connector
 	TLSParams  TLSParams
 }
 
@@ -135,7 +128,6 @@ func LoadConfig(file string) {
 	} else {
 		configPath = file
 	}
-
 	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
 		log.Fatalln(err)
 	}
