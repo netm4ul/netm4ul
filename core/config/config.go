@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 
 	"crypto/tls"
-	"github.com/BurntSushi/toml"
-	"io/ioutil"
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"crypto/x509"
-	"runtime"
+	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/cmd/colors"
+	"io/ioutil"
+	"net"
 )
 
 // API : Rest API config
@@ -42,17 +42,26 @@ type Server struct {
 // TLS Certificates and keys
 type TLSParams struct {
 
+	// Enable TLS communications or not
+	UseTLS bool `toml:"usetls"`
+
 	// TLS Configuration to be set later
-	TLSConfig	*tls.Config
+	TLSConfig *tls.Config
 
 	// Certifcation Authority and Server Certificates
 	CaCert     string `toml:"caCert"`
 	ServerCert string `toml:"serverCert"`
 
 	// These will later be deleted to be load dynamically for server and clients
-	ServerPrivateKey 	string `toml:"serverPrivateKey"`
-	ClientCert			string `toml:"clientCert"`
-	ClientPrivateKey	string `toml:"clientPrivateKey"`
+	ServerPrivateKey string `toml:"serverPrivateKey"`
+	ClientCert       string `toml:"clientCert"`
+	ClientPrivateKey string `toml:"clientPrivateKey"`
+}
+
+// Connection type, to handle either use of TLS or not
+type Connector struct {
+	TLSConn *tls.Conn
+	Conn    net.Conn
 }
 
 // Database : Mongodb config
@@ -104,6 +113,7 @@ type ConfigToml struct {
 	Database   Database
 	Nodes      map[string]Node
 	Modules    map[string]Module
+	Connector  Connector
 	TLSParams  TLSParams
 }
 
@@ -131,26 +141,18 @@ func LoadConfig(file string) {
 	}
 }
 
-// Returns the calling functions name for error printing
-func traceFunc() string{
-	pc := make([]uintptr, 10)  // at least 1 entry needed
-	runtime.Callers(2, pc)
-	f := runtime.FuncForPC(pc[0])
-	return f.Name()
-}
-
 // Read CA file and initialise
-func TLSReadCAFile(caCert string) (*x509.CertPool, error){
+func TLSReadCAFile(caCert string) (*x509.CertPool, error) {
 
 	caCertBytes, err := ioutil.ReadFile(caCert)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to read CA file %s : %s"), traceFunc(), caCert, err.Error())
+		log.Printf(colors.Red("Unable to read CA file %s : %s"), caCert, err.Error())
 		return nil, err
 	}
 
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
-		log.Println(colors.Red("%s : Unable to add CA certificate to certificate pool"), traceFunc())
+		log.Println(colors.Red("Unable to add CA certificate to certificate pool"))
 		return nil, err
 	}
 
@@ -166,14 +168,14 @@ func TLSBuildServerConf() (*tls.Config, error) {
 	// Get CA file
 	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to load CA : %s"), traceFunc(), err.Error())
+		log.Printf(colors.Red("Unable to load CA : %s"), err.Error())
 		return nil, err
 	}
 
 	// Read own KeyPair
 	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ServerCert, Config.TLSParams.ServerPrivateKey)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to read X509KeyPair at %s : %s"), traceFunc(), Config.TLSParams.ServerCert, err.Error())
+		log.Printf(colors.Red("Unable to read X509KeyPair at %s : %s"), Config.TLSParams.ServerCert, err.Error())
 		return nil, err
 	}
 
@@ -206,14 +208,14 @@ func TLSBuildClientConf() (*tls.Config, error) {
 	// Read CA file and initialise
 	caCertPool, err = TLSReadCAFile(Config.TLSParams.CaCert)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to read CA file : %s"), traceFunc(), err.Error())
+		log.Printf(colors.Red("Unable to read CA file : %s"), err.Error())
 		return nil, err
 	}
 
 	// Read own KeyPair
 	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ClientCert, Config.TLSParams.ClientPrivateKey)
 	if err != nil {
-		log.Println(colors.Red("%s : Unable to read Client X509KeyPair : %s"), traceFunc(), err.Error())
+		log.Printf(colors.Red("Unable to read Client X509KeyPair : %s"), err.Error())
 		return nil, err
 	}
 

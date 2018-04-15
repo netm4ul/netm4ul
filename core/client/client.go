@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"log"
+	"net"
 )
 
 const (
@@ -27,15 +28,26 @@ var (
 )
 
 // Connect : Setup the connection to the master node
-func Connect(ipport string, config *tls.Config) (*tls.Conn, error) {
-	conn, err := tls.Dial("tcp", ipport, config)
-	// conn.SetKeepAlive(true) // This could potentially be buggy : tls.Conn does not offer a SetKeepAllive equivalent
+func Connect(ipport string, conf *config.ConfigToml) error {
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Dialing "+ipport+" failed")
+	var err error
+
+	if conf.TLSParams.UseTLS {
+		conf.Connector.TLSConn, err = tls.Dial("tcp", ipport, conf.TLSParams.TLSConfig)
+		if err != nil {
+			return errors.Wrap(err, "Dialing "+ipport+" failed")
+		}
+
+		return nil
+	} else {
+		conf.Connector.Conn, err = net.Dial("tcp", ipport)
+		if err != nil {
+			return errors.Wrap(err, "Dialing "+ipport+" failed")
+		}
+
+		return nil
 	}
 
-	return conn, nil
 }
 
 // InitModule : Update ListModule & ListModuleEnabled variable
@@ -53,9 +65,14 @@ func InitModule() {
 }
 
 // SendHello : Send node info (modules list, project name,...)
-func SendHello(conn *tls.Conn) error {
-	var err error
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+func SendHello(conn *config.Connector) error {
+	var rw *bufio.ReadWriter
+
+	if conn.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	} else {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+	}
 
 	enc := gob.NewEncoder(rw)
 
@@ -66,7 +83,7 @@ func SendHello(conn *tls.Conn) error {
 		log.Printf(colors.Yellow("Node : %+v"), node)
 	}
 
-	err = enc.Encode(node)
+	err := enc.Encode(node)
 	if err != nil {
 		return err
 	}
@@ -80,14 +97,20 @@ func SendHello(conn *tls.Conn) error {
 }
 
 // Recv read the incomming data from the server. The server use the server.Command struct.
-func Recv(conn *tls.Conn) (server.Command, error) {
+func Recv(conn *config.Connector) (server.Command, error) {
 	var cmd server.Command
 
 	if config.Config.Verbose {
 		log.Println(colors.Yellow("Waiting for incoming data"))
 	}
 
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	var rw *bufio.ReadWriter
+
+	if conn.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	} else {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+	}
 
 	dec := gob.NewDecoder(rw)
 	err := dec.Decode(&cmd)
@@ -125,11 +148,16 @@ func Execute(module modules.Module, cmd server.Command) (modules.Result, error) 
 }
 
 // SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
-func SendResult(conn *tls.Conn, res modules.Result) error {
-	var err error
-	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+func SendResult(conn *config.Connector, res modules.Result) error {
+	var rw *bufio.ReadWriter
+
+	if conn.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.Conn), bufio.NewWriter(conn.Conn))
+	} else {
+		rw = bufio.NewReadWriter(bufio.NewReader(conn.TLSConn), bufio.NewWriter(conn.TLSConn))
+	}
 	enc := gob.NewEncoder(rw)
-	err = enc.Encode(res)
+	err := enc.Encode(res)
 
 	if err != nil {
 		log.Println(colors.Red("Error :"), err)

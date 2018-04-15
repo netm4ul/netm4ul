@@ -61,17 +61,28 @@ func init() {
 }
 
 // Listen : create the TCP server on ipport interface ("ip:port" format)
-func TLSListen(ipport string, conf *tls.Config) {
+func TLSListen(ipport string, conf *config.ConfigToml) {
 	log.Printf(colors.Green("Listenning on : %s"), ipport)
-	l, err := tls.Listen("tcp", ipport, conf)
 
-	if err != nil {
-		log.Println(colors.Red("Error listening : %s"), err.Error())
-		os.Exit(1)
+	var l net.Listener
+
+	if conf.TLSParams.UseTLS {
+		l, err := tls.Listen("tcp", ipport, conf.TLSParams.TLSConfig)
+		if err != nil {
+			log.Println(colors.Red("Error listening : %s"), err.Error())
+			os.Exit(1)
+		}
+		defer l.Close()
+	} else {
+		l, err := net.Listen("tcp", ipport)
+		if err != nil {
+			log.Println(colors.Red("Error listening : %s"), err.Error())
+			os.Exit(1)
+		}
+		defer l.Close()
 	}
 
 	// Close the listener when the application closes.
-	defer l.Close()
 	mgoSession := database.Connect()
 
 	for {

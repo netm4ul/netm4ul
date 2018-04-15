@@ -19,11 +19,11 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
 	"log"
-	"github.com/netm4ul/netm4ul/cmd/colors"
 )
 
 // startCmd represents the start command
