@@ -35,7 +35,7 @@ var runCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Fatalln("To few arguments ! Expecting target.")
+			log.Fatalln("Too few arguments ! Expecting target.")
 		}
 
 		targets, err := parseTargets(args)

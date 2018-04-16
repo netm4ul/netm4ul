@@ -21,22 +21,23 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
-	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/spf13/cobra"
 
 	mgo "gopkg.in/mgo.v2"
 )
 
 const (
-	defaultSetupUser     = "admin"
-	defaultSetupPassword = "admin"
-	dbname               = "NetM4ul"
+	defaultDBSetupUser     = "admin"
+	defaultDBSetupPassword = "admin"
+	dbname                 = "NetM4ul"
 )
 
 var (
-	setupUser     string
-	setupPassword string
+	cliDBSetupUser     string
+	cliDBSetupPassword string
+	userIMode          = false
+	passwordIMode      = false
 )
 
 // setupCmd represents the setup command
@@ -49,7 +50,20 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+		CLISession.Config.Database.User = cliDBSetupUser
+		CLISession.Config.Database.Password = cliDBSetupPassword
+	},
+
 	Run: func(cmd *cobra.Command, args []string) {
+		ex2Conf()
+		if CLISession.Config.Database.User == "" {
+			userIMode = true
+		}
+		if CLISession.Config.Database.Password == "" {
+			passwordIMode = true
+		}
 		setupDB()
 	},
 }
@@ -60,15 +74,57 @@ func check(err error) {
 	}
 }
 
+// prompt user for configuration parameters
+func prompt(param string) (answer string) {
+	var text string
+	var input string
+	var defInput string
+
+	// Database parameters
+	if param == "dbuser" {
+		defInput = defaultDBSetupUser
+		fmt.Println("Interactive mode for username (default : ", defInput, ")")
+		text = "Enter username: "
+	} else if param == "dbpassword" {
+		defInput = defaultDBSetupPassword
+		fmt.Println("Interactive mode for password (default : ", defInput, ")")
+		text = "Enter password: "
+	}
+
+	// Can add other options for prompted stuff here
+	/*
+		else if param == "your_test"{
+			fmt.Println("Inteactive mode for ...")
+			text = "..."
+		}
+	*/
+	fmt.Print(text)
+	fmt.Scanln(&input)
+	if input == "" {
+		answer = defInput
+	} else {
+		answer = input
+	}
+	fmt.Println(answer)
+
+	return answer
+}
+
 // setupDB => create user in db for future requests
 func setupDB() {
 
+	if userIMode {
+		CLISession.Config.Database.User = prompt("dbuser")
+	}
+	if passwordIMode {
+		CLISession.Config.Database.Password = prompt("dbpassword")
+	}
 	fmt.Println("Configuring the database with provided user")
 
 	mgoSession := database.ConnectWithoutCreds()
 	roles := []mgo.Role{mgo.RoleDBAdmin}
 
-	u := mgo.User{Username: setupUser, Password: setupPassword, Roles: roles}
+	u := mgo.User{Username: CLISession.Config.Database.User, Password: CLISession.Config.Database.Password, Roles: roles}
 
 	c := mgoSession.DB(dbname)
 
@@ -79,17 +135,15 @@ func setupDB() {
 	modifyDBConnect()
 }
 
+// modify conf file for db parameters
 func modifyDBConnect() {
-	config.Config.Database.User = setupUser
-	config.Config.Database.Password = setupPassword
-
 	//Open current config file
-	srcFile, err := os.Open(config.Config.ConfigPath)
+	srcFile, err := os.Open(CLISession.Config.ConfigPath)
 	check(err)
 	defer srcFile.Close()
 
 	//Create bkp file
-	destFile, err := os.Create(config.Config.ConfigPath + ".old") // creates if file doesn't exist
+	destFile, err := os.Create(CLISession.Config.ConfigPath + ".old") // creates if file doesn't exist
 	check(err)
 	defer destFile.Close()
 
@@ -101,12 +155,12 @@ func modifyDBConnect() {
 	check(err)
 
 	//Remove old config file
-	err = os.Remove(config.Config.ConfigPath)
+	err = os.Remove(CLISession.Config.ConfigPath)
 	check(err)
 
 	//Create new config file
 	file, err := os.OpenFile(
-		config.Config.ConfigPath,
+		CLISession.Config.ConfigPath,
 		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
 		0666,
 	)
@@ -114,15 +168,37 @@ func modifyDBConnect() {
 	defer file.Close()
 
 	//Write new config to new config file
-	if err := toml.NewEncoder(file).Encode(config.Config); err != nil {
+	if err := toml.NewEncoder(file).Encode(CLISession.Config); err != nil {
 		log.Fatal(err)
 	}
 }
 
+// modify conf file
+func ex2Conf() {
+	//Open example config file
+	srcFile, err := os.Open(CLISession.Config.ConfigPath + ".example")
+	check(err)
+	defer srcFile.Close()
+
+	//Open current config file
+	destFile, err := os.OpenFile(
+		CLISession.Config.ConfigPath,
+		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
+		0666,
+	)
+	check(err)
+	defer destFile.Close()
+
+	//Copy content of example into current
+	_, err = io.Copy(destFile, srcFile) // check first var for number of bytes copied
+	check(err)
+
+	err = destFile.Sync()
+	check(err)
+}
+
 func init() {
 	rootCmd.AddCommand(setupCmd)
-	setupCmd.PersistentFlags().StringVarP(&setupUser, "user", "u", defaultSetupUser, "Custom database user")
-	setupCmd.PersistentFlags().StringVarP(&setupPassword, "password", "p", defaultSetupPassword, "Custom database password")
 
 	// Here you will define your flags and configuration settings.
 
@@ -133,4 +209,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// setupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	setupCmd.PersistentFlags().StringVarP(&cliDBSetupUser, "user", "", "", "Custom database user")
+	setupCmd.PersistentFlags().StringVarP(&cliDBSetupPassword, "password", "", "", "Custom database password")
 }
