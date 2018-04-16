@@ -24,3 +24,9 @@ netm4ul
 vendor/
 .idea/
 data/
+
+# personnal conf
+netm4ul.conf.my
+
+# Don't include certs
+certificates/*

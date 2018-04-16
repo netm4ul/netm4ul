@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -13,16 +14,16 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
 
+	"crypto/tls"
+
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/session"
 )
 
 var (
-	Version = config.Config.Versions.Server
-	// ConfigServer : Global config for the server. Must be goroutine safe
-	ConfigServer *config.ConfigToml
+	Version string
 	//Nodes represent a map to net.Conn
 	Nodes map[string]net.Conn
 	//SessionServer represent the server side's session. Hold all the modules
@@ -54,14 +55,29 @@ type Command struct {
 
 func init() {
 	Nodes = make(map[string]net.Conn)
-
-	SessionServer = session.NewSession()
 }
 
-// Listen : create the TCP server on ipport interface ("ip:port" format)
-func Listen(ipport string) {
-	log.Printf(colors.Green("Listenning on : %s"), ipport)
-	l, err := net.Listen("tcp", ipport)
+// CreateServer : Initialise the infinite server loop on the master node
+func CreateServer(s *session.Session) {
+	SessionServer = s
+	Listen(s)
+}
+
+// Listen : create the TCP server
+func Listen(s *session.Session) {
+
+	Version = s.Config.Versions.Server
+	ipport := s.GetServerIPPort()
+
+	var err error
+	var l net.Listener
+
+	if s.Config.TLSParams.UseTLS {
+		l, err = tls.Listen("tcp", ipport, s.Config.TLSParams.TLSConfig)
+
+	} else {
+		l, err = net.Listen("tcp", ipport)
+	}
 
 	if err != nil {
 		log.Println(colors.Red("Error listening : %s"), err.Error())
@@ -70,7 +86,11 @@ func Listen(ipport string) {
 
 	// Close the listener when the application closes.
 	defer l.Close()
+
+	database.InitDatabase(&s.Config)
 	mgoSession := database.Connect()
+
+	log.Printf(colors.Green("Listenning on : %s"), ipport)
 
 	for {
 		// Listen for an incoming connection.
@@ -82,27 +102,28 @@ func Listen(ipport string) {
 
 		mgoSessionClone := mgoSession.Clone()
 		// Handle connections in a new goroutine. (multi-client)
-		go handleRequest(conn, mgoSessionClone)
+		go handleRequest(conn, mgoSessionClone, s)
 	}
 }
 
-func handleRequest(conn net.Conn, mgoSession *mgo.Session) {
+func handleRequest(conn net.Conn, mgoSession *mgo.Session, s *session.Session) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 	// defer conn.Close()
 
-	handleHello(conn, rw, mgoSession)
+	handleHello(conn, rw, mgoSession, s)
 
 	stop := false
 	for !stop {
-		stop = handleData(conn, rw, mgoSession)
+		stop = handleData(conn, rw, mgoSession, s)
 	}
 }
 
 // Recv basic info for the node at connection time.
-func handleHello(conn net.Conn, rw *bufio.ReadWriter, session *mgo.Session) {
+func handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session, s *session.Session) {
 
 	var node config.Node
+
 	dec := gob.NewDecoder(rw)
 	err := dec.Decode(&node)
 
@@ -113,32 +134,35 @@ func handleHello(conn net.Conn, rw *bufio.ReadWriter, session *mgo.Session) {
 
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
-	if config.Config.Verbose {
-		if _, ok := ConfigServer.Nodes[ip]; ok {
+	if s.Config.Verbose {
+		if _, ok := s.Config.Nodes[ip]; ok {
 			log.Println(colors.Yellow("Node known. Updating"))
 		} else {
 			log.Println(colors.Yellow("Unknown node. Creating"))
 		}
 	}
 
-	ConfigServer.Nodes[ip] = node
+	s.Config.Nodes = make(map[string]config.Node)
+	s.Config.Modules = make(map[string]config.Module)
+
+	s.Config.Nodes[ip] = node
 	Nodes[ip] = conn
-	database.CreateProject(session, node.Project)
+	database.CreateProject(mgoSession, node.Project)
 
-	p := database.GetProjects(session)
+	p := database.GetProjects(mgoSession)
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("Nodes : %+v"), ConfigServer.Nodes)
+	if s.Config.Verbose {
+		log.Printf(colors.Yellow("Nodes : %+v"), s.Config.Nodes)
 		log.Printf(colors.Yellow("Projects : %+v"), p)
 	}
 
 }
 
-func getProjectByNodeIP(ip string) (string, error) {
+func getProjectByNodeIP(ip string, s *session.Session) (string, error) {
 
 	var err error
 
-	n, ok := ConfigServer.Nodes[ip]
+	n, ok := s.Config.Nodes[ip]
 	if !ok {
 		return "", errors.New("Unknown node ! Could not get project name")
 	}
@@ -161,13 +185,14 @@ func SendCmdByName(name string, options []string) {
 }
 
 //SendCmd sends one commands with its options to selected clients
-func SendCmd(command Command) error {
+func SendCmd(command Command, s *session.Session) error {
 
 	conns, err := getAvailableNodes(command.Requirements)
 
-	if config.Config.Verbose {
+	if s.Config.Verbose {
 		log.Printf(colors.Yellow("Available node(s) : %d"), len(conns))
 	}
+
 	if err != nil {
 		return errors.New("Could not get nodes :" + err.Error())
 	}
@@ -203,7 +228,7 @@ func getAvailableNodes(req Requirements) ([]net.Conn, error) {
 }
 
 // handleData decode and route all data after the "hello". It listens forever until connection closed.
-func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bool {
+func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session, s *session.Session) bool {
 	var data modules.Result
 	var err error
 
@@ -223,13 +248,15 @@ func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bo
 		return false
 	}
 
-	module, ok := SessionServer.Modules[strings.ToLower(data.Module)]
+	module, ok := s.Modules[strings.ToLower(data.Module)]
 	if !ok {
 		log.Printf(colors.Red("Unknown module : %s %+v %s"), data.Module, module, ok)
 	}
-	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
-	projectName, err := getProjectByNodeIP(ip)
 
+	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
+	projectName, err := getProjectByNodeIP(ip, s)
+
+	fmt.Printf("%+v", data)
 	err = module.WriteDb(data, mgoSession, projectName)
 
 	if err != nil {

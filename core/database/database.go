@@ -61,11 +61,15 @@ type Project struct {
 	IPs         []IP   `json:"ips" bson:"omitempty"`
 }
 
-var db *mgo.Database
-
 //DBname is the name of the mongodb collection
 // TODO move into config
 const DBname = "netm4ul"
+
+var cfg *config.ConfigToml
+
+func InitDatabase(c *config.ConfigToml) {
+	cfg = c
+}
 
 // Connect to the database and return a session
 func ConnectWithoutCreds() *mgo.Session {
@@ -86,7 +90,7 @@ func ConnectWithoutCreds() *mgo.Session {
 // Connect to the database and return a session
 func Connect() *mgo.Session {
 	mongoDBDialInfo := &mgo.DialInfo{
-		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
+		Addrs:    []string{cfg.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
 		Database: "NetM4ul",
 		Username: config.Config.Database.User,
@@ -97,7 +101,7 @@ func Connect() *mgo.Session {
 	if err != nil {
 		log.Fatalf(colors.Red("Error connecting with the database : %s"), err.Error())
 	}
-	log.Printf(colors.Green("Connected to the database : %s"), config.Config.Database.IP)
+	log.Printf(colors.Green("Connected to the database : %s"), cfg.Database.IP)
 	return session
 }
 
@@ -108,7 +112,7 @@ func CreateProject(session *mgo.Session, projectName string) {
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
-	if config.Config.Verbose && info.Updated == 1 {
+	if cfg.Verbose && info.Updated == 1 {
 		log.Printf(colors.Yellow("Info : %+v"), info)
 		log.Printf(colors.Yellow("Adding %s to the collections 'projects'"), projectName)
 	}

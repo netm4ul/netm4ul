@@ -26,12 +26,6 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/lair-framework/go-nmap"
-  packages = ["."]
-  revision = "2fc779828d7efe957e2960bbe73ccc589e2382e4"
-
-[[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
@@ -42,6 +36,12 @@
   packages = ["."]
   revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
   version = "v0.0.2"
+
+[[projects]]
+  name = "github.com/miekg/dns"
+  packages = ["."]
+  revision = "83c435cc65d2862736428b9b4d07d0ab10ad3e4d"
+  version = "v1.0.5"
 
 [[projects]]
   branch = "master"
@@ -70,11 +70,31 @@
 [[projects]]
   name = "github.com/spf13/pflag"
   packages = ["."]
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
-  version = "v1.0.0"
+  revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
+  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/crypto"
+  packages = [
+    "ed25519",
+    "ed25519/internal/edwards25519"
+  ]
+  revision = "beb2a9779c3b677077c41673505f150149fce895"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = [
+    "bpf",
+    "internal/iana",
+    "internal/socket",
+    "ipv4",
+    "ipv6"
+  ]
+  revision = "61147c48b25b599e5b561d2e9c4f3e1ef489ca41"
+
+[[projects]]
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
@@ -94,6 +114,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1dd576587b119066239b83e1920331a9a5dea0f0e7c0c4fa8848bcce02b2334d"
+  inputs-digest = "b5834a148c9fd7a62319ea9a01fb4c6b593da4d27daf0c86067aa110297d71e2"
   solver-name = "gps-cdcl"
   solver-version = 1

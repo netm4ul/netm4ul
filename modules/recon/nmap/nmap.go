@@ -13,12 +13,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/netm4ul/netm4ul/cmd/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
 	"github.com/BurntSushi/toml"
-	mynmap "github.com/lair-framework/go-nmap"
+	// gonmap "github.com/lair-framework/go-nmap"
+
 	"github.com/netm4ul/netm4ul/modules"
 )
 
@@ -40,12 +41,13 @@ type ConfigToml struct {
 type Nmap struct {
 	Config  ConfigToml
 	Result  []byte
-	Nmaprun *mynmap.NmapRun
+	Nmaprun *NmapRun
 }
 
 // NewTraceroute generate a new Nmap module (type modules.Module)
 func NewNmap() modules.Module {
-	gob.Register(mynmap.NmapRun{})
+
+	gob.Register(NmapRun{})
 	var t modules.Module
 	t = &Nmap{}
 	return t
@@ -132,6 +134,7 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	}
 
 	// TODO : change it for per target option ?
+	// filename := opt2[len(opt2)-1] + ".xml"
 	filename := "127.0.0.1.xml"
 	opt = append(opt, "-oX", filename)
 
@@ -145,26 +148,14 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	execErr := cmd.Run()
 	if execErr != nil {
 		log.Fatal(execErr)
-		// panic(execErr)
 	}
 	var err error
 	N.Result, err = ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatal("Error 2 : ", err)
 	}
-
-	return modules.Result{Data: N.Result, Timestamp: time.Now(), Module: N.Name()}, err
-}
-
-// Parse : Parse the result of the execution
-func (N *Nmap) Parse() (interface{}, error) {
-	var err error
-	N.Nmaprun, err = mynmap.Parse(N.Result)
-	if err != nil {
-		log.Fatal("Error 2 !", err)
-	}
-
-	return N.Nmaprun, err
+	N.Nmaprun, err = Parse(N.Result)
+	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
 // HandleMQ : Recv data from the MQ
@@ -199,11 +190,11 @@ func (N *Nmap) ParseConfig() error {
 // WriteDb : Save data
 func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
 	log.Println("Write to the database.")
-	var data mynmap.NmapRun
-	data = result.Data.(mynmap.NmapRun)
-
+	// var data NmapRun
+	result.Data = result.Data.(NmapRun)
+	// fmt.Printf("============================%+v", result.Data)
 	//save raw data
-	raw := bson.M{projectName + ".results." + result.Module: data}
+	raw := bson.M{projectName + ".results." + result.Module: result}
 	database.UpsertRawData(mgoSession, projectName, raw)
 
 	//save data in projects

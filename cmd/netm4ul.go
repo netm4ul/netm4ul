@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/netm4ul/netm4ul/core/session"
+
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
 )
@@ -18,24 +20,35 @@ var (
 	Modes       = []string{"passive", "stealth", "aggressive"}
 	DefaultMode = Modes[1] // uses first non-passive mode.
 
-	configPath string
-	CLItargets []string
-	CLImodules []string
-	CLImode    string
-	verbose    bool
-	version    bool
+	configPath     string
+	CLItargets     []string
+	CLImodules     []string
+	CLImode        string
+	CLIProjectName string
+	verbose        bool
+	version        bool
 
 	isServer   bool
 	isClient   bool
 	noColors   bool
 	info       string
 	completion bool
+	CLISession *session.Session
 )
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", DefaultConfigPath, "Custom config file path")
+	rootCmd.PersistentFlags().StringVarP(&CLIProjectName, "project", "p", DefaultConfigPath, "Uses the provided project name")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
+}
+
+func createSessionBase() {
+	config.LoadConfig(configPath)
+	CLISession = session.NewSession(config.Config)
+	CLISession.Config.ConfigPath = configPath
+	CLISession.Config.Verbose = verbose
+	CLISession.Config.Project.Name = CLIProjectName
 }
 
 var rootCmd = &cobra.Command{
@@ -43,11 +56,7 @@ var rootCmd = &cobra.Command{
 	Short: "netm4ul : Distributed recon made easy",
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		config.LoadConfig(configPath)
-
-		config.Config.ConfigPath = configPath
-		config.Config.Verbose = verbose
-
+		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

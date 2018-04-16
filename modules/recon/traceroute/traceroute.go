@@ -11,7 +11,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
@@ -43,33 +43,33 @@ type Traceroute struct {
 func NewTraceroute() modules.Module {
 	gob.Register(TracerouteResult{})
 	var t modules.Module
-	t = Traceroute{}
+	t = &Traceroute{}
 	return t
 }
 
 // Name : name getter
-func (T Traceroute) Name() string {
+func (T *Traceroute) Name() string {
 	return "Traceroute"
 }
 
 // Author : Author getter
-func (T Traceroute) Author() string {
+func (T *Traceroute) Author() string {
 	return "tomalavie"
 }
 
 // Version : Version  getter
-func (T Traceroute) Version() string {
+func (T *Traceroute) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (T Traceroute) DependsOn() []modules.Condition {
+func (T *Traceroute) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
 
 // Run : Main function of the module
-func (T Traceroute) Run(data []string) (modules.Result, error) {
+func (T *Traceroute) Run(data []string) (modules.Result, error) {
 	fmt.Println("hello world") //Affiche hello world pour le fun
 	// cmd := exec.Command("traceroute", "8.8.8.8") //
 	// var out bytes.Buffer
@@ -83,12 +83,12 @@ func (T Traceroute) Run(data []string) (modules.Result, error) {
 }
 
 // Parse : Parse the result of the execution
-func (T Traceroute) Parse() (TracerouteResult, error) {
+func (T *Traceroute) Parse() (TracerouteResult, error) {
 	return TracerouteResult{}, nil
 }
 
 // ParseConfig : Load the config from the config folder
-func (T Traceroute) ParseConfig() error {
+func (T *Traceroute) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -105,7 +105,7 @@ func (T Traceroute) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T Traceroute) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+func (T Traceroute) WriteDb(result modules.Result, sessionDB *mgo.Session, projectName string) error {
 	if config.Config.Verbose {
 		log.Println(colors.Yellow("Writing to the database."))
 	}
@@ -113,6 +113,6 @@ func (T Traceroute) WriteDb(result modules.Result, mgoSession *mgo.Session, proj
 	data = result.Data.(TracerouteResult)
 
 	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
+	database.UpsertRawData(sessionDB, projectName, raw)
 	return nil
 }

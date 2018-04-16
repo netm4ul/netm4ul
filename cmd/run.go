@@ -17,9 +17,11 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
 )
 
@@ -27,8 +29,9 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run scan on the defined target",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		config.Config.Mode = CLImode
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+		CLISession.Config.Mode = CLImode
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -40,22 +43,34 @@ var runCmd = &cobra.Command{
 			log.Println("Error while parsing targets :", err.Error())
 		}
 
-		if config.Config.Verbose {
+		if CLISession.Config.Verbose {
 			log.Println("targets :", targets)
 			log.Println("CLIModules :", CLImodules)
-			log.Println("Modules :", config.Config.Modules)
+			log.Println("Modules :", CLISession.Config.Modules)
 			log.Println("CLIMode :", CLImode)
-			log.Println("Mode :", config.Config.Mode)
+			log.Println("Mode :", CLISession.Config.Mode)
 		}
 
 		if len(CLImodules) > 0 {
-			mods, err := parseModules(CLImodules)
+			mods, err := parseModules(CLImodules, CLISession)
 			if err != nil {
 				fmt.Println(colors.Yellow(err.Error()))
 			}
-			addModules(mods)
+			addModules(mods, CLISession)
 		}
+		runModules(args[0])
 	},
+}
+
+func runModules(target string) {
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run/"
+	for i := range CLISession.Config.Modules {
+		resp, err := http.Post(url+i+"?options="+target, "application/text", strings.NewReader("127.0.0.1"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(resp)
+	}
 }
 
 func init() {
