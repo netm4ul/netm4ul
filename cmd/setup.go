@@ -27,8 +27,26 @@ import (
 	mgo "gopkg.in/mgo.v2"
 )
 
+// TODO Struct prompt for every prompted things
+/*
+mastruct struct {
+text = "blablablabla"
+defInput = "meh"
+}
+Mais après je l'appel comment ?
+Enfin
+Mmh
+Faut bien que j'ai plein de trucs différents
+Du coup plein de struct ?
+Edznux - Today at 3:48 PM
+En gros oui
+Et tu rajoute toutes ces struct dans une map
+Comme ça tu y accède avec lamap["dbpassword"]
+
+*/
 const (
-	defaultDBSetupUser     = "admin"
+	defaultDBSetupUser = "admin"
+	// TODO change by generated one
 	defaultDBSetupPassword = "admin"
 	dbname                 = "NetM4ul"
 )
@@ -74,7 +92,14 @@ func check(err error) {
 	}
 }
 
+// TODO Password generating func on 16 char
+/* func generatePwd(){
+	[...]
+}
+*/
+
 // prompt user for configuration parameters
+// TODO Change for struct
 func prompt(param string) (answer string) {
 	var text string
 	var input string
@@ -86,6 +111,8 @@ func prompt(param string) (answer string) {
 		fmt.Println("Interactive mode for username (default : ", defInput, ")")
 		text = "Enter username: "
 	} else if param == "dbpassword" {
+		// TODO change by generated one
+		// defInput = generatePwd()
 		defInput = defaultDBSetupPassword
 		fmt.Println("Interactive mode for password (default : ", defInput, ")")
 		text = "Enter password: "
@@ -148,7 +175,7 @@ func modifyDBConnect() {
 	defer destFile.Close()
 
 	//Copy content of current into bkp
-	_, err = io.Copy(destFile, srcFile) // check first var for number of bytes copied
+	_, err = io.Copy(destFile, srcFile)
 	check(err)
 
 	err = destFile.Sync()
@@ -190,7 +217,7 @@ func ex2Conf() {
 	defer destFile.Close()
 
 	//Copy content of example into current
-	_, err = io.Copy(destFile, srcFile) // check first var for number of bytes copied
+	_, err = io.Copy(destFile, srcFile)
 	check(err)
 
 	err = destFile.Sync()
