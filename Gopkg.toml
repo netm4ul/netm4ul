@@ -42,3 +42,7 @@ name = "github.com/lair-framework/go-nmap"
 [[constraint]]
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.0.5"

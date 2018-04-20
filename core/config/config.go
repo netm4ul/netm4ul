@@ -1,16 +1,16 @@
 package config
 
 import (
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/sirupsen/logrus"
 
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
 
 	"github.com/BurntSushi/toml"
-	"github.com/netm4ul/netm4ul/cmd/colors"
 )
 
 // API : Rest API config
@@ -138,13 +138,13 @@ func TLSReadCAFile(caCert string) (*x509.CertPool, error) {
 
 	caCertBytes, err := ioutil.ReadFile(caCert)
 	if err != nil {
-		log.Printf(colors.Red("Unable to read CA file %s : %s"), caCert, err.Error())
+		log.Errorf("Unable to read CA file %s : %s", caCert, err.Error())
 		return nil, err
 	}
 
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
-		log.Println(colors.Red("Unable to add CA certificate to certificate pool"))
+		log.Error("Unable to add CA certificate to certificate pool")
 		return nil, err
 	}
 
@@ -163,7 +163,7 @@ func TLSBuildServerConf() (*tls.Config, error) {
 	// Read own KeyPair
 	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ServerCert, Config.TLSParams.ServerPrivateKey)
 	if err != nil {
-		log.Printf(colors.Red("Unable to read X509KeyPair at %s : %s"), Config.TLSParams.ServerCert, err.Error())
+		log.Errorf("Unable to read X509KeyPair at %s : %s", Config.TLSParams.ServerCert, err.Error())
 		return nil, err
 	}
 
@@ -199,7 +199,7 @@ func TLSBuildClientConf() (*tls.Config, error) {
 	// Read own KeyPair
 	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ClientCert, Config.TLSParams.ClientPrivateKey)
 	if err != nil {
-		log.Printf(colors.Red("Unable to read Client X509KeyPair : %s"), err.Error())
+		log.Errorf("Unable to read Client X509KeyPair : %s", err.Error())
 		return nil, err
 	}
 

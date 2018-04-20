@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 
-	"github.com/netm4ul/netm4ul/core/session"
-
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/session"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -41,9 +40,18 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&CLIProjectName, "project", "p", DefaultConfigPath, "Uses the provided project name")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
+	log.SetOutput(os.Stdout)
+	customFormatter := new(log.TextFormatter)
+	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	customFormatter.FullTimestamp = true
+	log.SetFormatter(customFormatter)
 }
 
 func createSessionBase() {
+	if verbose {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	config.LoadConfig(configPath)
 	CLISession = session.NewSession(config.Config)
 	CLISession.Config.ConfigPath = configPath
@@ -67,7 +75,7 @@ var rootCmd = &cobra.Command{
 // Execute is the entrypoint
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(1)
 	}
 }
@@ -77,6 +85,17 @@ func gracefulShutdown() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
-	log.Println("shutting down")
+	log.Info("shutting down")
 	os.Exit(0)
+}
+
+func setupLoggingToFile(logfile string) {
+	if logfile != "" {
+		f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize log file %s", err)
+			os.Exit(1)
+		}
+		log.SetOutput(f)
+	}
 }
