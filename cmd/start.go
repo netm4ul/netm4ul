@@ -40,7 +40,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the requested service",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("\n\nTo few arguments !\n\n")
+		fmt.Printf("\n\nTo few arguments !\n\n")
 		cmd.Help()
 		os.Exit(1)
 	},
