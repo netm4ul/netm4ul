@@ -26,6 +26,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	ServerLogPath = "server.log"
+	ClientLogPath = "client.log"
+)
+
+var (
+	CLILogfile bool
+)
+
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -47,7 +56,9 @@ var startServerCmd = &cobra.Command{
 		// init session...
 		// there is no chaining of persistent pre run ... so we are doing it manualy...
 		createSessionBase()
-
+		if CLILogfile {
+			setupLoggingToFile(ServerLogPath)
+		}
 		CLISession.Config.IsServer = isServer
 		CLISession.Config.Nodes = make(map[string]config.Node)
 
@@ -88,7 +99,9 @@ var startClientCmd = &cobra.Command{
 		// init session
 		// there is no chaining of persistent pre run ... so we are doing it manualy...
 		createSessionBase()
-
+		if CLILogfile {
+			setupLoggingToFile(ClientLogPath)
+		}
 		config.Config.IsClient = isClient
 
 		if CLISession.Config.TLSParams.UseTLS {
@@ -111,6 +124,8 @@ var startClientCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(startCmd)
+
+	startCmd.PersistentFlags().BoolVar(&CLILogfile, "log2file", false, "Enable logging to file")
 
 	startCmd.AddCommand(startServerCmd)
 	startCmd.AddCommand(startClientCmd)

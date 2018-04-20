@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 
@@ -50,6 +51,7 @@ func createSessionBase() {
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	}
+
 	config.LoadConfig(configPath)
 	CLISession = session.NewSession(config.Config)
 	CLISession.Config.ConfigPath = configPath
@@ -85,4 +87,15 @@ func gracefulShutdown() {
 	<-c
 	log.Info("shutting down")
 	os.Exit(0)
+}
+
+func setupLoggingToFile(logfile string) {
+	if logfile != "" {
+		f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize log file %s", err)
+			os.Exit(1)
+		}
+		log.SetOutput(f)
+	}
 }
