@@ -16,14 +16,13 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +31,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the requested service",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("To few arguments !")
+		fmt.Println("\n\nTo few arguments !\n\n")
 		cmd.Help()
 		os.Exit(1)
 	},
@@ -56,7 +55,7 @@ var startServerCmd = &cobra.Command{
 			CLISession.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
 
 			if err != nil {
-				log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
+				log.Error("Unable to load TLS configuration. Shutting down.")
 				os.Exit(1)
 			}
 		}
@@ -96,7 +95,7 @@ var startClientCmd = &cobra.Command{
 			config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()
 
 			if err != nil {
-				log.Println(colors.Red("Unable to load TLS configuration. Shutting down."))
+				log.Error("Unable to load TLS configuration. Shutting down.")
 				os.Exit(1)
 			}
 		}

@@ -5,16 +5,15 @@ import (
 	"crypto/tls"
 	"encoding/gob"
 	"io"
-	"log"
 	"net"
 	"time"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -39,7 +38,7 @@ func CreateClient(s *session.Session) {
 
 	InitModule(s)
 
-	log.Println(colors.Green("Modules enabled :"), ListModuleEnabled)
+	log.Info("Modules enabled :", ListModuleEnabled)
 
 	for tries := 0; tries < maxRetry; tries++ {
 		err = Connect(s)
@@ -49,8 +48,8 @@ func CreateClient(s *session.Session) {
 			break
 		}
 
-		log.Println(colors.Red("Could not connect :"), err)
-		log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
+		log.Errorf("Could not connect : %+v", err)
+		log.Errorf("Retry count : %d, Max retry : %d", tries, maxRetry)
 		time.Sleep(1 * time.Second)
 	}
 
@@ -74,11 +73,11 @@ func handleData(s *session.Session) {
 
 		// kill on socket closed.
 		if err == io.EOF {
-			log.Fatalf(colors.Red("Connection closed : %s"), err.Error())
+			log.Fatalf("Connection closed : %s", err.Error())
 		}
 
 		if err != nil {
-			log.Println(colors.Red(err.Error()))
+			log.Error(err.Error())
 			continue
 		}
 
@@ -117,9 +116,7 @@ func Connect(s *session.Session) error {
 // InitModule : Update ListModule & ListModuleEnabled variable
 func InitModule(s *session.Session) {
 
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("Session client : %+v"), s)
-	}
+	log.Debugf("Session client : %+v", s)
 	for m := range s.Config.Modules {
 		ListModule = append(ListModule, m)
 		if s.Config.Modules[m].Enabled {
@@ -142,9 +139,7 @@ func SendHello(s *session.Session) error {
 
 	node := config.Node{Modules: ListModuleEnabled, Project: s.Config.Project.Name}
 
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("Node : %+v"), node)
-	}
+	log.Debugf("Node : %+v", node)
 
 	err := enc.Encode(node)
 	if err != nil {
@@ -163,9 +158,7 @@ func SendHello(s *session.Session) error {
 func Recv(s *session.Session) (server.Command, error) {
 	var cmd server.Command
 
-	if s.Config.Verbose {
-		log.Println(colors.Yellow("Waiting for incomming data"))
-	}
+	log.Debugf("Waiting for incomming data")
 
 	var rw *bufio.ReadWriter
 
@@ -187,9 +180,7 @@ func Recv(s *session.Session) (server.Command, error) {
 		return server.Command{}, errors.New("Could not decode received message : " + err.Error())
 	}
 
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("Recieved command %+v"), cmd)
-	}
+	log.Debugf("Recieved command %+v", cmd)
 	_, ok := s.Modules[cmd.Name]
 
 	if !ok {
@@ -202,9 +193,7 @@ func Recv(s *session.Session) (server.Command, error) {
 // Execute runs modules with the right options and handle errors.
 func Execute(s *session.Session, module modules.Module, cmd server.Command) (modules.Result, error) {
 
-	if s.Config.Verbose {
-		log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
-	}
+	log.Debugf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
 	//TODO
 	res, err := module.Run(cmd.Options)
 	return res, err
@@ -224,13 +213,13 @@ func SendResult(s *session.Session, res modules.Result) error {
 	err := enc.Encode(res)
 
 	if err != nil {
-		log.Println(colors.Red("Error :"), err)
+		log.Errorf("Error : %+v", err)
 		return err
 	}
 
 	err = rw.Flush()
 	if err != nil {
-		log.Println(colors.Red("Error :"), err)
+		log.Errorf("Error : %+v", err)
 		return err
 	}
 

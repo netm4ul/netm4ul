@@ -16,12 +16,11 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -40,21 +39,19 @@ var runCmd = &cobra.Command{
 
 		targets, err := parseTargets(args)
 		if err != nil {
-			log.Println("Error while parsing targets :", err.Error())
+			log.Errorf("Error while parsing targets : %v", err.Error())
 		}
 
-		if CLISession.Config.Verbose {
-			log.Println("targets :", targets)
-			log.Println("CLIModules :", CLImodules)
-			log.Println("Modules :", CLISession.Config.Modules)
-			log.Println("CLIMode :", CLImode)
-			log.Println("Mode :", CLISession.Config.Mode)
-		}
+		log.Debugf("targets : %+v", targets)
+		log.Debugf("CLIModules : %+v", CLImodules)
+		log.Debugf("Modules : %+v", CLISession.Config.Modules)
+		log.Debugf("CLIMode : %+v", CLImode)
+		log.Debugf("Mode : %+v", CLISession.Config.Mode)
 
 		if len(CLImodules) > 0 {
 			mods, err := parseModules(CLImodules, CLISession)
 			if err != nil {
-				fmt.Println(colors.Yellow(err.Error()))
+				log.Errorf(err.Error())
 			}
 			addModules(mods, CLISession)
 		}

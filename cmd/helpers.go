@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -14,9 +13,9 @@ import (
 	"time"
 
 	"github.com/netm4ul/netm4ul/core/session"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
@@ -40,9 +39,7 @@ func getData(ressource string, s *session.Session) (api.Result, error) {
 	var result api.Result
 	url := getURL(ressource, s)
 
-	if s.Config.Verbose {
-		log.Println(colors.Yellow("GET : " + url))
-	}
+	log.Debugf("GET : %s", url)
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -95,7 +92,7 @@ func createProjectIfNotExist(s *session.Session) {
 
 	listOfProject, err := GetProjects(s)
 	if err != nil {
-		log.Printf(colors.Red("Can't get project list : %s"), err.Error())
+		log.Errorf("Can't get project list : %s", err.Error())
 	}
 
 	for _, project := range listOfProject {
@@ -107,7 +104,7 @@ func createProjectIfNotExist(s *session.Session) {
 
 	err = CreateProject(p, s)
 	if err != nil {
-		log.Printf(colors.Red("Can't create project : %s"), err.Error())
+		log.Errorf("Can't create project : %s", err.Error())
 	}
 
 }
@@ -136,9 +133,7 @@ func GetProjects(s *session.Session) ([]database.Project, error) {
 	var data []database.Project
 	resjson, err := getData("/projects", s)
 
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("response : %+v"), resjson)
-	}
+	log.Debugf("response : %+v", resjson)
 
 	if err != nil {
 		return data, err
@@ -160,9 +155,7 @@ func GetProject(name string, s *session.Session) (database.Project, error) {
 	var data database.Project
 	resjson, err := getData("/projects/"+name, s)
 
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("response : %+v"), resjson)
-	}
+	log.Debugf("response : %+v", resjson)
 
 	if err != nil {
 		return data, err
@@ -229,13 +222,13 @@ func printProjectsInfo(s *session.Session) {
 	// get list of projects
 	listOfProjects, err := GetProjects(s)
 	if err != nil {
-		log.Printf(colors.Red("Can't get projects list : %s"), err.Error())
+		log.Errorf("Can't get projects list : %s", err.Error())
 	}
 
 	// build array of array for the table !
 	for _, p := range listOfProjects {
 		if s.Config.Verbose {
-			log.Printf(colors.Green("p : %+v"), p)
+			log.Infof("p : %+v", p)
 		}
 		data = append(data, []string{p.Name, p.Description, strconv.Itoa(len(p.IPs)), time.Unix(p.UpdatedAt, 0).String()})
 	}
@@ -254,21 +247,19 @@ func printProjectInfo(projectName string, s *session.Session) {
 	table.SetHeader([]string{"IP", "Ports"})
 
 	if projectName == "" {
-		log.Fatalln(colors.Red("No project provided"))
+		log.Fatalln("No project provided")
 		// exit
 	}
 
 	p, err = GetProject(projectName, s)
 	if err != nil {
-		log.Printf(colors.Red("Can't get project %s : %s"), projectName, err.Error())
+		log.Errorf("Can't get project %s : %s", projectName, err.Error())
 	}
 
-	if s.Config.Verbose {
-		log.Printf(colors.Green("Project : %+v"), p)
-	}
+	log.Debugf("Project : %+v", p)
 
 	for _, ip := range p.IPs {
-		log.Printf("ip : %+v", ip)
+		log.Debugf("ip : %+v", ip)
 		for _, port := range ip.Ports {
 			data = append(data, []string{ip.Value.String(), strconv.Itoa(int(port.Number))})
 		}
