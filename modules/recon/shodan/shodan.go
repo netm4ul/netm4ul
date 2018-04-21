@@ -3,10 +3,11 @@ package shodan
 import (
 	"context"
 	"encoding/gob"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/config"
@@ -87,7 +88,7 @@ type Services struct {
 // Run : Main function of the module
 func (S Shodan) Run(data []string) (modules.Result, error) {
 
-	log.Println("Shodan World!")
+	log.Debug("Shodan World!")
 
 	// Instanciate shodanResult
 	shodanResult := ShodanResult{}
@@ -122,28 +123,28 @@ func (S Shodan) Run(data []string) (modules.Result, error) {
 	if config.Config.Verbose {
 		printHost(*host)
 		for _, servicesData := range host.Data {
-			log.Println(servicesData)
+			log.Debug(servicesData)
 		}
 	}
 
 	// Exit message
-	log.Println("Shodan module executed. See u, in hell!!")
+	log.Debug("Shodan module executed. See u, in hell!!")
 
 	return modules.Result{Data: shodanResult, Timestamp: time.Now(), Module: S.Name()}, err
 }
 
 func printHost(host shodan.Host) {
-	log.Println(host.OS)
-	log.Println(host.Ports)
-	log.Println(host.IP)
-	log.Println(host.ISP)
-	log.Println(host.Hostnames)
-	log.Println(host.Organization)
-	log.Println(host.Vulnerabilities)
-	log.Println(host.ASN)
-	log.Println(host.LastUpdate)
-	log.Println(host.Data)
-	log.Println(host.HostLocation)
+	log.Debug(host.OS)
+	log.Debug(host.Ports)
+	log.Debug(host.IP)
+	log.Debug(host.ISP)
+	log.Debug(host.Hostnames)
+	log.Debug(host.Organization)
+	log.Debug(host.Vulnerabilities)
+	log.Debug(host.ASN)
+	log.Debug(host.LastUpdate)
+	log.Debug(host.Data)
+	log.Debug(host.HostLocation)
 }
 
 // ParseConfig : Load the config from the config folder
@@ -156,14 +157,14 @@ func (S Shodan) ParseConfig() error {
 	configPath := filepath.Join(exPath, "config", "shodan.conf")
 
 	if _, err := toml.DecodeFile(configPath, &S.Config); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return err
 	}
 	return nil
 }
 
 func (S Shodan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Println("Write to the database.")
+	log.Debug("Write to the database.")
 	var data ShodanResult
 	data = result.Data.(ShodanResult)
 
