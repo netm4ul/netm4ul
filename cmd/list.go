@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/spf13/cobra"
 )
 
@@ -36,25 +35,31 @@ var listCmd = &cobra.Command{
 var listProjectsCmd = &cobra.Command{
 	Use:   "projects",
 	Short: "Return list of projects",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listProjectsCmd called")
-		printProjectsInfo()
+		printProjectsInfo(CLISession)
 	},
 }
 
 var listProjectCmd = &cobra.Command{
 	Use:   "project",
 	Short: "Return project info",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listProjectCmd called")
 		// no argument, read from config
 		if len(args) == 0 {
-			printProjectInfo(config.Config.Project.Name)
+			printProjectInfo(CLISession.Config.Project.Name, CLISession)
 			os.Exit(0)
 		}
 		// 1 arguments, use it
 		if len(args) == 1 {
-			printProjectInfo(args[0])
+			printProjectInfo(args[0], CLISession)
 		} else {
 			fmt.Println("Too many arguments expected 1, got", len(args))
 		}
@@ -65,6 +70,9 @@ var listProjectCmd = &cobra.Command{
 var listIPCmd = &cobra.Command{
 	Use:   "ip",
 	Short: "Return ip info",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listIPCmd called")
 	},
@@ -73,6 +81,9 @@ var listIPCmd = &cobra.Command{
 var listPortCmd = &cobra.Command{
 	Use:   "port",
 	Short: "Return port info",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listPortCmd called")
 	},

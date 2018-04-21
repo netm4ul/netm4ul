@@ -2,21 +2,22 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 	"net"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/server"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/session"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/mgo.v2/bson"
 )
 
 var (
 	// Version is the string representation of the api version
-	Version string
+	Version    string
+	SessionAPI *session.Session
 )
 
 const (
@@ -46,12 +47,20 @@ type Metadata struct {
 	API   API                    `json:"api"`
 }
 
+// CreateAPI : Initialise the infinite server loop on the master node
+func CreateAPI(s *session.Session) {
+	SessionAPI = s
+	Start()
+}
+
 //Start the API and route endpoints to functions
-func Start(ipport string, conf *config.ConfigToml) {
-	Version = config.Config.Versions.Api
+func Start() {
+
+	ipport := SessionAPI.GetAPIIPPort()
+	Version = SessionAPI.Config.Versions.Api
 	prefix := "/api/" + Version
-	log.Printf(colors.Green("API Listenning : %s, version : %s"), ipport, config.Config.Versions.Api)
-	log.Println("API Endpoint :", ipport+prefix)
+	log.Infof("API Listenning : %s, version : %s", ipport, SessionAPI.Config.Versions.Api)
+	log.Infof("API Endpoint : %s", ipport+prefix)
 	router := mux.NewRouter()
 
 	// Add content-type json header !
@@ -80,8 +89,8 @@ func Start(ipport string, conf *config.ConfigToml) {
 
 //GetIndex returns a link to the documentation on the root path
 func GetIndex(w http.ResponseWriter, r *http.Request) {
-	api := API{Port: config.Config.API.Port, Versions: config.Config.Versions}
-	d := Metadata{API: api, Nodes: server.ConfigServer.Nodes}
+	api := API{Port: SessionAPI.Config.API.Port, Versions: SessionAPI.Config.Versions}
+	d := Metadata{API: api, Nodes: server.SessionServer.Config.Nodes}
 	res := Result{Status: "success", Code: CodeOK, Message: "Documentation available at https://github.com/netm4ul/netm4ul", Data: d}
 	json.NewEncoder(w).Encode(res)
 }
@@ -121,9 +130,7 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	session := database.Connect()
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("Requesting project : %s"), vars["name"])
-	}
+	log.Debugf("Requesting project : %s", vars["name"])
 	p := database.GetProjectByName(session, vars["name"])
 
 	// TODO : use real data
@@ -167,16 +174,14 @@ func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 
 	err := session.DB(database.DBname).C("projects").Find(bson.M{"Name": name}).All(&ips)
 	if err != nil {
-		log.Println(colors.Red("Error in selecting projects %s"), err.Error())
+		log.Errorf("Error in selecting projects %s", err.Error())
 		res := Result{Status: "error", Code: CodeDatabaseError, Message: "Error in selecting project IPs"}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
 	if len(ips) == 1 && ips[0].Value == nil {
-		if config.Config.Verbose {
-			log.Printf(colors.Yellow("Project %s not found"), name)
-		}
+		log.Debugf("Project %s not found", name)
 		res := Result{Status: "error", Code: CodeNotFound, Data: []string{}, Message: "No IP found"}
 		json.NewEncoder(w).Encode(res)
 		return
@@ -212,17 +217,13 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	protocol := vars["protocol"]
 
 	if protocol != "" {
-		if config.Config.Verbose {
-			log.Printf(colors.Yellow("name : %s, ip : %s, protocol : %s"), name, ip, protocol)
-		}
+		log.Debugf("name : %s, ip : %s, protocol : %s", name, ip, protocol)
 		res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("name : %s, ip : %s"), name, ip)
-	}
+	log.Debugf("name : %s, ip : %s", name, ip)
 
 	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	json.NewEncoder(w).Encode(res)
@@ -326,11 +327,9 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 
 	cmd := server.Command{Name: module, Options: options}
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("RunModule for cmd : %+v"), cmd)
-	}
+	log.Debugf("RunModule for cmd : %+v", cmd)
 
-	err := server.SendCmd(cmd)
+	err := server.SendCmd(cmd, SessionAPI)
 	if err != nil {
 		res = Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
 	}
@@ -354,9 +353,7 @@ func DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 func jsonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if config.Config.Verbose {
-			log.Printf(colors.Green("Request URL : %s"), r.RequestURI)
-		}
+		log.Debugf("Request URL : %s", r.RequestURI)
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
