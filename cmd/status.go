@@ -36,6 +36,9 @@ var statusCmd = &cobra.Command{
 var statusServerCmd = &cobra.Command{
 	Use:   "server",
 	Short: "status of the server",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("statusServer called")
 	},
@@ -45,6 +48,9 @@ var statusServerCmd = &cobra.Command{
 var statusClientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "status of the client",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("statusClient called")
 	},

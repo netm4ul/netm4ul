@@ -1,12 +1,11 @@
 package database
 
 import (
-	"log"
 	"net"
 	"time"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
+	log "github.com/sirupsen/logrus"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -61,16 +60,20 @@ type Project struct {
 	IPs         []IP   `json:"ips" bson:"omitempty"`
 }
 
-var db *mgo.Database
-
 //DBname is the name of the mongodb collection
 // TODO move into config
 const DBname = "netm4ul"
 
+var cfg *config.ConfigToml
+
+func InitDatabase(c *config.ConfigToml) {
+	cfg = c
+}
+
 // Connect to the database and return a session
 func Connect() *mgo.Session {
 	mongoDBDialInfo := &mgo.DialInfo{
-		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
+		Addrs:    []string{cfg.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
 		Database: "NetM4ul",
 		// TODO : security whatever ¯\_(ツ)_/¯
@@ -80,9 +83,9 @@ func Connect() *mgo.Session {
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
-		log.Fatalf(colors.Red("Error connecting with the database : %s"), err.Error())
+		log.Fatalf("Error connecting with the database : %s", err.Error())
 	}
-	log.Printf(colors.Green("Connected to the database : %s"), config.Config.Database.IP)
+	log.Infof("Connected to the database : %s", cfg.Database.IP)
 	return session
 }
 
@@ -93,9 +96,9 @@ func CreateProject(session *mgo.Session, projectName string) {
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
-	if config.Config.Verbose && info.Updated == 1 {
-		log.Printf(colors.Yellow("Info : %+v"), info)
-		log.Printf(colors.Yellow("Adding %s to the collections 'projects'"), projectName)
+	if cfg.Verbose && info.Updated == 1 {
+		log.Infof("Info : %+v", info)
+		log.Infof("Adding %s to the collections 'projects'", projectName)
 	}
 
 	if err != nil {
@@ -107,7 +110,7 @@ func CreateProject(session *mgo.Session, projectName string) {
 func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
 	c := session.DB(DBname).C("projects")
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
-	log.Printf(colors.Yellow("Info : %+v"), info)
+	log.Infof("Info : %+v", info)
 	if err != nil {
 		log.Fatal(err)
 	}
