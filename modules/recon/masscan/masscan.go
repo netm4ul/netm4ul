@@ -7,16 +7,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"os"
 	"path/filepath"
 
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
@@ -103,7 +104,7 @@ func (M *Masscan) Author() string {
 
 // Version : Version  getter
 func (M *Masscan) Version() string {
-	return "0.2"
+	return "0.3"
 }
 
 // DependsOn : Generate the dependencies requirement
@@ -112,61 +113,93 @@ func (M *Masscan) DependsOn() []modules.Condition {
 	return []modules.Condition{}
 }
 
-// Checks error
-func check(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
-}
-
-// Generate uuid name for output file
-func generateUUID() string {
-	uuid := make([]byte, 16)
-	_, err := rand.Read(uuid)
-	check(err)
-
-	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:])
-}
-
 // Run : Main function of the module
 func (M *Masscan) Run(data []string) (modules.Result, error) {
-	log.Println("H3ll-0 M4sscan")
+	log.Debug("H3ll-0 M4sscan")
 
 	// Temporary IP forced : 212.47.247.190 = edznux.fr
 	target := []string{"212.47.247.190"}
 	outputfile := "/tmp/" + generateUUID() + ".json"
 
 	// Get arguments
-	opt := M.ParseOptions()
+	opt, err := M.ParseOptions()
+	if err != nil {
+		log.Error(err)
+	}
 	opt = append(opt, "-oJ", outputfile)
-	//opt = append(opt, data...)
+	// opt = append(data, opt...)
 	opt = append(target, opt...)
 
 	// Command execution
 	cmd := exec.Command("masscan", opt...)
-	log.Printf("cmd:%+v\n", cmd)
+	log.Debug("Command executed: masscan ", opt)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	fmt.Println(stderr.String())
-	check(err)
+	err = cmd.Run()
+	if err != nil {
+		log.Error(stderr.String())
+	}
+	log.Debug(stdout.String())
 	res, err := M.Parse(outputfile)
-	check(err)
-
-	log.Println("M4sscan done.")
+	if err != nil {
+		log.Error(err)
+	}
+	log.Debug("M4sscan done.")
 
 	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
 }
 
+// Parse : Parse the result of the execution
+func (M *Masscan) Parse(file string) (MasscanResult, error) {
+	var scans []Scan
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return MasscanResult{}, err
+	}
+	fileReformatted := string(data)
+
+	// JSON reformatted
+	re := regexp.MustCompile(" },\n]\n")
+	fileReformatted = re.ReplaceAllString(string(data), " }\n]\n")
+
+	err = json.Unmarshal([]byte(fileReformatted), &scans)
+	if err != nil {
+		return MasscanResult{}, err
+	}
+
+	err = os.Remove(file)
+	if err != nil {
+		log.Error(err)
+	}
+	return MasscanResult{Resultat: scans}, nil
+}
+
+// ParseConfig : Load the config from the config folder
+func (M *Masscan) ParseConfig() error {
+	ex, err := os.Executable()
+	if err != nil {
+		log.Panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	configPath := filepath.Join(exPath, "config", "masscan.conf")
+
+	if _, err := toml.DecodeFile(configPath, &M.Config); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ParseOptions : Parse the args in according to masscan.conf
-func (M *Masscan) ParseOptions() []string {
+func (M *Masscan) ParseOptions() ([]string, error) {
 	var opt []string
 
 	err := M.ParseConfig()
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	if M.Config.Verbose {
 		opt = append(opt, "-v")
@@ -254,51 +287,28 @@ func (M *Masscan) ParseOptions() []string {
 		opt = append(opt, "--wait="+M.Config.Wait)
 	}
 
-	return opt
-}
-
-// Parse : Parse the result of the execution
-func (M *Masscan) Parse(file string) (MasscanResult, error) {
-	var scans []Scan
-	data, err := ioutil.ReadFile(file)
-	check(err)
-	fileReformatted := string(data)
-
-	// JSON reformatted
-	re := regexp.MustCompile(" },\n]\n")
-	fileReformatted = re.ReplaceAllString(string(data), " }\n]\n")
-
-	err = json.Unmarshal([]byte(fileReformatted), &scans)
-	check(err)
-	err = os.Remove(file)
-	check(err)
-
-	return MasscanResult{Resultat: scans}, nil
-}
-
-// ParseConfig : Load the config from the config folder
-func (M *Masscan) ParseConfig() error {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "config", "masscan.conf")
-
-	if _, err := toml.DecodeFile(configPath, &M.Config); err != nil {
-		fmt.Println(err)
-		return err
-	}
-	return nil
+	return opt, nil
 }
 
 // WriteDb : Save data
 func (M *Masscan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Println("Write to the database.")
+	log.Info("Write to the database.")
 	var data MasscanResult
 	data = result.Data.(MasscanResult)
 
 	raw := bson.M{projectName + ".results." + result.Module: data}
 	database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
+}
+
+// Generate uuid name for output file
+func generateUUID() string {
+	uuid := make([]byte, 16)
+	_, err := rand.Read(uuid)
+	if err != nil {
+		log.Error(err)
+		return "temp_masscan_output"
+	}
+
+	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:])
 }
