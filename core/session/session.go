@@ -46,17 +46,11 @@ func (s *Session) loadModule() {
 	s.Register(traceroute.NewTraceroute())
 	s.Register(dns.NewDns())
 	s.Register(nmap.NewNmap())
+	s.Register(shodan.NewShodan())
 }
 
 func (s *Session) GetServerIPPort() string {
 	return s.Config.Server.IP + ":" + strconv.FormatUint(uint64(s.Config.Server.Port), 10)
-}
-
-func (p *Session) loadModule() {
-	p.Register(traceroute.NewTraceroute())
-	p.Register(shodan.NewShodan())
-	p.Register(dns.NewDns())
-	p.Register(nmap.NewNmap())
 }
 
 func (s *Session) GetAPIIPPort() string {

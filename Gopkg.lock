@@ -32,12 +32,6 @@
   version = "v1.0"
 
 [[projects]]
-  name = "github.com/mattn/go-isatty"
-  packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
   revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
@@ -142,6 +136,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2f679d97f6ad935045bc1fd1efeac366109c26bb161317ecf27c566c616a337b"
+  inputs-digest = "fd49ce0a6e5c9b970f7f87c483312fd89c25da56863fb94323c1eecbe940ce57"
   solver-name = "gps-cdcl"
   solver-version = 1
