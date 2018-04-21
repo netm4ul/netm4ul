@@ -10,6 +10,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/netm4ul/netm4ul/modules/recon/dns"
 	"github.com/netm4ul/netm4ul/modules/recon/nmap"
+	"github.com/netm4ul/netm4ul/modules/recon/shodan"
 	"github.com/netm4ul/netm4ul/modules/recon/traceroute"
 	mgo "gopkg.in/mgo.v2"
 )
@@ -45,6 +46,7 @@ func (s *Session) loadModule() {
 	s.Register(traceroute.NewTraceroute())
 	s.Register(dns.NewDns())
 	s.Register(nmap.NewNmap())
+	s.Register(shodan.NewShodan())
 }
 
 func (s *Session) GetServerIPPort() string {

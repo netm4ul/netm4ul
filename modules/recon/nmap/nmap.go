@@ -19,7 +19,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	// gonmap "github.com/lair-framework/go-nmap"
-
 	"github.com/netm4ul/netm4ul/modules"
 )
 
