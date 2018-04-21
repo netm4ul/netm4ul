@@ -3,7 +3,6 @@ package shodan
 import (
 	"context"
 	"encoding/gob"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -88,10 +87,6 @@ type Services struct {
 // Run : Main function of the module
 func (S Shodan) Run(data []string) (modules.Result, error) {
 
-	/*
-		TODO: Not implemented yet
-	*/
-
 	log.Println("Shodan World!")
 
 	// Instanciate shodanResult
@@ -100,8 +95,9 @@ func (S Shodan) Run(data []string) (modules.Result, error) {
 	// Create client
 	shodanClient := shodan.NewClient(nil, config.Config.Keys.Shodan)
 
-	// Get IP adress
+	// Create shodan context
 	shodanContext := context.Background()
+	// Get IP adress
 	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{"google.com", "edznux.fr"})
 	if err != nil {
 		log.Panic(err)
@@ -150,16 +146,6 @@ func printHost(host shodan.Host) {
 	log.Println(host.HostLocation)
 }
 
-// HandleMQ : Recv data from the MQ
-func (S Shodan) HandleMQ() error {
-	return nil
-}
-
-// SendMQ : Send data to the MQ
-func (S Shodan) SendMQ(data []byte) error {
-	return nil
-}
-
 // ParseConfig : Load the config from the config folder
 func (S Shodan) ParseConfig() error {
 	ex, err := os.Executable()
@@ -170,7 +156,7 @@ func (S Shodan) ParseConfig() error {
 	configPath := filepath.Join(exPath, "config", "shodan.conf")
 
 	if _, err := toml.DecodeFile(configPath, &S.Config); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
