@@ -67,7 +67,7 @@ func (T *Traceroute) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (T *Traceroute) Run(data []string) (modules.Result, error) {
+func (T *Traceroute) Run(inputs []modules.Input) (modules.Result, error) {
 	fmt.Println("hello world") //Affiche hello world pour le fun
 	// cmd := exec.Command("traceroute", "8.8.8.8") //
 	// var out bytes.Buffer

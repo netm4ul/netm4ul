@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/netm4ul/netm4ul/modules"
+
 	"github.com/netm4ul/netm4ul/core/session"
 	log "github.com/sirupsen/logrus"
 
@@ -269,16 +271,18 @@ func printProjectInfo(projectName string, s *session.Session) {
 	table.Render()
 }
 
-func parseTargets(targets []string) ([]string, error) {
+func parseTargets(targets []string) ([]modules.Input, error) {
 
-	var res []string
+	var inputs []modules.Input
+	var input modules.Input
 
 	if len(targets) == 0 {
-		return nil, errors.New("Not target found")
+		return []modules.Input{}, errors.New("Not target found")
 	}
 
 	// loop on each targets
 	for _, target := range targets {
+
 		ip, ipNet, err := net.ParseCIDR(target)
 
 		// if this is a domain
@@ -286,42 +290,46 @@ func parseTargets(targets []string) ([]string, error) {
 			ips, err := net.LookupIP(target)
 
 			if err != nil {
-				return nil, err
+				return []modules.Input{}, errors.New("Could lookup address : " + target + ", " + err.Error())
 			}
 
 			if ips == nil {
-				return nil, errors.New("Could not resolve :" + target)
+				return []modules.Input{}, errors.New("Could not resolve :" + target)
 			}
 
 			// convert ips to strings
-			for _, i := range ips {
-				res = append(res, i.String())
+			for _, ip := range ips {
+				input = modules.Input{Domain: target, IP: ip}
+				inputs = append(inputs, input)
 			}
+
 		} else {
 			// if this is an ip
-
 			// check if ip is specified (not :: or 0.0.0.0)
 			if ip.IsUnspecified() {
-				return nil, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
+				return []modules.Input{}, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
 			}
 
-			// check if ip is specified (not :: or 0.0.0.0)
+			// check if ip isn't loopback
 			if ip.IsLoopback() {
-				return nil, errors.New("Target ip is loopback address")
+				return []modules.Input{}, errors.New("Target ip is loopback address")
 			}
 
 			// IP Range (CIDR)
 			if ipNet != nil {
 				h, err := hosts(target)
 				if err != nil {
-					return nil, errors.New("Target ip range is invalid (" + err.Error() + ")")
+					return []modules.Input{}, errors.New("Target ip range is invalid (" + err.Error() + ")")
 				}
-				res = append(res, h...)
+				for _, host := range h {
+					input = modules.Input{IP: host}
+					inputs = append(inputs, input)
+				}
 			}
 		}
 	}
 
-	return res, nil
+	return inputs, nil
 }
 
 func inc(ip net.IP) {
@@ -333,15 +341,15 @@ func inc(ip net.IP) {
 	}
 }
 
-func hosts(cidr string) ([]string, error) {
+func hosts(cidr string) ([]net.IP, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, err
 	}
 
-	var ips []string
+	var ips []net.IP
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		ips = append(ips, ip.String())
+		ips = append(ips, ip)
 	}
 	// remove network address and broadcast address
 	return ips[1 : len(ips)-1], nil
