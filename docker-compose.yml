@@ -4,14 +4,14 @@ services:
   netmaulserver:
     build: .
     container_name: "netmaulserver"
-    command: ["/go/src/github.com/netm4ul/netm4ul/netm4ul","-server"]
+    command: ["./netm4ul","start", "server", "-v"]
     ports:
       - 8080:8080
 
   netmaulclient:
     container_name: "netmaulclient"
     build: .
-    command: ["/go/src/github.com/netm4ul/netm4ul/netm4ul"]
+    command: ["./netm4ul","start", "client", "-v"]
 
   mongodb:
     image: mongo:latest

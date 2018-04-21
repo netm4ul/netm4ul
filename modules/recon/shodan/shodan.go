@@ -86,7 +86,7 @@ type Services struct {
 */
 
 // Run : Main function of the module
-func (S Shodan) Run(data []string) (modules.Result, error) {
+func (S Shodan) Run(inputs []modules.Input) (modules.Result, error) {
 
 	log.Debug("Shodan World!")
 
@@ -99,14 +99,21 @@ func (S Shodan) Run(data []string) (modules.Result, error) {
 	// Create shodan context
 	shodanContext := context.Background()
 	// Get IP adress
-	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{"google.com", "edznux.fr"})
+	var domains []string
+	for _, input := range inputs {
+		if input.Domain != "" {
+			domains = append(domains, input.Domain)
+		}
+	}
+	dns, err := shodanClient.GetDNSResolve(shodanContext, domains)
 	if err != nil {
 		log.Panic(err)
-	} else {
-		// shodanResult.IP = *dns["edznux.fr"]
-		myIP := *dns["edznux.fr"]
-		shodanResult.IP = myIP.String()
 	}
+	// TODO : change shodanResult slices / array ?
+	// Not sure about just one domain output...
+	// shodanResult.IP = *dns["edznux.fr"]
+	myIP := *dns[domains[0]]
+	shodanResult.IP = myIP.String()
 
 	hostServiceOption := shodan.HostServicesOptions{}
 

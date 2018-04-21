@@ -1,7 +1,14 @@
+[project]
+name = "Netm4ul"
+description = "This is an awesome Netm4ul project"
+
 [api]
 port=8080
 user="toto"
 password="P@ssW0rd!"
+
+[dns]
+resolvers = "1.1.1.1,8.8.8.8"
 
 [keys]
 google="apikey"
@@ -11,13 +18,26 @@ shodan="apikey" # needed for passive port scan
 user = "user"
 password = "password"
 ip = "netmaulserver"
-port = 5672
+port = 4444
+
+[TLSParams]
+usetls = false
+caCert = "certificates/NetM4ul_CA.crt"
+serverCert = "certificates/NetM4ul_Server.crt"
+serverPrivateKey = "certificates/NetM4ul_Server.pem"
+clientCert = "certificates/NetM4ul_Client.crt"
+clientPrivateKey = "certificates/NetM4ul_Client.pem"
 
 [database]
 ip = "mongodb"
 port = 27017
 user = "NetM4ul"
 password = "NetM4ul"
+
+[versions]
+api = "v1"
+server = "0.1"
+client = "0.1"
 
 [modules]
     [modules.shodan]
@@ -30,4 +50,10 @@ password = "NetM4ul"
         enabled = false # The module will not be run
 
     [modules.traceroute]
+        enabled = true
+
+    [modules.nmap]
+        enabled = true
+
+    [modules.dns]
         enabled = true

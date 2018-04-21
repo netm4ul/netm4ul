@@ -15,10 +15,13 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
+
+	"github.com/netm4ul/netm4ul/modules"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -55,14 +58,20 @@ var runCmd = &cobra.Command{
 			}
 			addModules(mods, CLISession)
 		}
-		runModules(args[0])
+		runModules(targets)
 	},
 }
 
-func runModules(target string) {
+func runModules(targets []modules.Input) {
 	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run/"
+
+	jsonInput, err := json.Marshal(targets)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for i := range CLISession.Config.Modules {
-		resp, err := http.Post(url+i+"?options="+target, "application/text", strings.NewReader("127.0.0.1"))
+		resp, err := http.Post(url+i, "application/text", bytes.NewBuffer(jsonInput))
 		if err != nil {
 			log.Fatal(err)
 		}

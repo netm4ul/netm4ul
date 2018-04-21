@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/netm4ul/netm4ul/modules"
+
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
@@ -22,10 +24,11 @@ var (
 
 const (
 	// represents the path of the api
-	CodeOK                = 200
-	CodeNotFound          = 404
-	CodeDatabaseError     = 998
-	CodeNotImplementedYet = 999
+	CodeOK                 = 200
+	CodeNotFound           = 404
+	CodeCouldNotDecodeJSON = 500
+	CodeDatabaseError      = 998
+	CodeNotImplementedYet  = 999
 )
 
 // Result is the standard response format
@@ -315,23 +318,31 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 }
 */
 func RunModule(w http.ResponseWriter, r *http.Request) {
-	//TODO
-	// Setup correct command (and option through parameters)
-
-	vars := mux.Vars(r)
-	// name := vars["name"]
-	module := vars["module"]
-	options := r.URL.Query()["options"]
-
+	var inputs []modules.Input
 	var res Result
 
-	cmd := server.Command{Name: module, Options: options}
+	vars := mux.Vars(r)
+	module := vars["module"]
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&inputs)
+	if err != nil {
+		log.Debugf("Could not decode provided json : %+v", err)
+		res = Result{Status: "error", Code: CodeCouldNotDecodeJSON, Message: "Could not decode provided json"}
+		return
+	}
+
+	log.Debugf("JSON input : %+v", inputs)
+	defer r.Body.Close()
+
+	cmd := server.Command{Name: module, Options: inputs}
 
 	log.Debugf("RunModule for cmd : %+v", cmd)
 
-	err := server.SendCmd(cmd, SessionAPI)
+	err = server.SendCmd(cmd, SessionAPI)
 	if err != nil {
 		res = Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+		return
 	}
 	res = Result{Status: "success", Code: CodeOK, Message: "Command sent"}
 	json.NewEncoder(w).Encode(res)
