@@ -9,7 +9,7 @@ import (
 // GetProjects returns list of projects in the database. Take a session as argument
 func GetProjects(session *mgo.Session) []Project {
 	var p []Project
-	err := session.DB(DBname).C("projects").Find(nil).Select(bson.M{"Name": 1}).All(&p)
+	err := session.DB(cfg.Database.Collection).C("projects").Find(nil).Select(bson.M{"Name": 1}).All(&p)
 	if err != nil {
 		log.Errorf("Error in selecting projects %+v", err)
 		return nil
@@ -21,7 +21,7 @@ func GetProjects(session *mgo.Session) []Project {
 // GetProjectByName returns the project in the database by its name
 func GetProjectByName(session *mgo.Session, name string) Project {
 	var p Project
-	err := session.DB(DBname).C("projects").Find(bson.M{"Name": name}).One(&p)
+	err := session.DB(cfg.Database.Collection).C("projects").Find(bson.M{"Name": name}).One(&p)
 	if err != nil {
 		log.Errorf("Error in selecting projects %+v", err)
 		return Project{}

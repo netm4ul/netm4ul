@@ -178,7 +178,7 @@ func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	name := vars["name"]
 	session := database.Connect()
 
-	err := session.DB(database.DBname).C("projects").Find(bson.M{"Name": name}).All(&ips)
+	err := session.DB(SessionAPI.Config.Database.Collection).C("projects").Find(bson.M{"Name": name}).All(&ips)
 	if err != nil {
 		log.Errorf("Error in selecting projects %s", err.Error())
 
