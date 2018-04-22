@@ -98,22 +98,13 @@ It uses the following format :
 ```
 {
 	"status": "success", // only "success" or "error"
-	"code": 200, // see the "code list" below
+	"code": CodeOK, // see the "code list" in godocs
 	"message": "Some message", // required only in ERROR code. Not mandatory on success
 	"data" : // any kind of json type : object, array, string, number, ... If error, no data are returned.
 }
 ```
 
 All the JSON fields are **lowercase** and most of them are omitted if empty.
-
-**Code list**
-
-| Number | Meaning             | Description                                    | Status  |
-| ------ | ------------------- | ---------------------------------------------- | ------- |
-| 200    | OK                  | Expected result                                | success |
-| 404    | Not Found           | The requested item was not found on the server | error   |
-| 998    | Database Error      | Some error occured with the database           | error   |
-| 999    | Not Implemented Yet | This endpoint is not available yet             | error   |
 
 
 ### Module

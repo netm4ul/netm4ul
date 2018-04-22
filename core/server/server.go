@@ -105,7 +105,6 @@ func Listen(s *session.Session) {
 func handleRequest(conn net.Conn, mgoSession *mgo.Session, s *session.Session) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-	// defer conn.Close()
 
 	handleHello(conn, rw, mgoSession, s)
 

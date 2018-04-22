@@ -60,7 +60,7 @@ func getData(ressource string, s *session.Session) (api.Result, error) {
 		return api.Result{}, errors.New("Can't decode json : " + err.Error())
 	}
 
-	if result.Code != 200 {
+	if result.Code != api.CodeOK {
 		return result, errors.New(result.Message)
 	}
 
@@ -146,7 +146,7 @@ func GetProjects(s *session.Session) ([]database.Project, error) {
 		return data, err
 	}
 
-	if resjson.Code != 200 {
+	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
 
@@ -168,7 +168,7 @@ func GetProject(name string, s *session.Session) (database.Project, error) {
 		return data, err
 	}
 
-	if resjson.Code != 200 {
+	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
 
