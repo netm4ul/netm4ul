@@ -32,6 +32,7 @@ clientPrivateKey = "certificates/NetM4ul_Client.pem"
 ip = "mongodb"
 port = 27017
 user = "NetM4ul"
+collection = "netm4ul"
 password = "NetM4ul"
 
 [versions]

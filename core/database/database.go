@@ -60,10 +60,6 @@ type Project struct {
 	IPs         []IP   `json:"ips" bson:"omitempty"`
 }
 
-//DBname is the name of the mongodb collection
-// TODO move into config
-const DBname = "netm4ul"
-
 var cfg *config.ConfigToml
 
 func InitDatabase(c *config.ConfigToml) {
@@ -92,7 +88,7 @@ func Connect() *mgo.Session {
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string) {
 	// mongodb will create collection on use.
-	c := session.DB(DBname).C("projects")
+	c := session.DB(cfg.Database.Collection).C("projects")
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
@@ -108,7 +104,7 @@ func CreateProject(session *mgo.Session, projectName string) {
 
 //UpsertRawData is used by module to store raw results into the database.
 func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
-	c := session.DB(DBname).C("projects")
+	c := session.DB(cfg.Database.Collection).C("projects")
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
 	log.Infof("Info : %+v", info)
 	if err != nil {
