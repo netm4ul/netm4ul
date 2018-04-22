@@ -118,7 +118,7 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	log.Debug("H3ll-0 M4sscan")
 
 	// Temporary IP forced : 212.47.247.190 = edznux.fr
-	target := []string{"212.47.247.190"}
+	// target := []string{"212.47.247.190"}
 	outputfile := "/tmp/" + generateUUID() + ".json"
 
 	// Get arguments
@@ -127,8 +127,13 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 		log.Fatal(err)
 	}
 	opt = append(opt, "-oJ", outputfile)
-	// opt = append(data, opt...)
-	opt = append(target, opt...)
+	// Get IP
+	for _, i := range inputs {
+		if i.IP != nil {
+			opt = append([]string{i.IP.String()}, opt...)
+		}
+	}
+	// opt = append(target, opt...)
 
 	// Command execution
 	cmd := exec.Command("masscan", opt...)
@@ -140,7 +145,7 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 
 	err = cmd.Run()
 	if err != nil {
-		log.fatal(stderr.String())
+		log.Fatal(stderr.String())
 	}
 	log.Debug(stdout.String())
 	res, err := M.Parse(outputfile)
