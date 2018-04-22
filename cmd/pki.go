@@ -33,11 +33,12 @@ import (
 	"crypto/x509/pkix"
 
 	"path/filepath"
+	"github.com/netm4ul/netm4ul/core/config"
 )
 
 // setupCmd represents the setup command
-var setupCmd = &cobra.Command{
-	Use:   "setup",
+var pkiCmd = &cobra.Command{
+	Use:   "pki",
 	Short: "Set up PKI (CA, Server and clients)",
 	Long: `This command builds a Public Key Infrastructure (PKI) for mutual TLS authentication between your server and the nodes.
 	A Certificate Authority (CA) is created, signing the server (master node) certificate as well as all the clients (node) at first deploy time.
@@ -48,8 +49,19 @@ var setupCmd = &cobra.Command{
 	The master node has probably an IP address as hostname, if you run your instance from a box without DNS indexing.
 	
 	The client nodes don't need a publicly known hostname, but you may assign them a name that suits your use (e.g. your logs may see "client_x successfully connected to API"")`,
+
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		config.LoadConfig(configPath)
+
+		config.Config.ConfigPath = configPath
+		config.Config.Verbose = verbose
+
+	},
+
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("setup called")
+		fmt.Println("pki called")
+		cmd.Help()
+		os.Exit(1)
 	},
 }
 
@@ -286,6 +298,9 @@ func setup()  {
 	organisationSubject := "Netm4ul"
 	certificateDirectory := "./certificates"
 
+	// Perform Checks and pre-setup
+	checkDir(certificateDirectory)
+
 	// Create CA
 	caCert, caKey, _, _ := create("ca", certDuration, "CA", recommendedCurve, nil, nil,organisationSubject, certificateDirectory)
 	if caCert == nil || caKey == nil{
@@ -302,7 +317,7 @@ func setup()  {
 }
 
 func init() {
-	rootCmd.AddCommand(setupCmd)
+	rootCmd.AddCommand(pkiCmd)
 
 	// Here you will define your flags and configuration settings.
 
