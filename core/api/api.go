@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/netm4ul/netm4ul/modules"
 
@@ -73,6 +74,7 @@ func Start() {
 
 	// POST
 	router.HandleFunc(prefix+"/projects", CreateProject).Methods("POST")
+	router.HandleFunc(prefix+"/projects/{name}/run", RunModules).Methods("POST")
 	router.HandleFunc(prefix+"/projects/{name}/run/{module}", RunModule).Methods("POST")
 
 	// DELETE
@@ -308,6 +310,49 @@ func GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 func CreateProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	res := CodeToResult[CodeNotImplementedYet]
+	json.NewEncoder(w).Encode(res)
+}
+
+//RunModules runs every enabled modules
+func RunModules(w http.ResponseWriter, r *http.Request) {
+	var inputs []modules.Input
+	var res Result
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&inputs)
+	if err != nil {
+		log.Debugf("Could not decode provided json : %+v", err)
+
+		res = CodeToResult[CodeCouldNotDecodeJSON]
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	log.Debugf("JSON input : %+v", inputs)
+	defer r.Body.Close()
+
+	/*
+	* TODO
+	* Implements load balancing betweens node
+	* Remove duplications
+	* 	- maybe each module should look in the database and check if it has been already done
+	* 	- Scan expiration ? re-runable script ? only re run if not in the same area / ip range ?
+	 */
+
+	for _, module := range SessionAPI.ModulesEnabled {
+		moduleName := strings.ToLower(module.Name())
+		cmd := server.Command{Name: moduleName, Options: inputs}
+		log.Debugf("RunModule for cmd : %+v", cmd)
+
+		err = server.SendCmd(cmd, SessionAPI)
+		if err != nil {
+			res = CodeToResult[CodeNotImplementedYet]
+			json.NewEncoder(w).Encode(res)
+			return
+		}
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Message = "Command sent"
 	json.NewEncoder(w).Encode(res)
 }
 
