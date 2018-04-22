@@ -22,15 +22,17 @@ type Connector struct {
 }
 
 type Session struct {
-	Modules      map[string]modules.Module
-	Config       config.ConfigToml
-	ConnectionDB *mgo.Session
-	Connector    Connector
+	ModulesEnabled map[string]modules.Module
+	Modules        map[string]modules.Module
+	Config         config.ConfigToml
+	ConnectionDB   *mgo.Session
+	Connector      Connector
 }
 
 func NewSession(c config.ConfigToml) *Session {
 	s := Session{
-		Modules: make(map[string]modules.Module, 0),
+		Modules:        make(map[string]modules.Module, 0),
+		ModulesEnabled: make(map[string]modules.Module, 0),
 	}
 	// populate all modules
 	s.Config = c
@@ -39,7 +41,12 @@ func NewSession(c config.ConfigToml) *Session {
 }
 
 func (s *Session) Register(m modules.Module) {
-	s.Modules[strings.ToLower(m.Name())] = m
+	moduleName := strings.ToLower(m.Name())
+	s.Modules[moduleName] = m
+
+	if s.Config.Modules[moduleName].Enabled {
+		s.ModulesEnabled[moduleName] = m
+	}
 }
 
 func (s *Session) loadModule() {

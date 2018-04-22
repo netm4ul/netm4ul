@@ -42,7 +42,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
 	log.SetOutput(os.Stdout)
 	customFormatter := new(log.TextFormatter)
-	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	customFormatter.TimestampFormat = "2001-02-03 12:34:56"
 	customFormatter.FullTimestamp = true
 	log.SetFormatter(customFormatter)
 }

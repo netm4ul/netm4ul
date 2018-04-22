@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/netm4ul/netm4ul/modules"
 
@@ -22,19 +23,10 @@ var (
 	SessionAPI *session.Session
 )
 
-const (
-	// represents the path of the api
-	CodeOK                 = 200
-	CodeNotFound           = 404
-	CodeCouldNotDecodeJSON = 500
-	CodeDatabaseError      = 998
-	CodeNotImplementedYet  = 999
-)
-
 // Result is the standard response format
 type Result struct {
 	Status  string      `json:"status"`
-	Code    int         `json:"code"`
+	Code    Code        `json:"code"`
 	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
@@ -82,6 +74,7 @@ func Start() {
 
 	// POST
 	router.HandleFunc(prefix+"/projects", CreateProject).Methods("POST")
+	router.HandleFunc(prefix+"/projects/{name}/run", RunModules).Methods("POST")
 	router.HandleFunc(prefix+"/projects/{name}/run/{module}", RunModule).Methods("POST")
 
 	// DELETE
@@ -92,9 +85,13 @@ func Start() {
 
 //GetIndex returns a link to the documentation on the root path
 func GetIndex(w http.ResponseWriter, r *http.Request) {
+
 	api := API{Port: SessionAPI.Config.API.Port, Versions: SessionAPI.Config.Versions}
 	d := Metadata{API: api, Nodes: server.SessionServer.Config.Nodes}
-	res := Result{Status: "success", Code: CodeOK, Message: "Documentation available at https://github.com/netm4ul/netm4ul", Data: d}
+
+	res := CodeToResult[CodeOK]
+	res.Data = d
+	res.Message = "Documentation available at https://github.com/netm4ul/netm4ul"
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -102,7 +99,7 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
-  "code": 200,
+  "code": CodeOK, // real value in /core/api/codes.go
   "data": [
     {
       "name": "FirstProject"
@@ -113,8 +110,9 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 func GetProjects(w http.ResponseWriter, r *http.Request) {
 	session := database.Connect()
 	p := database.GetProjects(session)
-	// psend := struct{ Projects []database.Project }{Projects: p}
-	res := Result{Status: "success", Code: CodeOK, Data: p}
+
+	res := CodeToResult[CodeOK]
+	res.Data = p
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -122,7 +120,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
-  "code": 200,
+  "code": CodeOK, // real value in /core/api/codes.go
   "data": {
     "name": "FirstProject",
     "updated_at": 1520122127
@@ -130,6 +128,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 }
 */
 func GetProject(w http.ResponseWriter, r *http.Request) {
+	var res Result
 	vars := mux.Vars(r)
 	session := database.Connect()
 
@@ -145,12 +144,15 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if p.Name == "" {
-		notFound := Result{Status: "error", Code: CodeNotFound, Message: "Project not found"}
-		json.NewEncoder(w).Encode(notFound)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "Project not found"
+		json.NewEncoder(w).Encode(res)
 		return
 	}
 
-	res := Result{Status: "success", Code: CodeOK, Data: p}
+	res = CodeToResult[CodeOK]
+	res.Data = p
+
 	json.NewEncoder(w).Encode(res)
 
 }
@@ -159,7 +161,7 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
-  "code": 200,
+  "code": CodeOK, // real value in /core/api/codes.go
   "data": [
 	  "10.0.0.1",
 	  "10.0.0.12",
@@ -169,27 +171,33 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 */
 func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 
+	var res Result
+	var ips []database.IP
+
 	vars := mux.Vars(r)
 	name := vars["name"]
 	session := database.Connect()
 
-	var ips []database.IP
-
 	err := session.DB(database.DBname).C("projects").Find(bson.M{"Name": name}).All(&ips)
 	if err != nil {
 		log.Errorf("Error in selecting projects %s", err.Error())
-		res := Result{Status: "error", Code: CodeDatabaseError, Message: "Error in selecting project IPs"}
+
+		res = CodeToResult[CodeDatabaseError]
+		res.Message += "[error in selecting project IPs]"
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
 	if len(ips) == 1 && ips[0].Value == nil {
 		log.Debugf("Project %s not found", name)
-		res := Result{Status: "error", Code: CodeNotFound, Data: []string{}, Message: "No IP found"}
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No IP found"
 		json.NewEncoder(w).Encode(res)
 		return
 	}
-	res := Result{Status: "success", Code: CodeOK, Data: ips}
+
+	res = CodeToResult[CodeOK]
+	res.Data = ips
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -197,7 +205,7 @@ func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
-  "code": 200,
+  "code": CodeOK, // real value in /core/api/codes.go
   "data": [
 	  {
 		"number": 22
@@ -214,6 +222,7 @@ func GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 */
 func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
+	var res Result
 	vars := mux.Vars(r)
 	name := vars["name"]
 	ip := vars["ip"]
@@ -221,14 +230,14 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 
 	if protocol != "" {
 		log.Debugf("name : %s, ip : %s, protocol : %s", name, ip, protocol)
-		res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+		res = CodeToResult[CodeNotImplementedYet]
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
 	log.Debugf("name : %s, ip : %s", name, ip)
 
-	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	res = CodeToResult[CodeNotImplementedYet]
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -236,7 +245,7 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 /*
 {
   "status": "success",
-  "code": 200,
+  "code": CodeOK, // real value in /core/api/codes.go
   "data": [
 	  {
 		"number": 22
@@ -253,14 +262,14 @@ func GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 */
 func GetDirectoryByPort(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	res := CodeToResult[CodeNotImplementedYet]
 	json.NewEncoder(w).Encode(res)
 }
 
 //GetRawModuleByProject returns all the raw output for requested module.
 func GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	res := CodeToResult[CodeNotImplementedYet]
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -268,7 +277,7 @@ func GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
 /*
 {
 	"status": "success",
-	"code": 200,
+	"code": CodeOK, // real value in /core/api/codes.go
 	"data": [
 		{
 			"Source": "1.2.3.4",
@@ -286,7 +295,7 @@ func GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
 */
 func GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	res := CodeToResult[CodeNotImplementedYet]
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -294,13 +303,56 @@ func GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 /*
 {
 	"status": "success",
-	"code": 200,
+	"code": CodeOK, // real value in /core/api/codes.go
 	"data": "ProjectName"
 }
 */
 func CreateProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	res := CodeToResult[CodeNotImplementedYet]
+	json.NewEncoder(w).Encode(res)
+}
+
+//RunModules runs every enabled modules
+func RunModules(w http.ResponseWriter, r *http.Request) {
+	var inputs []modules.Input
+	var res Result
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&inputs)
+	if err != nil {
+		log.Debugf("Could not decode provided json : %+v", err)
+
+		res = CodeToResult[CodeCouldNotDecodeJSON]
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	log.Debugf("JSON input : %+v", inputs)
+	defer r.Body.Close()
+
+	/*
+	* TODO
+	* Implements load balancing betweens node
+	* Remove duplications
+	* 	- maybe each module should look in the database and check if it has been already done
+	* 	- Scan expiration ? re-runable script ? only re run if not in the same area / ip range ?
+	 */
+
+	for _, module := range SessionAPI.ModulesEnabled {
+		moduleName := strings.ToLower(module.Name())
+		cmd := server.Command{Name: moduleName, Options: inputs}
+		log.Debugf("RunModule for cmd : %+v", cmd)
+
+		err = server.SendCmd(cmd, SessionAPI)
+		if err != nil {
+			res = CodeToResult[CodeNotImplementedYet]
+			json.NewEncoder(w).Encode(res)
+			return
+		}
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Message = "Command sent"
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -308,7 +360,7 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 /*
 {
 	"status": "success",
-	"code": 200,
+	"code": CodeOK, // real value in /core/api/codes.go
 	"data": {
 		nodes: [
 			"1.2.3.4",
@@ -318,6 +370,7 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 }
 */
 func RunModule(w http.ResponseWriter, r *http.Request) {
+
 	var inputs []modules.Input
 	var res Result
 
@@ -328,7 +381,9 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&inputs)
 	if err != nil {
 		log.Debugf("Could not decode provided json : %+v", err)
-		res = Result{Status: "error", Code: CodeCouldNotDecodeJSON, Message: "Could not decode provided json"}
+
+		res = CodeToResult[CodeCouldNotDecodeJSON]
+		json.NewEncoder(w).Encode(res)
 		return
 	}
 
@@ -341,10 +396,13 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 
 	err = server.SendCmd(cmd, SessionAPI)
 	if err != nil {
-		res = Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+		res = CodeToResult[CodeNotImplementedYet]
+		json.NewEncoder(w).Encode(res)
 		return
 	}
-	res = Result{Status: "success", Code: CodeOK, Message: "Command sent"}
+
+	res = CodeToResult[CodeOK]
+	res.Message = "Command sent"
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -352,13 +410,13 @@ func RunModule(w http.ResponseWriter, r *http.Request) {
 /*
 {
 	"status": "success",
-	"code": 200,
+	"code": CodeOK, // real value in /core/api/codes.go
 	"data": "ProjectName"
 }
 */
 func DeleteProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
-	res := Result{Status: "error", Code: CodeNotImplementedYet, Message: "Not implemented yet"}
+	res := CodeToResult[CodeNotImplementedYet]
 	json.NewEncoder(w).Encode(res)
 }
 
