@@ -114,7 +114,7 @@ func (M *Masscan) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (M *Masscan) Run(data []string) (modules.Result, error) {
+func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	log.Debug("H3ll-0 M4sscan")
 
 	// Temporary IP forced : 212.47.247.190 = edznux.fr
@@ -124,7 +124,7 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 	// Get arguments
 	opt, err := M.ParseOptions()
 	if err != nil {
-		log.Error(err)
+		log.Fatal(err)
 	}
 	opt = append(opt, "-oJ", outputfile)
 	// opt = append(data, opt...)
@@ -140,7 +140,7 @@ func (M *Masscan) Run(data []string) (modules.Result, error) {
 
 	err = cmd.Run()
 	if err != nil {
-		log.Error(stderr.String())
+		log.fatal(stderr.String())
 	}
 	log.Debug(stdout.String())
 	res, err := M.Parse(outputfile)
