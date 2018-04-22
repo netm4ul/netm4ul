@@ -50,7 +50,7 @@ func CreateClient(s *session.Session) {
 
 		log.Errorf("Could not connect : %+v", err)
 		log.Errorf("Retry count : %d, Max retry : %d", tries, maxRetry)
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 
 	if err != nil {

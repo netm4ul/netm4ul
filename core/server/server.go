@@ -46,9 +46,9 @@ type Requirements struct {
 
 //Command represents the communication protocol between clients and the master node
 type Command struct {
-	Name         string       `json:"name"`
-	Options      []string     `json:"options"`
-	Requirements Requirements `json:"requirements"`
+	Name         string          `json:"name"`
+	Options      []modules.Input `json:"options"`
+	Requirements Requirements    `json:"requirements"`
 }
 
 func init() {

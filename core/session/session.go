@@ -11,6 +11,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules/recon/dns"
 	"github.com/netm4ul/netm4ul/modules/recon/masscan"
 	"github.com/netm4ul/netm4ul/modules/recon/nmap"
+	"github.com/netm4ul/netm4ul/modules/recon/shodan"
 	"github.com/netm4ul/netm4ul/modules/recon/traceroute"
 	mgo "gopkg.in/mgo.v2"
 )
@@ -50,7 +51,11 @@ func (s *Session) loadModule() {
 	s.Register(traceroute.NewTraceroute())
 	s.Register(dns.NewDns())
 	s.Register(nmap.NewNmap())
+<<<<<<< HEAD
 	s.Register(masscan.NewMasscan())
+=======
+	s.Register(shodan.NewShodan())
+>>>>>>> 0770e488253c736f34107b4c3a0996a4f792f764
 }
 
 // GetServerIPPort func
