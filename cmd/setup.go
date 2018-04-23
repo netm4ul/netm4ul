@@ -100,7 +100,7 @@ func prompt(param string) (answer string) {
 	fmt.Printf(promptString[param].Message, promptString[param].DefaultValue)
 	fmt.Scanln(&input)
 	if input == "" {
-		return defInput
+		return promptString[param].DefaultValue
 	}
 
 	return input
