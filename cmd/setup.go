@@ -17,8 +17,9 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/database"
@@ -26,6 +27,11 @@ import (
 
 	mgo "gopkg.in/mgo.v2"
 )
+
+type PromptRes struct {
+	Message      string
+	DefaultValue string
+}
 
 const (
 	defaultDBSetupUser     = "admin"
@@ -70,44 +76,34 @@ to quickly create a Cobra application.`,
 
 func check(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 }
 
 // prompt user for configuration parameters
 func prompt(param string) (answer string) {
-	var text string
+	// var text string
 	var input string
 	var defInput string
 
 	// Database parameters
-	if param == "dbuser" {
-		defInput = defaultDBSetupUser
-		fmt.Println("Interactive mode for username (default : ", defInput, ")")
-		text = "Enter username: "
-	} else if param == "dbpassword" {
-		defInput = defaultDBSetupPassword
-		fmt.Println("Interactive mode for password (default : ", defInput, ")")
-		text = "Enter password: "
+	promptString := map[string]PromptRes{
+		"dbuser":     PromptRes{Message: "Interactive mode for database username (default : %s) : ", DefaultValue: defaultDBSetupUser},
+		"dbpassword": PromptRes{Message: "Interactive mode for database password (default : %s) : ", DefaultValue: defaultDBSetupPassword},
 	}
 
-	// Can add other options for prompted stuff here
+	//Other parameters
 	/*
-		else if param == "your_test"{
-			fmt.Println("Inteactive mode for ...")
-			text = "..."
-		}
+		...
 	*/
-	fmt.Print(text)
+
+	fmt.Printf(promptString[param].Message, promptString[param].DefaultValue)
 	fmt.Scanln(&input)
 	if input == "" {
-		answer = defInput
-	} else {
-		answer = input
+		return defInput
 	}
-	fmt.Println(answer)
 
-	return answer
+	return input
 }
 
 // setupDB => create user in db for future requests
@@ -119,7 +115,6 @@ func setupDB() {
 	if passwordIMode {
 		CLISession.Config.Database.Password = prompt("dbpassword")
 	}
-	fmt.Println("Configuring the database with provided user")
 
 	mgoSession := database.ConnectWithoutCreds()
 	roles := []mgo.Role{mgo.RoleDBAdmin}

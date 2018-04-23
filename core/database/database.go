@@ -1,9 +1,10 @@
 package database
 
 import (
-	"log"
 	"net"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
@@ -93,15 +94,15 @@ func Connect() *mgo.Session {
 		Addrs:    []string{cfg.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
 		Database: "NetM4ul",
-		Username: config.Config.Database.User,
-		Password: config.Config.Database.Password,
+		Username: cfg.Database.User,
+		Password: cfg.Database.Password,
 	}
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
-		log.Fatalf(colors.Red("Error connecting with the database : %s"), err.Error())
+		log.Fatal(("Error connecting with the database : %s"), err.Error())
 	}
-	log.Printf(colors.Green("Connected to the database : %s"), cfg.Database.IP)
+	log.Infof(("Connected to the database : %s"), cfg.Database.IP)
 	return session
 }
 
