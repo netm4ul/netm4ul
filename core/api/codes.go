@@ -1,5 +1,7 @@
 package api
 
+import "net/http"
+
 type Code int
 
 const (
@@ -22,10 +24,10 @@ func init() {
 	CodeToResult = make(map[Code]Result)
 
 	CodeToResult = map[Code]Result{
-		CodeOK:                 Result{Code: CodeOK, Status: "success"},
-		CodeNotFound:           Result{Code: CodeNotFound, Status: "error", Message: "Ressource not found on the server !"},
-		CodeCouldNotDecodeJSON: Result{Code: CodeCouldNotDecodeJSON, Status: "error", Message: "Could not decode provided json : invalid json"},
-		CodeDatabaseError:      Result{Code: CodeDatabaseError, Status: "error", Message: "Something unexepected has happened with the database"},
-		CodeNotImplementedYet:  Result{Code: CodeNotImplementedYet, Status: "error", Message: "Not implemented yet"},
+		CodeOK:                 Result{Code: CodeOK, Status: "success", HTTPCode: http.StatusOK},
+		CodeNotFound:           Result{Code: CodeNotFound, Status: "error", Message: "Ressource not found on the server !", HTTPCode: http.StatusNotFound},
+		CodeCouldNotDecodeJSON: Result{Code: CodeCouldNotDecodeJSON, Status: "error", Message: "Could not decode provided json : invalid json", HTTPCode: http.StatusBadRequest},
+		CodeDatabaseError:      Result{Code: CodeDatabaseError, Status: "error", Message: "Something unexepected has happened with the database", HTTPCode: http.StatusInternalServerError},
+		CodeNotImplementedYet:  Result{Code: CodeNotImplementedYet, Status: "error", Message: "Not implemented yet", HTTPCode: http.StatusNotImplemented},
 	}
 }

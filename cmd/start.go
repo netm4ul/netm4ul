@@ -77,12 +77,13 @@ var startServerCmd = &cobra.Command{
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// ss := session.NewSession(config.Config)
 		// listen on all interface + Server port
-		go server.CreateServer(CLISession)
-
+		s := server.CreateServer(CLISession)
+		go s.Listen()
 		// TODO flag enable / disable api
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// sa := session.NewSession(config.Config)
-		go api.CreateAPI(CLISession)
+		a := api.CreateAPI(CLISession, s)
+		go a.Start()
 
 		gracefulShutdown()
 
@@ -116,7 +117,8 @@ var startClientCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// sc := session.NewSession(config.Config)
-		go client.CreateClient(CLISession)
+		c := client.CreateClient(CLISession)
+		go c.Start()
 
 		gracefulShutdown()
 	},
