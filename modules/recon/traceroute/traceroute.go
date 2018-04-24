@@ -3,14 +3,12 @@ package traceroute
 import (
 	"encoding/gob"
 	"fmt"
-	"log"
-	"time"
-
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/core/config"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/netm4ul/netm4ul/core/database"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -69,7 +67,7 @@ func (T *Traceroute) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (T *Traceroute) Run(data []string) (modules.Result, error) {
+func (T *Traceroute) Run(inputs []modules.Input) (modules.Result, error) {
 	fmt.Println("hello world") //Affiche hello world pour le fun
 	// cmd := exec.Command("traceroute", "8.8.8.8") //
 	// var out bytes.Buffer
@@ -97,18 +95,16 @@ func (T *Traceroute) ParseConfig() error {
 	configPath := filepath.Join(exPath, "config", "traceroute.conf")
 
 	if _, err := toml.DecodeFile(configPath, &T.Config); err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
-	fmt.Println(T.Config.MaxHops)
+	log.Debug(T.Config.MaxHops)
 	return nil
 }
 
 // WriteDb : Save data
 func (T Traceroute) WriteDb(result modules.Result, sessionDB *mgo.Session, projectName string) error {
-	if config.Config.Verbose {
-		log.Println(colors.Yellow("Writing to the database."))
-	}
+	log.Debug("Writing to the database.")
 	var data TracerouteResult
 	data = result.Data.(TracerouteResult)
 

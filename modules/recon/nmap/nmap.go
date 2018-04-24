@@ -20,7 +20,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	// gonmap "github.com/lair-framework/go-nmap"
-
 	"github.com/netm4ul/netm4ul/modules"
 )
 
@@ -76,7 +75,7 @@ func (N *Nmap) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
+func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 	N.ParseConfig()
 	fmt.Println(&N.Config)
 	var opt []string
@@ -102,6 +101,7 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	}
 
 	// Port range option : -p- for all ports, -p x-y for specific range, nothing for default
+	// TODO : load ports from []inputs.Ports ?
 	log.Println(N.Config.PortRange)
 	if N.Config.PortRange != "Null" {
 		opt = append(opt, "-p"+N.Config.PortRange)
@@ -140,8 +140,14 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	opt = append(opt, "-oX", filename)
 
 	// TODO : change it for Run argument, will be passed as an option : ./netm4ul 127.0.0.1
-
-	opt = append(opt, opt2...)
+	for _, input := range inputs {
+		if input.Domain != "" {
+			opt = append(opt, input.Domain)
+		}
+		if input.IP != nil {
+			opt = append(opt, input.IP.String())
+		}
+	}
 
 	fmt.Println(opt)
 	cmd := exec.Command("/usr/bin/nmap", opt...)
@@ -157,16 +163,6 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	}
 	N.Nmaprun, err = Parse(N.Result)
 	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
-}
-
-// HandleMQ : Recv data from the MQ
-func (N *Nmap) HandleMQ() error {
-	return nil
-}
-
-// SendMQ : Send data to the MQ
-func (N *Nmap) SendMQ(data []byte) error {
-	return nil
 }
 
 // ParseConfig : Load the config from the config folder

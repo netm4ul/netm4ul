@@ -4,9 +4,8 @@ import (
 	"net"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/netm4ul/netm4ul/core/config"
+	log "github.com/sirupsen/logrus"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -61,10 +60,6 @@ type Project struct {
 	IPs         []IP   `json:"ips" bson:"omitempty"`
 }
 
-//DBname is the name of the mongodb collection
-// TODO move into config
-const DBname = "netm4ul"
-
 var cfg *config.ConfigToml
 
 func InitDatabase(c *config.ConfigToml) {
@@ -99,22 +94,22 @@ func Connect() *mgo.Session {
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
-		log.Fatal(("Error connecting with the database : %s"), err.Error())
+		log.Fatalf("Error connecting with the database : %s", err.Error())
 	}
-	log.Infof(("Connected to the database : %s"), cfg.Database.IP)
+	log.Infof("Connected to the database : %s", cfg.Database.IP)
 	return session
 }
 
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string) {
 	// mongodb will create collection on use.
-	c := session.DB(DBname).C("projects")
+	c := session.DB(cfg.Database.Collection).C("projects")
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
 	if cfg.Verbose && info.Updated == 1 {
-		log.Info("Info : %+v", info)
-		log.Info("Adding %s to the collections 'projects'", projectName)
+		log.Infof("Info : %+v", info)
+		log.Infof("Adding %s to the collections 'projects'", projectName)
 	}
 
 	if err != nil {
@@ -124,9 +119,9 @@ func CreateProject(session *mgo.Session, projectName string) {
 
 //UpsertRawData is used by module to store raw results into the database.
 func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
-	c := session.DB(DBname).C("projects")
+	c := session.DB(cfg.Database.Collection).C("projects")
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
-	log.Info("Info : %+v", info)
+	log.Infof("Info : %+v", info)
 	if err != nil {
 		log.Fatal(err)
 	}

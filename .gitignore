@@ -24,6 +24,7 @@ netm4ul
 vendor/
 .idea/
 data/
+*.log
 
 # personnal conf
 netm4ul.conf.my

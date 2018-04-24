@@ -5,16 +5,15 @@ import (
 	"crypto/tls"
 	"encoding/gob"
 	"io"
-	"log"
 	"net"
 	"time"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -22,131 +21,126 @@ const (
 	maxRetry = 3
 )
 
-var (
-	//SessionClient : !! TO FIX : global var for state vs args of each func ?
-	SessionClient *session.Session
+type Client struct {
+	Session *session.Session
 	// ListModule : global list of modules
 	ListModule []string
 	// ListModuleEnabled : global list of enabled modules
 	ListModuleEnabled []string
-)
+}
 
 // CreateClient : Connect the node to the master server
-func CreateClient(s *session.Session) {
+func CreateClient(s *session.Session) *Client {
+
+	client := Client{Session: s}
+	client.InitModule()
+	return &client
+}
+
+//Start actually start the client and send an hello packet to the server
+func (client *Client) Start() {
 
 	var err error
-	SessionClient = s
-
-	InitModule(s)
-
-	log.Println(colors.Green("Modules enabled :"), ListModuleEnabled)
+	log.Info("Modules enabled :", client.ListModuleEnabled)
 
 	for tries := 0; tries < maxRetry; tries++ {
-		err = Connect(s)
+		err = client.Connect()
 
 		// no error, exit retry loop
 		if err == nil {
 			break
 		}
 
-		log.Println(colors.Red("Could not connect :"), err)
-		log.Printf(colors.Red("Retry count : %d, Max retry : %d"), tries, maxRetry)
-		time.Sleep(1 * time.Second)
+		log.Errorf("Could not connect : %+v", err)
+		log.Errorf("Retry count : %d, Max retry : %d", tries, maxRetry)
+		time.Sleep(10 * time.Second)
 	}
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = SendHello(s)
+	err = client.SendHello()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Recieve data
-	go handleData(s)
+	go client.handleData()
 }
 
-func handleData(s *session.Session) {
+func (client *Client) handleData() {
 
 	for {
-		cmd, err := Recv(s)
+		cmd, err := client.Recv()
 
 		// kill on socket closed.
 		if err == io.EOF {
-			log.Fatalf(colors.Red("Connection closed : %s"), err.Error())
+			log.Fatalf("Connection closed : %s", err.Error())
 		}
 
 		if err != nil {
-			log.Println(colors.Red(err.Error()))
+			log.Error(err.Error())
 			continue
 		}
 
 		// must exist, if it doesn't, this line shouldn't be executed (checks above)
-		module := s.Modules[cmd.Name]
+		module := client.Session.Modules[cmd.Name]
 
 		//TODO
 		// send data back to the server
-		data, err := Execute(s, module, cmd)
-		SendResult(s, data)
+		data, err := client.Execute(module, cmd)
+		client.SendResult(data)
 	}
 }
 
 // Connect : Setup the connection to the master node
-func Connect(s *session.Session) error {
+func (client *Client) Connect() error {
 
 	var err error
-	ipport := s.GetServerIPPort()
+	ipport := client.Session.GetServerIPPort()
 
-	if s.Config.TLSParams.UseTLS {
-		s.Connector.TLSConn, err = tls.Dial("tcp", ipport, s.Config.TLSParams.TLSConfig)
+	if client.Session.Config.TLSParams.UseTLS {
+		client.Session.Connector.TLSConn, err = tls.Dial("tcp", ipport, client.Session.Config.TLSParams.TLSConfig)
 		if err != nil {
 			return errors.Wrap(err, "Dialing "+ipport+" failed")
 		}
 	} else {
-		s.Connector.Conn, err = net.Dial("tcp", ipport)
+		client.Session.Connector.Conn, err = net.Dial("tcp", ipport)
 		if err != nil {
 			return errors.Wrap(err, "Dialing "+ipport+" failed")
 		}
 	}
 
 	return nil
-
 }
 
 // InitModule : Update ListModule & ListModuleEnabled variable
-func InitModule(s *session.Session) {
+func (client *Client) InitModule() {
 
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("Session client : %+v"), s)
-	}
-	for m := range s.Config.Modules {
-		ListModule = append(ListModule, m)
-		if s.Config.Modules[m].Enabled {
-			ListModuleEnabled = append(ListModuleEnabled, m)
+	log.Debugf("Session client : %+v", client.Session)
+	for m := range client.Session.Config.Modules {
+		client.ListModule = append(client.ListModule, m)
+		if client.Session.Config.Modules[m].Enabled {
+			client.ListModuleEnabled = append(client.ListModuleEnabled, m)
 		}
 	}
 }
 
 // SendHello : Send node info (modules list, project name,...)
-func SendHello(s *session.Session) error {
+func (client *Client) SendHello() error {
 	var rw *bufio.ReadWriter
 
-	if s.Connector.TLSConn == nil {
-		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.Conn), bufio.NewWriter(s.Connector.Conn))
+	if client.Session.Connector.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(client.Session.Connector.Conn), bufio.NewWriter(client.Session.Connector.Conn))
 	} else {
-		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.TLSConn), bufio.NewWriter(s.Connector.TLSConn))
+		rw = bufio.NewReadWriter(bufio.NewReader(client.Session.Connector.TLSConn), bufio.NewWriter(client.Session.Connector.TLSConn))
 	}
 
-	enc := gob.NewEncoder(rw)
+	node := config.Node{Modules: client.ListModuleEnabled, Project: client.Session.Config.Project.Name}
+	log.Debugf("Node : %+v", node)
 
-	node := config.Node{Modules: ListModuleEnabled, Project: s.Config.Project.Name}
-
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("Node : %+v"), node)
-	}
-
-	err := enc.Encode(node)
+	err := gob.NewEncoder(rw).Encode(node)
 	if err != nil {
 		return err
 	}
@@ -160,23 +154,20 @@ func SendHello(s *session.Session) error {
 }
 
 // Recv read the incomming data from the server. The server use the server.Command struct.
-func Recv(s *session.Session) (server.Command, error) {
+func (client *Client) Recv() (server.Command, error) {
 	var cmd server.Command
 
-	if s.Config.Verbose {
-		log.Println(colors.Yellow("Waiting for incomming data"))
-	}
+	log.Debugf("Waiting for incomming data")
 
 	var rw *bufio.ReadWriter
 
-	if s.Connector.TLSConn == nil {
-		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.Conn), bufio.NewWriter(s.Connector.Conn))
+	if client.Session.Connector.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(client.Session.Connector.Conn), bufio.NewWriter(client.Session.Connector.Conn))
 	} else {
-		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.TLSConn), bufio.NewWriter(s.Connector.TLSConn))
+		rw = bufio.NewReadWriter(bufio.NewReader(client.Session.Connector.TLSConn), bufio.NewWriter(client.Session.Connector.TLSConn))
 	}
 
-	dec := gob.NewDecoder(rw)
-	err := dec.Decode(&cmd)
+	err := gob.NewDecoder(rw).Decode(&cmd)
 
 	// handle connection closed (server shutdown for example)
 	if err == io.EOF {
@@ -187,10 +178,8 @@ func Recv(s *session.Session) (server.Command, error) {
 		return server.Command{}, errors.New("Could not decode received message : " + err.Error())
 	}
 
-	if s.Config.Verbose {
-		log.Printf(colors.Yellow("Recieved command %+v"), cmd)
-	}
-	_, ok := s.Modules[cmd.Name]
+	log.Debugf("Recieved command %+v", cmd)
+	_, ok := client.Session.Modules[cmd.Name]
 
 	if !ok {
 		return server.Command{}, errors.New("Unsupported (or unknown) command : " + cmd.Name)
@@ -200,37 +189,34 @@ func Recv(s *session.Session) (server.Command, error) {
 }
 
 // Execute runs modules with the right options and handle errors.
-func Execute(s *session.Session, module modules.Module, cmd server.Command) (modules.Result, error) {
+func (client *Client) Execute(module modules.Module, cmd server.Command) (modules.Result, error) {
 
-	if s.Config.Verbose {
-		log.Printf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
-	}
+	log.Debugf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
 	//TODO
 	res, err := module.Run(cmd.Options)
 	return res, err
 }
 
 // SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
-func SendResult(s *session.Session, res modules.Result) error {
+func (client *Client) SendResult(res modules.Result) error {
 	var rw *bufio.ReadWriter
 
-	if s.Connector.TLSConn == nil {
-		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.Conn), bufio.NewWriter(s.Connector.Conn))
+	if client.Session.Connector.TLSConn == nil {
+		rw = bufio.NewReadWriter(bufio.NewReader(client.Session.Connector.Conn), bufio.NewWriter(client.Session.Connector.Conn))
 	} else {
-		rw = bufio.NewReadWriter(bufio.NewReader(s.Connector.TLSConn), bufio.NewWriter(s.Connector.TLSConn))
+		rw = bufio.NewReadWriter(bufio.NewReader(client.Session.Connector.TLSConn), bufio.NewWriter(client.Session.Connector.TLSConn))
 	}
 
-	enc := gob.NewEncoder(rw)
-	err := enc.Encode(res)
+	err := gob.NewEncoder(rw).Encode(res)
 
 	if err != nil {
-		log.Println(colors.Red("Error :"), err)
+		log.Errorf("Error : %+v", err)
 		return err
 	}
 
 	err = rw.Flush()
 	if err != nil {
-		log.Println(colors.Red("Error :"), err)
+		log.Errorf("Error : %+v", err)
 		return err
 	}
 
