@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"net"
 	"time"
 
@@ -135,31 +134,26 @@ func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
 }
 
 // AppendIP is used by module to store result into the database
-func appendIP(session *mgo.Session, ip IP) {
-	fmt.Println("Adding IP to project facebook.com")
+func AppendIP(session *mgo.Session, ip IP) {
 	c := session.DB(cfg.Database.Collection).C("projects")
-
-	ip.ID = bson.NewObjectId()
 
 	portsArr := make([]bson.ObjectId, len(ip.Ports))
 	for k := range ip.Ports {
-		fmt.Println("k:", k)
-		fmt.Println("portsFunc[k]:", ip.Ports[k].ID)
 		portsArr[k] = ip.Ports[k].ID
 	}
-	fmt.Println("portsArr : ", portsArr)
 
-	_, err := c.Upsert(bson.M{"Name": "projects"}, bson.M{"_id": ip.ID, "Value": ip.Value, "Ports": portsArr})
+	_, err := c.Upsert(bson.M{"Name": "projects"}, bson.M{"_id": ip.ID, "Value": ip.Value.String(), "Ports": portsArr})
 	if err != nil {
 		log.Fatal("Something went wrong : ", err)
 	}
 }
 
-func appendPorts(session *mgo.Session, ports []Port) {
+// AppendPorts is used by module to store result into the database
+func AppendPorts(session *mgo.Session, ports []Port) {
 	c := session.DB(cfg.Database.Collection).C("projects")
 
 	for v := range ports {
-		info, err := c.Upsert(bson.M{"Name": "projects"},
+		_, err := c.Upsert(bson.M{"Name": "projects"},
 			bson.M{"_id": ports[v].ID, "Number": ports[v].Number,
 				"Protocol": ports[v].Protocol,
 				"Status":   ports[v].Status,
@@ -167,7 +161,14 @@ func appendPorts(session *mgo.Session, ports []Port) {
 		if err != nil {
 			log.Fatal("Something went wrong (PORT) : ", err)
 		}
-		fmt.Println(info)
-		v++
+	}
+}
+
+// UpateProjectIPs Update IP related to a project, for now, only 1 IP
+func UpateProjectIPs(session *mgo.Session, projectName string, ip IP) {
+	c := session.DB(cfg.Database.Collection).C("projects")
+	_, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix(), "IPs": ip.ID}})
+	if err != nil {
+		log.Fatal("Something went wrong (Update Project) : ", err)
 	}
 }
