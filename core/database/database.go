@@ -6,7 +6,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/config"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -82,9 +81,9 @@ func ConnectWithoutCreds() *mgo.Session {
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
-		log.Fatalf(colors.Red("Error connecting with the database : %s"), err.Error())
+		log.Fatal("Error connecting with the database : %s", err.Error())
 	}
-	log.Printf(colors.Green("Connected to the database : %s"), config.Config.Database.IP)
+	log.Info("Connected to the database : %s", config.Config.Database.IP)
 	return session
 }
 
@@ -114,8 +113,8 @@ func CreateProject(session *mgo.Session, projectName string) {
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
 	if cfg.Verbose && info.Updated == 1 {
-		log.Printf(colors.Yellow("Info : %+v"), info)
-		log.Printf(colors.Yellow("Adding %s to the collections 'projects'"), projectName)
+		log.Info("Info : %+v", info)
+		log.Info("Adding %s to the collections 'projects'", projectName)
 	}
 
 	if err != nil {
@@ -127,7 +126,7 @@ func CreateProject(session *mgo.Session, projectName string) {
 func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
 	c := session.DB(DBname).C("projects")
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
-	log.Printf(colors.Yellow("Info : %+v"), info)
+	log.Info("Info : %+v", info)
 	if err != nil {
 		log.Fatal(err)
 	}
