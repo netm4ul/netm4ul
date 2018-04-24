@@ -50,12 +50,6 @@ var (
 var setupCmd = &cobra.Command{
 	Use:   "setup",
 	Short: "NetM4ul setup",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
 		CLISession.Config.Database.User = cliDBSetupUser
@@ -84,12 +78,11 @@ func check(err error) {
 func prompt(param string) (answer string) {
 	// var text string
 	var input string
-	var defInput string
 
 	// Database parameters
 	promptString := map[string]PromptRes{
-		"dbuser":     PromptRes{Message: "Interactive mode for database username (default : %s) : ", DefaultValue: defaultDBSetupUser},
-		"dbpassword": PromptRes{Message: "Interactive mode for database password (default : %s) : ", DefaultValue: defaultDBSetupPassword},
+		"dbuser":     {Message: "Interactive mode for database username (default : %s) : ", DefaultValue: defaultDBSetupUser},
+		"dbpassword": {Message: "Interactive mode for database password (default : %s) : ", DefaultValue: defaultDBSetupPassword},
 	}
 
 	//Other parameters
