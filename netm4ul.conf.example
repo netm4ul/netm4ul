@@ -36,6 +36,7 @@ IsClient = false
   user = "admin"
   password = "admin"
   ip = "localhost"
+  collection = "netm4ul"
   port = 27017
 
 [Modules]
