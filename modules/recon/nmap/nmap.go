@@ -151,6 +151,7 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 
 	fmt.Println(opt)
 	cmd := exec.Command("/usr/bin/nmap", opt...)
+	fmt.Println(cmd)
 	fmt.Println("My cmd:", cmd)
 	execErr := cmd.Run()
 	if execErr != nil {
@@ -162,6 +163,7 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 		log.Fatal("Error 2 : ", err)
 	}
 	N.Nmaprun, err = Parse(N.Result)
+	fmt.Println("N.Nmaprun 2 : ", N.Nmaprun.Hosts[0].Addresses[0].Addr)
 	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
@@ -186,7 +188,7 @@ func (N *Nmap) ParseConfig() error {
 
 // WriteDb : Save data
 func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Println("Write to the database.")
+	log.Println("Write raw to the database.")
 	// var data NmapRun
 	result.Data = result.Data.(NmapRun)
 	// fmt.Printf("============================%+v", result.Data)
@@ -195,6 +197,10 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	database.UpsertRawData(mgoSession, projectName, raw)
 
 	//save data in projects
+
+	fmt.Println("Results : ", result)
+	fmt.Println("raw:", raw)
+	// fmt.Println("Modules.Result:")
 
 	return nil
 }

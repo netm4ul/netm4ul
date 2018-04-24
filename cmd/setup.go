@@ -84,7 +84,6 @@ func check(err error) {
 func prompt(param string) (answer string) {
 	// var text string
 	var input string
-	var defInput string
 
 	// Database parameters
 	promptString := map[string]PromptRes{

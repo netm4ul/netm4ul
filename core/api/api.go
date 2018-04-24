@@ -141,6 +141,7 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 
 	// TODO : use real data
 	p.IPs = append(p.IPs, database.IP{
+		ID:    bson.NewObjectId(),
 		Value: net.ParseIP("127.0.0.1"),
 		Ports: []database.Port{
 			database.Port{Number: 53, Banner: "Bind9", Status: "open"},

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 
 // Hop defines each "hop" from the host (netm4ul client) to the target.
 type Hop struct {
+	ID  bson.ObjectId `bson:"_id,omitempty"`
 	IP  net.IP
 	Max float32
 	Min float32
@@ -25,39 +27,44 @@ type Hop struct {
 
 // Route defines the route from the host (netm4ul client) to the target
 type Route struct {
-	Source      string `json:"source,omitempty" bson:"Source"`
-	Destination string `json:"destination,omitempty" bson:"Destination"`
-	Hops        []Hop  `json:"hops,omitempty" bson:"Hops,omitempty"`
+	ID          bson.ObjectId `bson:"_id,omitempty"`
+	Source      string        `json:"source,omitempty" bson:"Source"`
+	Destination string        `json:"destination,omitempty" bson:"Destination"`
+	Hops        []Hop         `json:"hops,omitempty" bson:"Hops,omitempty"`
 }
 
 // Directory defines one directory from a remote target (webserver)
 type Directory struct {
-	Name string `json:"name" bson:"Name"`
-	Code string `json:"code,omitempty" bson:"Code,omitempty"`
+	ID   bson.ObjectId `bson:"_id,omitempty"`
+	Name string        `json:"name" bson:"Name"`
+	Code string        `json:"code,omitempty" bson:"Code,omitempty"`
 }
 
 // Port defines the basic structure for each port scanned on the target
 type Port struct {
-	Number      int16       `json:"number,omitempty" bson:"Number"`
-	Protocol    string      `json:"protocol,omitempty" bson:"Protocol"`
-	Status      string      `json:"status,omitempty" bson:"Status"` // open, filtered, closed
-	Banner      string      `json:"banner,omitempty" bson:"Banner,omitempty"`
-	Type        string      `json:"type,omitempty" bson:"Type,omitempty"`
-	Directories []Directory `json:"value,omitempty" bson:"Value,omitempty"`
+	ID          bson.ObjectId `bson:"_id,omitempty"`
+	Number      int16         `json:"number,omitempty" bson:"Number"`
+	Protocol    string        `json:"protocol,omitempty" bson:"Protocol"`
+	Status      string        `json:"status,omitempty" bson:"Status"` // open, filtered, closed
+	Banner      string        `json:"banner,omitempty" bson:"Banner,omitempty"`
+	Type        string        `json:"type,omitempty" bson:"Type,omitempty"`
+	Directories []Directory   `json:"value,omitempty" bson:"Value,omitempty"`
 }
 
 //IP defines the IP address of a target.
 type IP struct {
-	Value net.IP `json:"value,omitempty" bson:"Value"`
-	Ports []Port `json:"ports,omitempty" bson:"Ports,omitempty"`
+	ID    bson.ObjectId `bson:"_id,omitempty"`
+	Value net.IP        `json:"value,omitempty" bson:"Value"`
+	Ports []Port        `json:"ports,omitempty" bson:"Ports,omitempty"`
 }
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	Name        string `json:"name" bson:"Name"`
-	Description string `json:"description" bson:"Description,omitempty"`
-	UpdatedAt   int64  `json:"updated_at" bson:"UpdatedAt,omitempty"`
-	IPs         []IP   `json:"ips" bson:"omitempty"`
+	ID          bson.ObjectId `bson:"_id,omitempty"`
+	Name        string        `json:"name" bson:"Name"`
+	Description string        `json:"description" bson:"Description,omitempty"`
+	UpdatedAt   int64         `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	IPs         []IP          `json:"ips" bson:"omitempty"`
 }
 
 var cfg *config.ConfigToml
@@ -124,5 +131,43 @@ func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
 	log.Infof("Info : %+v", info)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+// AppendIP is used by module to store result into the database
+func appendIP(session *mgo.Session, ip IP) {
+	fmt.Println("Adding IP to project facebook.com")
+	c := session.DB(cfg.Database.Collection).C("projects")
+
+	ip.ID = bson.NewObjectId()
+
+	portsArr := make([]bson.ObjectId, len(ip.Ports))
+	for k := range ip.Ports {
+		fmt.Println("k:", k)
+		fmt.Println("portsFunc[k]:", ip.Ports[k].ID)
+		portsArr[k] = ip.Ports[k].ID
+	}
+	fmt.Println("portsArr : ", portsArr)
+
+	_, err := c.Upsert(bson.M{"Name": "projects"}, bson.M{"_id": ip.ID, "Value": ip.Value, "Ports": portsArr})
+	if err != nil {
+		log.Fatal("Something went wrong : ", err)
+	}
+}
+
+func appendPorts(session *mgo.Session, ports []Port) {
+	c := session.DB(cfg.Database.Collection).C("projects")
+
+	for v := range ports {
+		info, err := c.Upsert(bson.M{"Name": "projects"},
+			bson.M{"_id": ports[v].ID, "Number": ports[v].Number,
+				"Protocol": ports[v].Protocol,
+				"Status":   ports[v].Status,
+				"Banner":   ports[v].Banner})
+		if err != nil {
+			log.Fatal("Something went wrong (PORT) : ", err)
+		}
+		fmt.Println(info)
+		v++
 	}
 }
