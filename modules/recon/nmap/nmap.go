@@ -7,11 +7,12 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/netm4ul/netm4ul/core/database"
 	mgo "gopkg.in/mgo.v2"
@@ -168,7 +169,7 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 func (N *Nmap) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	exPath := filepath.Dir(ex)

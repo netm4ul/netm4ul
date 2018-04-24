@@ -67,14 +67,29 @@ func InitDatabase(c *config.ConfigToml) {
 }
 
 // Connect to the database and return a session
+func ConnectWithoutCreds() *mgo.Session {
+	mongoDBDialInfo := &mgo.DialInfo{
+		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
+		Timeout:  10 * time.Second,
+		Database: "NetM4ul",
+	}
+	session, err := mgo.DialWithInfo(mongoDBDialInfo)
+
+	if err != nil {
+		log.Fatal("Error connecting with the database : %s", err.Error())
+	}
+	log.Info("Connected to the database : %s", config.Config.Database.IP)
+	return session
+}
+
+// Connect to the database and return a session
 func Connect() *mgo.Session {
 	mongoDBDialInfo := &mgo.DialInfo{
 		Addrs:    []string{cfg.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
 		Database: "NetM4ul",
-		// TODO : security whatever ¯\_(ツ)_/¯
-		// Username: "NetM4ul",
-		// Password: "Password!",
+		Username: cfg.Database.User,
+		Password: cfg.Database.Password,
 	}
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
