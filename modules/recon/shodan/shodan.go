@@ -11,10 +11,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/modules"
 	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/ns3777k/go-shodan.v3/shodan"
 )
 
@@ -172,11 +170,11 @@ func (S Shodan) ParseConfig() error {
 
 func (S Shodan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
 	log.Debug("Write to the database.")
-	var data ShodanResult
-	data = result.Data.(ShodanResult)
+	// var data ShodanResult
+	// data = result.Data.(ShodanResult)
 
-	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
+	// raw := bson.M{projectName + ".results." + result.Module: data}
+	// database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }
 

@@ -200,14 +200,22 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	// Ports part
 	ports := make([]database.Port, len(data.Hosts[0].Ports))
 	for j := range data.Hosts[0].Ports {
-		fmt.Println(j)
-		ports[j].ID = bson.NewObjectId()
-		ports[j].Number = int16(data.Hosts[0].Ports[j].PortId)
-		ports[j].Protocol = data.Hosts[0].Ports[j].Protocol
-		ports[j].Status = data.Hosts[0].Ports[j].State.State
-		ports[j].Banner = data.Hosts[0].Ports[j].Service.Name
+		// 	fmt.Println(j)
+		// 	ports[j].ID = bson.NewObjectId()
+		// 	ports[j].Number = int16(data.Hosts[0].Ports[j].PortId)
+		// 	ports[j].Protocol = data.Hosts[0].Ports[j].Protocol
+		// 	ports[j].Status = data.Hosts[0].Ports[j].State.State
+		// 	ports[j].Banner = data.Hosts[0].Ports[j].Service.Name
+		// }
+		p := database.Port{
+			ID:       bson.NewObjectId(),
+			Number:   int16(data.Hosts[0].Ports[j].PortId),
+			Protocol: data.Hosts[0].Ports[j].Protocol,
+			Status:   data.Hosts[0].Ports[j].State.State,
+			Banner:   data.Hosts[0].Ports[j].Service.Name,
+		}
+		ports[j] = p
 	}
-
 	fmt.Println(ports)
 
 	// IP parts, multi ips ?
@@ -227,11 +235,11 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	// put everything in db
 
 	//IP
-	database.AppendIP(mgoSession, target)
+	database.AppendIP(mgoSession, target, "IP")
 	// Ports
-	database.AppendPorts(mgoSession, ports)
+	database.AppendPorts(mgoSession, ports, "PORTS")
 	// Update project
-	database.UpateProjectIPs(mgoSession, projectName, target)
+	database.UpateProjectIPs(mgoSession, projectName, target, "projects")
 	//save raw data
 	// raw := bson.M{projectName + ".results." + result.Module: data}
 	// database.UpsertRawData(mgoSession, projectName, raw)

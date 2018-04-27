@@ -119,7 +119,7 @@ func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSessio
 	server.Session.Config.Nodes[ip] = node
 
 	server.Nodes[ip] = conn
-	database.CreateProject(mgoSession, node.Project)
+	database.CreateDatabase(mgoSession, config.Database.Database)
 
 	p := database.GetProjects(mgoSession)
 

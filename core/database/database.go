@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -77,7 +78,7 @@ func ConnectWithoutCreds() *mgo.Session {
 	mongoDBDialInfo := &mgo.DialInfo{
 		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
-		Database: "NetM4ul",
+		Database: cfg.Database.Database,
 	}
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
@@ -93,10 +94,12 @@ func Connect() *mgo.Session {
 	mongoDBDialInfo := &mgo.DialInfo{
 		Addrs:    []string{cfg.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
-		Database: "NetM4ul",
+		Database: cfg.Database.Database,
 		Username: cfg.Database.User,
 		Password: cfg.Database.Password,
 	}
+	fmt.Println(cfg.Database.User)
+	fmt.Println(cfg.Database.Database)
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
@@ -106,10 +109,15 @@ func Connect() *mgo.Session {
 	return session
 }
 
+func CreateDatabase(session *mgo.Session, database string) {
+	session.DB(database)
+}
+
 // CreateProject create a new project structure inside db
-func CreateProject(session *mgo.Session, projectName string) {
+func CreateProject(session *mgo.Session, projectName string, collection string) {
 	// mongodb will create collection on use.
-	c := session.DB(cfg.Database.Collection).C("projects")
+	// c := session.DB(cfg.Database.Database).C(collection)
+	c := session.DB(cfg.Database.Database).C(collection)
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
@@ -124,8 +132,8 @@ func CreateProject(session *mgo.Session, projectName string) {
 }
 
 //UpsertRawData is used by module to store raw results into the database.
-func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
-	c := session.DB(cfg.Database.Collection).C("projects")
+func UpsertRawData(session *mgo.Session, projectName string, data bson.M, collection string) {
+	c := session.DB(cfg.Database.Database).C(collection)
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
 	log.Infof("Info : %+v", info)
 	if err != nil {
@@ -134,26 +142,26 @@ func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
 }
 
 // AppendIP is used by module to store result into the database
-func AppendIP(session *mgo.Session, ip IP) {
-	c := session.DB(cfg.Database.Collection).C("projects")
+func AppendIP(session *mgo.Session, ip IP, collection string) {
+	c := session.DB(cfg.Database.Database).C(collection)
 
 	portsArr := make([]bson.ObjectId, len(ip.Ports))
 	for k := range ip.Ports {
 		portsArr[k] = ip.Ports[k].ID
 	}
 
-	_, err := c.Upsert(bson.M{"Name": "projects"}, bson.M{"_id": ip.ID, "Value": ip.Value.String(), "Ports": portsArr})
+	_, err := c.Upsert(bson.M{"Name": collection}, bson.M{"_id": ip.ID, "Value": ip.Value.String(), "Ports": portsArr})
 	if err != nil {
 		log.Fatal("Something went wrong : ", err)
 	}
 }
 
 // AppendPorts is used by module to store result into the database
-func AppendPorts(session *mgo.Session, ports []Port) {
-	c := session.DB(cfg.Database.Collection).C("projects")
+func AppendPorts(session *mgo.Session, ports []Port, collection string) {
+	c := session.DB(cfg.Database.Database).C(collection)
 
 	for v := range ports {
-		_, err := c.Upsert(bson.M{"Name": "projects"},
+		_, err := c.Upsert(bson.M{"Name": collection},
 			bson.M{"_id": ports[v].ID, "Number": ports[v].Number,
 				"Protocol": ports[v].Protocol,
 				"Status":   ports[v].Status,
@@ -165,8 +173,8 @@ func AppendPorts(session *mgo.Session, ports []Port) {
 }
 
 // UpateProjectIPs Update IP related to a project, for now, only 1 IP
-func UpateProjectIPs(session *mgo.Session, projectName string, ip IP) {
-	c := session.DB(cfg.Database.Collection).C("projects")
+func UpateProjectIPs(session *mgo.Session, projectName string, ip IP, collection string) {
+	c := session.DB(cfg.Database.Database).C(collection)
 	_, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix(), "IPs": ip.ID}})
 	if err != nil {
 		log.Fatal("Something went wrong (Update Project) : ", err)

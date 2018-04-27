@@ -21,12 +21,17 @@ import (
 	"net/http"
 	"strconv"
 
+	"gopkg.in/mgo.v2"
+
 	"github.com/netm4ul/netm4ul/core/api"
+	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/modules"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+var projectName string
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
@@ -35,6 +40,9 @@ var runCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
 		CLISession.Config.Mode = CLImode
+		var mgoSession *mgo.Session
+		mgoSession = database.Connect()
+		database.CreateProject(mgoSession, projectName, "projects")
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -121,4 +129,5 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.PersistentFlags().StringArrayVar(&CLImodules, "modules", []string{}, "Set custom module(s)")
 	runCmd.PersistentFlags().StringVarP(&CLImode, "mode", "m", DefaultMode, "Use predefined mode")
+	runCmd.PersistentFlags().StringVarP(&projectName, "project", "", "default_project", "Set project name")
 }

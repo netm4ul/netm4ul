@@ -184,7 +184,7 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["name"]
 	sessionMgo := database.Connect()
-	dbCollection := api.Session.Config.Database.Collection
+	dbCollection := api.Session.Config.Database.Database
 
 	err := sessionMgo.DB(dbCollection).C("projects").Find(bson.M{"Name": name}).All(&ips)
 	if err != nil {
