@@ -86,14 +86,14 @@ func TestParseTLS(t *testing.T) {
 
 func TestParseDatabase(t *testing.T) {
 
-	collection := Config.Database.Collection
+	database := Config.Database.Database
 	user := Config.Database.User
 	password := Config.Database.Password
 	ip := Config.Database.IP
 	port := Config.Database.Port
 
-	if collection == "" {
-		t.Error("Expected collection name, got empty string")
+	if database == "" {
+		t.Error("Expected database name, got empty string")
 	}
 	if user == "" {
 		t.Error("Expected user, got empty string")

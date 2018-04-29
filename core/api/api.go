@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -141,6 +142,7 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 
 	// TODO : use real data
 	p.IPs = append(p.IPs, database.IP{
+		ID:    bson.NewObjectId(),
 		Value: net.ParseIP("127.0.0.1"),
 		Ports: []database.Port{
 			{Number: 53, Banner: "Bind9", Status: "open"},
@@ -183,7 +185,7 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["name"]
 	sessionMgo := database.Connect()
-	dbCollection := api.Session.Config.Database.Collection
+	dbCollection := api.Session.Config.Database.Database
 
 	err := sessionMgo.DB(dbCollection).C("projects").Find(bson.M{"Name": name}).All(&ips)
 	if err != nil {
@@ -326,10 +328,30 @@ func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 }
 */
 func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
-	//TODO
-	res := CodeToResult[CodeNotImplementedYet]
+	var project string
+	var res Result
+	fmt.Println(r)
+	decoder := json.NewDecoder(r.Body)
+	fmt.Println("decoder : ", decoder)
 
-	w.WriteHeader(CodeToResult[CodeNotImplementedYet].HTTPCode)
+	err := decoder.Decode(&project)
+	if err != nil {
+		log.Fatal("Could not decode provided json : %+v", err)
+		res = CodeToResult[CodeCouldNotDecodeJSON]
+		w.WriteHeader(CodeToResult[CodeCouldNotDecodeJSON].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	log.Debugf("JSON input : %+v", project)
+	defer r.Body.Close()
+
+	//Create project in DB
+	mgoSession := database.Connect()
+	database.CreateProject(mgoSession, project, "projects")
+
+	res = CodeToResult[CodeOK]
+	res.Message = "Command Sent"
 	json.NewEncoder(w).Encode(res)
 }
 

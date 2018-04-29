@@ -6,7 +6,7 @@ IsServer = false
 IsClient = false
 
 [Project]
-  Name = "netm4ul.conf"
+  Name = "netm4ul"
   Description = "This is an awesome Netm4ul project"
 
 [Versions]
@@ -35,6 +35,7 @@ IsClient = false
 [Database]
   user = "admin"
   password = "admin"
+  database = "NetM4ul"
   ip = "localhost"
   collection = "netm4ul"
   port = 27017

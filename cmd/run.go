@@ -28,6 +28,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// var CLIprojectName string
+
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -35,6 +37,9 @@ var runCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
 		CLISession.Config.Mode = CLImode
+		if CLIprojectName != "" {
+			createProject(CLIprojectName)
+		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -68,6 +73,25 @@ var runCmd = &cobra.Command{
 
 		runModules(targets)
 	},
+}
+
+func createProject(project string) {
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects"
+	jsonInput, err := json.Marshal(project)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonInput))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res, err := json.Marshal(resp.Body)
+	if err != nil {
+		fmt.Println("Received invalid json !", err)
+	}
+	fmt.Println(res)
 }
 
 func runModules(targets []modules.Input) {
@@ -121,4 +145,5 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.PersistentFlags().StringArrayVar(&CLImodules, "modules", []string{}, "Set custom module(s)")
 	runCmd.PersistentFlags().StringVarP(&CLImode, "mode", "m", DefaultMode, "Use predefined mode")
+	runCmd.PersistentFlags().StringVarP(&CLIprojectName, "project", "p", "", "Set project name")
 }

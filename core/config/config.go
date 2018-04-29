@@ -60,11 +60,11 @@ type TLSParams struct {
 
 // Database : Mongodb config
 type Database struct {
-	User       string `toml:"user"`
-	Collection string `toml:"collection"`
-	Password   string `toml:"password"`
-	IP         string `toml:"ip"`
-	Port       uint16 `toml:"port"`
+	User     string `toml:"user"`
+	Database string `toml:"database"`
+	Password string `toml:"password"`
+	IP       string `toml:"ip"`
+	Port     uint16 `toml:"port"`
 }
 
 // Module : Basic struct for general module config

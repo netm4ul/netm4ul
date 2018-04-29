@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,13 +15,13 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/netm4ul/netm4ul/core/database"
 	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 
 	"github.com/BurntSushi/toml"
 	// gonmap "github.com/lair-framework/go-nmap"
+	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/modules"
+	"gopkg.in/mgo.v2/bson"
 )
 
 //ConfigToml : configuration model (from the toml file)
@@ -151,7 +152,6 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 
 	fmt.Println(opt)
 	cmd := exec.Command("/usr/bin/nmap", opt...)
-	fmt.Println("My cmd:", cmd)
 	execErr := cmd.Run()
 	if execErr != nil {
 		log.Fatal(execErr)
@@ -186,15 +186,50 @@ func (N *Nmap) ParseConfig() error {
 
 // WriteDb : Save data
 func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Println("Write to the database.")
-	// var data NmapRun
-	result.Data = result.Data.(NmapRun)
-	// fmt.Printf("============================%+v", result.Data)
-	//save raw data
-	raw := bson.M{projectName + ".results." + result.Module: result}
-	database.UpsertRawData(mgoSession, projectName, raw)
+	log.Println("Write raw to the database.")
+
+	// result.Data = result.Data.(NmapRun)
+	data := result.Data.(NmapRun)
 
 	//save data in projects
 
+	// define infos to send in db
+	// Ports part
+	ports := make([]database.Port, len(data.Hosts[0].Ports))
+	for j := range data.Hosts[0].Ports {
+		p := database.Port{
+			ID:       bson.NewObjectId(),
+			Number:   int16(data.Hosts[0].Ports[j].PortId),
+			Protocol: data.Hosts[0].Ports[j].Protocol,
+			Status:   data.Hosts[0].Ports[j].State.State,
+			Banner:   data.Hosts[0].Ports[j].Service.Name,
+		}
+		ports[j] = p
+	}
+
+	// IP parts, multi ips ?
+	// var targets []database.IP
+	// for i := range data.Hosts {
+	// 	targets[i].Value = net.ParseIP(data.Hosts[0].Addresses[i].Addr)
+	// 	targets[i].Ports = ports
+	// }
+
+	// For now, only 1 IP
+	var target database.IP
+	target.ID = bson.NewObjectId()
+	target.Value = net.ParseIP(data.Hosts[0].Addresses[0].Addr)
+	target.Ports = ports
+
+	// put everything in db
+
+	//IP
+	database.AppendIP(mgoSession, target)
+	// Ports
+	database.AppendPorts(mgoSession, ports)
+	// Update project
+	database.UpdateProjectIPs(mgoSession, projectName, target)
+	//save raw data
+	raw := bson.M{projectName + ".results." + result.Module: data}
+	database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }
