@@ -35,6 +35,7 @@ IsClient = false
 [Database]
   user = "admin"
   password = "admin"
+  database = "NetM4ul"
   ip = "localhost"
   port = 27017
 
