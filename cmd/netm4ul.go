@@ -23,7 +23,7 @@ var (
 	CLItargets     []string
 	CLImodules     []string
 	CLImode        string
-	CLIProjectName string
+	CLIprojectName string
 	verbose        bool
 	version        bool
 
@@ -37,7 +37,7 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", DefaultConfigPath, "Custom config file path")
-	rootCmd.PersistentFlags().StringVarP(&CLIProjectName, "project", "p", DefaultConfigPath, "Uses the provided project name")
+	rootCmd.PersistentFlags().StringVarP(&CLIprojectName, "project", "p", "", "Uses the provided project name")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
 	log.SetOutput(os.Stdout)
@@ -56,7 +56,10 @@ func createSessionBase() {
 	CLISession = session.NewSession(config.Config)
 	CLISession.Config.ConfigPath = configPath
 	CLISession.Config.Verbose = verbose
-	CLISession.Config.Project.Name = CLIProjectName
+	fmt.Println("CLIprojectName", CLIprojectName)
+	if CLIprojectName != "" {
+		CLISession.Config.Project.Name = CLIprojectName
+	}
 }
 
 var rootCmd = &cobra.Command{

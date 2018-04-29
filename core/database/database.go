@@ -109,10 +109,6 @@ func Connect() *mgo.Session {
 	return session
 }
 
-func CreateDatabase(session *mgo.Session, database string) {
-	session.DB(database)
-}
-
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string, collection string) {
 	// mongodb will create collection on use.

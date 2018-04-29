@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -327,10 +328,30 @@ func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 }
 */
 func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
-	//TODO
-	res := CodeToResult[CodeNotImplementedYet]
+	var project string
+	var res Result
+	fmt.Println(r)
+	decoder := json.NewDecoder(r.Body)
+	fmt.Println("decoder : ", decoder)
 
-	w.WriteHeader(CodeToResult[CodeNotImplementedYet].HTTPCode)
+	err := decoder.Decode(&project)
+	if err != nil {
+		log.Fatal("Could not decode provided json : %+v", err)
+		res = CodeToResult[CodeCouldNotDecodeJSON]
+		w.WriteHeader(CodeToResult[CodeCouldNotDecodeJSON].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	log.Debugf("JSON input : %+v", project)
+	defer r.Body.Close()
+
+	//Create project in DB
+	mgoSession := database.Connect()
+	database.CreateProject(mgoSession, project, "projects")
+
+	res = CodeToResult[CodeOK]
+	res.Message = "Command Sent"
 	json.NewEncoder(w).Encode(res)
 }
 

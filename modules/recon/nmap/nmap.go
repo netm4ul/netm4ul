@@ -152,8 +152,6 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 
 	fmt.Println(opt)
 	cmd := exec.Command("/usr/bin/nmap", opt...)
-	fmt.Println(cmd)
-	fmt.Println("My cmd:", cmd)
 	execErr := cmd.Run()
 	if execErr != nil {
 		log.Fatal(execErr)
@@ -164,7 +162,6 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 		log.Fatal("Error 2 : ", err)
 	}
 	N.Nmaprun, err = Parse(N.Result)
-	fmt.Println("N.Nmaprun 2 : ", N.Nmaprun.Hosts[0].Addresses[0].Addr)
 	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
@@ -200,13 +197,6 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	// Ports part
 	ports := make([]database.Port, len(data.Hosts[0].Ports))
 	for j := range data.Hosts[0].Ports {
-		// 	fmt.Println(j)
-		// 	ports[j].ID = bson.NewObjectId()
-		// 	ports[j].Number = int16(data.Hosts[0].Ports[j].PortId)
-		// 	ports[j].Protocol = data.Hosts[0].Ports[j].Protocol
-		// 	ports[j].Status = data.Hosts[0].Ports[j].State.State
-		// 	ports[j].Banner = data.Hosts[0].Ports[j].Service.Name
-		// }
 		p := database.Port{
 			ID:       bson.NewObjectId(),
 			Number:   int16(data.Hosts[0].Ports[j].PortId),
@@ -216,7 +206,6 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 		}
 		ports[j] = p
 	}
-	fmt.Println(ports)
 
 	// IP parts, multi ips ?
 	// var targets []database.IP
@@ -230,7 +219,6 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	target.ID = bson.NewObjectId()
 	target.Value = net.ParseIP(data.Hosts[0].Addresses[0].Addr)
 	target.Ports = ports
-	fmt.Println(target)
 
 	// put everything in db
 

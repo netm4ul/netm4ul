@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -98,12 +99,12 @@ func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSessio
 	var node config.Node
 
 	err := gob.NewDecoder(rw).Decode(&node)
-
 	if err != nil {
 		log.Errorf("Cannot read hello data : %s", err.Error())
 		return
 	}
 
+	fmt.Printf("NIQUE %+v", node)
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
 	if server.Session.Config.Verbose {
@@ -119,7 +120,7 @@ func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSessio
 	server.Session.Config.Nodes[ip] = node
 
 	server.Nodes[ip] = conn
-	database.CreateDatabase(mgoSession, config.Database.Database)
+	// database.CreateDatabase(mgoSession, config.Da)
 
 	p := database.GetProjects(mgoSession)
 

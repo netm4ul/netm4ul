@@ -6,7 +6,7 @@ IsServer = false
 IsClient = false
 
 [Project]
-  Name = "netm4ul.conf"
+  Name = "netm4ul"
   Description = "This is an awesome Netm4ul project"
 
 [Versions]
