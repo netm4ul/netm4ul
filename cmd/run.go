@@ -37,7 +37,9 @@ var runCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
 		CLISession.Config.Mode = CLImode
-		createProject(CLIprojectName)
+		if CLIprojectName != "" {
+			createProject(CLIprojectName)
+		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(CLISession.Config.Project.Name)
