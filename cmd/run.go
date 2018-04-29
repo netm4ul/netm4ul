@@ -42,7 +42,6 @@ var runCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(CLISession.Config.Project.Name)
 		if len(args) == 0 {
 			log.Fatalln("Too few arguments ! Expecting target.")
 		}
@@ -82,9 +81,6 @@ func createProject(project string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("projectName", project)
-	fmt.Println("json Input : ", jsonInput)
-	fmt.Println("url : ", url)
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonInput))
 	if err != nil {

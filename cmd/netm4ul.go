@@ -56,8 +56,6 @@ func createSessionBase() {
 	CLISession = session.NewSession(config.Config)
 	CLISession.Config.ConfigPath = configPath
 	CLISession.Config.Verbose = verbose
-	fmt.Println("CLIprojectName", CLIprojectName)
-	fmt.Println(CLISession.Config.Project.Name)
 	if CLIprojectName != "" {
 		CLISession.Config.Project.Name = CLIprojectName
 	}
