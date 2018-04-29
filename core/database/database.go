@@ -112,7 +112,6 @@ func Connect() *mgo.Session {
 // CreateProject create a new project structure inside db
 func CreateProject(session *mgo.Session, projectName string, collection string) {
 	// mongodb will create collection on use.
-	// c := session.DB(cfg.Database.Database).C(collection)
 	c := session.DB(cfg.Database.Database).C(collection)
 
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
@@ -128,8 +127,8 @@ func CreateProject(session *mgo.Session, projectName string, collection string) 
 }
 
 //UpsertRawData is used by module to store raw results into the database.
-func UpsertRawData(session *mgo.Session, projectName string, data bson.M, collection string) {
-	c := session.DB(cfg.Database.Database).C(collection)
+func UpsertRawData(session *mgo.Session, projectName string, data bson.M) {
+	c := session.DB(cfg.Database.Database).C("raw")
 	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
 	log.Infof("Info : %+v", info)
 	if err != nil {
@@ -137,27 +136,27 @@ func UpsertRawData(session *mgo.Session, projectName string, data bson.M, collec
 	}
 }
 
-// AppendIP is used by module to store result into the database
-func AppendIP(session *mgo.Session, ip IP, collection string) {
-	c := session.DB(cfg.Database.Database).C(collection)
+// AppendIP is used by module to store ip data into the database
+func AppendIP(session *mgo.Session, ip IP) {
+	c := session.DB(cfg.Database.Database).C("ips")
 
 	portsArr := make([]bson.ObjectId, len(ip.Ports))
 	for k := range ip.Ports {
 		portsArr[k] = ip.Ports[k].ID
 	}
 
-	_, err := c.Upsert(bson.M{"Name": collection}, bson.M{"_id": ip.ID, "Value": ip.Value.String(), "Ports": portsArr})
+	_, err := c.Upsert(bson.M{"Name": "ips"}, bson.M{"_id": ip.ID, "Value": ip.Value.String(), "Ports": portsArr})
 	if err != nil {
 		log.Fatal("Something went wrong : ", err)
 	}
 }
 
-// AppendPorts is used by module to store result into the database
-func AppendPorts(session *mgo.Session, ports []Port, collection string) {
-	c := session.DB(cfg.Database.Database).C(collection)
+// AppendPorts is used by module to store ports data into the database
+func AppendPorts(session *mgo.Session, ports []Port) {
+	c := session.DB(cfg.Database.Database).C("ports")
 
 	for v := range ports {
-		_, err := c.Upsert(bson.M{"Name": collection},
+		_, err := c.Upsert(bson.M{"Name": "ports"},
 			bson.M{"_id": ports[v].ID, "Number": ports[v].Number,
 				"Protocol": ports[v].Protocol,
 				"Status":   ports[v].Status,
@@ -168,9 +167,20 @@ func AppendPorts(session *mgo.Session, ports []Port, collection string) {
 	}
 }
 
-// UpateProjectIPs Update IP related to a project, for now, only 1 IP
-func UpateProjectIPs(session *mgo.Session, projectName string, ip IP, collection string) {
-	c := session.DB(cfg.Database.Database).C(collection)
+// UpdatePort to update a port with new information, like directories after dirb
+func UpdatePort(session *mgo.Session, port Port) {
+	c := session.DB(cfg.Database.Database).C("ports")
+	// Update with directories, port.Directories is []Directories and must contain IDs
+	_, err := c.Upsert(bson.M{"Number": port.Number}, bson.M{"$set": bson.M{"Directories": port.Directories}})
+	if err != nil {
+		log.Fatal("Something went wrong (Update Port) : ", err)
+	}
+	//Update other stuff here
+}
+
+// UpdateProjectIPs Update IP related to a project, for now, only 1 IP
+func UpdateProjectIPs(session *mgo.Session, projectName string, ip IP) {
+	c := session.DB(cfg.Database.Database).C("projects")
 	_, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix(), "IPs": ip.ID}})
 	if err != nil {
 		log.Fatal("Something went wrong (Update Project) : ", err)

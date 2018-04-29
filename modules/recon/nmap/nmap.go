@@ -223,13 +223,13 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	// put everything in db
 
 	//IP
-	database.AppendIP(mgoSession, target, "IP")
+	database.AppendIP(mgoSession, target)
 	// Ports
-	database.AppendPorts(mgoSession, ports, "PORTS")
+	database.AppendPorts(mgoSession, ports)
 	// Update project
-	database.UpdateProjectIPs(mgoSession, projectName, target, "projects")
+	database.UpdateProjectIPs(mgoSession, projectName, target)
 	//save raw data
-	// raw := bson.M{projectName + ".results." + result.Module: data}
-	// database.UpsertRawData(mgoSession, projectName, raw)
+	raw := bson.M{projectName + ".results." + result.Module: data}
+	database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }
