@@ -73,19 +73,20 @@ func InitDatabase(c *config.ConfigToml) {
 	cfg = c
 }
 
-// Connect to the database and return a session
+// ConnectWithoutCreds connects to the database and return a session. Used only the first time
 func ConnectWithoutCreds() *mgo.Session {
 	mongoDBDialInfo := &mgo.DialInfo{
-		Addrs:    []string{config.Config.Database.IP}, // array of ip (sharding & whatever), just 1 for now
+		Addrs:    []string{cfg.Database.IP}, // array of ip (sharding & whatever), just 1 for now
 		Timeout:  10 * time.Second,
 		Database: cfg.Database.Database,
 	}
 	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
-		log.Fatal("Error connecting with the database : %s", err.Error())
+		log.Fatalf("Error connecting with the database [without creds] : %s", err.Error())
 	}
-	log.Info("Connected to the database : %s", config.Config.Database.IP)
+
+	log.Infof("Connected to the database : %s", config.Config.Database.IP)
 	return session
 }
 

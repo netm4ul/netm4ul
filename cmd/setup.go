@@ -109,6 +109,7 @@ func setupDB() {
 		CLISession.Config.Database.Password = prompt("dbpassword")
 	}
 
+	database.InitDatabase(&CLISession.Config)
 	mgoSession := database.ConnectWithoutCreds()
 	roles := []mgo.Role{mgo.RoleDBAdmin}
 
