@@ -18,7 +18,7 @@ import (
 
 // Hop defines each "hop" from the host (netm4ul client) to the target.
 type Hop struct {
-	ID  bson.ObjectId `bson:"_id,omitempty"`
+	ID  bson.ObjectId `json:"-" bson:"_id,omitempty"`
 	IP  net.IP
 	Max float32
 	Min float32
@@ -27,7 +27,7 @@ type Hop struct {
 
 // Route defines the route from the host (netm4ul client) to the target
 type Route struct {
-	ID          bson.ObjectId `bson:"_id,omitempty"`
+	ID          bson.ObjectId `json:"-" bson:"_id,omitempty"`
 	Source      string        `json:"source,omitempty" bson:"Source"`
 	Destination string        `json:"destination,omitempty" bson:"Destination"`
 	Hops        []Hop         `json:"hops,omitempty" bson:"Hops,omitempty"`
@@ -35,14 +35,14 @@ type Route struct {
 
 // Directory defines one directory from a remote target (webserver)
 type Directory struct {
-	ID   bson.ObjectId `bson:"_id,omitempty"`
+	ID   bson.ObjectId `json:"-" bson:"_id,omitempty"`
 	Name string        `json:"name" bson:"Name"`
 	Code string        `json:"code,omitempty" bson:"Code,omitempty"`
 }
 
 // Port defines the basic structure for each port scanned on the target
 type Port struct {
-	ID          bson.ObjectId `bson:"_id,omitempty"`
+	ID          bson.ObjectId `json:"-" bson:"_id,omitempty"`
 	Number      int16         `json:"number,omitempty" bson:"Number"`
 	Protocol    string        `json:"protocol,omitempty" bson:"Protocol"`
 	Status      string        `json:"status,omitempty" bson:"Status"` // open, filtered, closed
@@ -53,18 +53,18 @@ type Port struct {
 
 //IP defines the IP address of a target.
 type IP struct {
-	ID    bson.ObjectId `bson:"_id,omitempty"`
-	Value net.IP        `json:"value,omitempty" bson:"Value"`
+	ID    bson.ObjectId `json:"-" bson:"_id,omitempty"`
+	Value string        `json:"value,omitempty" bson:"Value"` // should be net.IP, but can't enforce that in the db...
 	Ports []Port        `json:"ports,omitempty" bson:"Ports,omitempty"`
 }
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	ID          bson.ObjectId `bson:"_id,omitempty"`
+	ID          bson.ObjectId `json:"-" bson:"_id,omitempty"`
 	Name        string        `json:"name" bson:"Name"`
 	Description string        `json:"description" bson:"Description,omitempty"`
 	UpdatedAt   int64         `json:"updated_at" bson:"UpdatedAt,omitempty"`
-	IPs         []IP          `json:"ips" bson:"omitempty"`
+	IPs         []IP          `json:"ips" bson:"IPs,omitempty"`
 }
 
 var cfg *config.ConfigToml
@@ -146,7 +146,7 @@ func AppendIP(session *mgo.Session, ip IP) {
 		portsArr[k] = ip.Ports[k].ID
 	}
 
-	_, err := c.Upsert(bson.M{"Name": "ips"}, bson.M{"_id": ip.ID, "Value": ip.Value.String(), "Ports": portsArr})
+	_, err := c.Upsert(bson.M{"Name": "ips"}, bson.M{"_id": ip.ID, "Value": ip.Value, "Ports": portsArr})
 	if err != nil {
 		log.Fatal("Something went wrong : ", err)
 	}

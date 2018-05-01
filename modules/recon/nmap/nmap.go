@@ -7,7 +7,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -217,7 +216,7 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	// For now, only 1 IP
 	var target database.IP
 	target.ID = bson.NewObjectId()
-	target.Value = net.ParseIP(data.Hosts[0].Addresses[0].Addr)
+	target.Value = data.Hosts[0].Addresses[0].Addr
 	target.Ports = ports
 
 	// put everything in db

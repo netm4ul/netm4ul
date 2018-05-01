@@ -263,7 +263,7 @@ func printProjectInfo(projectName string, s *session.Session) {
 	for _, ip := range p.IPs {
 		log.Debugf("ip : %+v", ip)
 		for _, port := range ip.Ports {
-			data = append(data, []string{ip.Value.String(), strconv.Itoa(int(port.Number))})
+			data = append(data, []string{ip.Value, strconv.Itoa(int(port.Number))})
 		}
 	}
 

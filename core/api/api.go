@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 
@@ -27,21 +26,23 @@ type Result struct {
 	HTTPCode int         `json:"-"` //remove HTTPCode from the json response
 }
 
+//API is the constructor for this package
 type API struct {
 	// Session defines the global session for the API.
 	Session *session.Session
 	Server  *server.Server
 }
 
-type APIInfo struct {
+//Info provides general purpose information for this API
+type Info struct {
 	Port     uint16          `json:"port,omitempty"`
 	Versions config.Versions `json:"versions"`
 }
 
 //Metadata of the current system (node, api, database)
 type Metadata struct {
-	Nodes   map[string]config.Node `json:"nodes"`
-	APIInfo APIInfo                `json:"api"`
+	Nodes map[string]config.Node `json:"nodes"`
+	Info  Info                   `json:"api"`
 }
 
 // CreateAPI : Initialise the infinite server loop on the master node
@@ -60,6 +61,7 @@ func (api *API) Start() {
 
 	log.Infof("API Listenning : %s, version : %s", ipport, version)
 	log.Infof("API Endpoint : %s", ipport+prefix)
+
 	router := mux.NewRouter()
 
 	// Add content-type json header !
@@ -90,8 +92,8 @@ func (api *API) Start() {
 //GetIndex returns a link to the documentation on the root path
 func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 
-	apiInfo := APIInfo{Port: api.Session.Config.API.Port, Versions: api.Session.Config.Versions}
-	d := Metadata{APIInfo: apiInfo, Nodes: api.Server.Session.Config.Nodes}
+	info := Info{Port: api.Session.Config.API.Port, Versions: api.Session.Config.Versions}
+	d := Metadata{Info: info, Nodes: api.Server.Session.Config.Nodes}
 
 	res := CodeToResult[CodeOK]
 	res.Data = d
@@ -143,7 +145,7 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	// TODO : use real data
 	p.IPs = append(p.IPs, database.IP{
 		ID:    bson.NewObjectId(),
-		Value: net.ParseIP("127.0.0.1"),
+		Value: "127.0.0.1",
 		Ports: []database.Port{
 			{Number: 53, Banner: "Bind9", Status: "open"},
 		},
@@ -178,16 +180,15 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 }
 */
 func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
-
 	var res Result
-	var ips []database.IP
 
 	vars := mux.Vars(r)
 	name := vars["name"]
-	sessionMgo := database.Connect()
-	dbCollection := api.Session.Config.Database.Database
 
-	err := sessionMgo.DB(dbCollection).C("projects").Find(bson.M{"Name": name}).All(&ips)
+	// calling the private function !
+	ips, err := api.getIPsByProjectName(name)
+
+	// Database error
 	if err != nil {
 		log.Errorf("Error in selecting projects %s", err.Error())
 
@@ -199,7 +200,16 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(ips) == 1 && ips[0].Value == nil {
+	log.Debugf("IPs : %+v", ips)
+
+	// convert [{Value: "1.1.1.1"},...] to ["1.1.1.1",...]
+	var data []string
+	for _, ip := range ips {
+		data = append(data, ip.Value)
+	}
+
+	// Not found
+	if len(data) == 0 {
 		log.Debugf("Project %s not found", name)
 		res = CodeToResult[CodeNotFound]
 		res.Message = "No IP found"
@@ -210,7 +220,7 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res = CodeToResult[CodeOK]
-	res.Data = ips
+	res.Data = data
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -336,7 +346,7 @@ func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&project)
 	if err != nil {
-		log.Fatal("Could not decode provided json : %+v", err)
+		log.Fatalf("Could not decode provided json : %+v", err)
 		res = CodeToResult[CodeCouldNotDecodeJSON]
 		w.WriteHeader(CodeToResult[CodeCouldNotDecodeJSON].HTTPCode)
 		json.NewEncoder(w).Encode(res)
