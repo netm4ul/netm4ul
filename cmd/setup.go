@@ -24,8 +24,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/spf13/cobra"
-
-	mgo "gopkg.in/mgo.v2"
 )
 
 type PromptRes struct {
@@ -109,15 +107,12 @@ func setupDB() {
 		CLISession.Config.Database.Password = prompt("dbpassword")
 	}
 
-	database.InitDatabase(&CLISession.Config)
-	mgoSession := database.ConnectWithoutCreds()
-	roles := []mgo.Role{mgo.RoleDBAdmin}
+	db := database.NewDatabase(&CLISession.Config)
 
-	u := mgo.User{Username: CLISession.Config.Database.User, Password: CLISession.Config.Database.Password, Roles: roles}
+	username := CLISession.Config.Database.User
+	password := CLISession.Config.Database.Password
 
-	c := mgoSession.DB(dbname)
-
-	err := c.UpsertUser(&u)
+	err := (*db).SetupAuth(username, password, dbname)
 
 	check(err)
 

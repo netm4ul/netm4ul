@@ -13,14 +13,13 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
-	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/BurntSushi/toml"
 	// gonmap "github.com/lair-framework/go-nmap"
-	"github.com/netm4ul/netm4ul/core/database"
+
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
-	"gopkg.in/mgo.v2/bson"
 )
 
 //ConfigToml : configuration model (from the toml file)
@@ -184,7 +183,7 @@ func (N *Nmap) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+func (N *Nmap) WriteDb(result modules.Result, db *models.Database, projectName string) error {
 	log.Println("Write raw to the database.")
 
 	// result.Data = result.Data.(NmapRun)
@@ -194,9 +193,9 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 
 	// define infos to send in db
 	// Ports part
-	ports := make([]database.Port, len(data.Hosts[0].Ports))
+	ports := make([]models.Port, len(data.Hosts[0].Ports))
 	for j := range data.Hosts[0].Ports {
-		p := database.Port{
+		p := models.Port{
 			ID:       bson.NewObjectId(),
 			Number:   int16(data.Hosts[0].Ports[j].PortId),
 			Protocol: data.Hosts[0].Ports[j].Protocol,
@@ -214,21 +213,20 @@ func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectNa
 	// }
 
 	// For now, only 1 IP
-	var target database.IP
+	var target models.IP
 	target.ID = bson.NewObjectId()
 	target.Value = data.Hosts[0].Addresses[0].Addr
 	target.Ports = ports
 
 	// put everything in db
-
 	//IP
-	database.AppendIP(mgoSession, target)
+	(*db).AppendIP(target)
 	// Ports
-	database.AppendPorts(mgoSession, ports)
+	(*db).AppendPorts(ports)
 	// Update project
-	database.UpdateProjectIPs(mgoSession, projectName, target)
+	(*db).UpdateProjectIPs(projectName, target)
 	//save raw data
 	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
+	(*db).AppendRawData(projectName, raw)
 	return nil
 }

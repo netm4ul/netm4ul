@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	mgo "gopkg.in/mgo.v2"
+	"github.com/netm4ul/netm4ul/core/database/models"
 )
 
 // Condition defined for dependencies tree
@@ -35,5 +35,5 @@ type Module interface {
 	DependsOn() []Condition
 	Run([]Input) (Result, error)
 	ParseConfig() error
-	WriteDb(Result, *mgo.Session, string) error
+	WriteDb(result Result, db *models.Database, projectName string) error
 }

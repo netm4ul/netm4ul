@@ -6,15 +6,16 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/netm4ul/netm4ul/core/database"
+
 	"github.com/netm4ul/netm4ul/modules"
 
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/database"
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // Result is the standard response format
@@ -31,6 +32,7 @@ type API struct {
 	// Session defines the global session for the API.
 	Session *session.Session
 	Server  *server.Server
+	db      *models.Database
 }
 
 //Info provides general purpose information for this API
@@ -48,6 +50,7 @@ type Metadata struct {
 // CreateAPI : Initialise the infinite server loop on the master node
 func CreateAPI(s *session.Session, server *server.Server) *API {
 	api := API{Session: s, Server: server}
+	api.db = database.NewDatabase(&s.Config)
 	api.Start()
 	return &api
 }
@@ -114,10 +117,19 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 }
 */
 func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
-	sessionMgo := database.Connect()
-	p := database.GetProjects(sessionMgo)
 
-	res := CodeToResult[CodeOK]
+	var res Result
+	p, err := (*api.db).GetProjects()
+
+	if err != nil {
+		res = CodeToResult[CodeDatabaseError]
+		log.Errorf("Could not retrieve project : %+v", err)
+		w.WriteHeader(CodeToResult[CodeDatabaseError].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res = CodeToResult[CodeOK]
 	res.Data = p
 
 	json.NewEncoder(w).Encode(res)
@@ -137,25 +149,25 @@ func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	var res Result
 	vars := mux.Vars(r)
-	sessionMgo := database.Connect()
 
 	log.Debugf("Requesting project : %s", vars["name"])
-	p := database.GetProjectByName(sessionMgo, vars["name"])
+	p, err := (*api.db).GetProjectByName(vars["name"])
 
-	// TODO : use real data
-	p.IPs = append(p.IPs, database.IP{
-		ID:    bson.NewObjectId(),
-		Value: "127.0.0.1",
-		Ports: []database.Port{
-			{Number: 53, Banner: "Bind9", Status: "open"},
-		},
-	})
-
-	if p.Name == "" {
+	//TOFIX
+	if err != nil && err.Error() == "not found" {
 		res = CodeToResult[CodeNotFound]
 		res.Message = "Project not found"
 
+		log.Warnf("Project not found %s", vars["name"])
 		w.WriteHeader(CodeToResult[CodeNotFound].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	if err != nil {
+		res = CodeToResult[CodeDatabaseError]
+		log.Errorf("Could not retrieve project : %+v", err)
+		w.WriteHeader(CodeToResult[CodeDatabaseError].HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -186,7 +198,7 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	name := vars["name"]
 
 	// calling the private function !
-	ips, err := api.getIPsByProjectName(name)
+	ips, err := (*api.db).GetIPsByProjectName(name)
 
 	// Database error
 	if err != nil {
@@ -244,7 +256,6 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 }
 */
 func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
-	//TODO
 	var res Result
 
 	vars := mux.Vars(r)
@@ -261,10 +272,15 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debugf("name : %s, ip : %s", name, ip)
+	ports, err := (*api.db).GetPortsByIP(name, ip)
 
-	res = CodeToResult[CodeNotImplementedYet]
-	json.NewEncoder(w).Encode(res)
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	log.Debugf("ports : %s", ports)
 }
 
 //GetDirectoryByPort return this template
@@ -357,8 +373,7 @@ func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	//Create project in DB
-	mgoSession := database.Connect()
-	database.CreateProject(mgoSession, project, "projects")
+	(*api.db).CreateProject(project)
 
 	res = CodeToResult[CodeOK]
 	res.Message = "Command Sent"

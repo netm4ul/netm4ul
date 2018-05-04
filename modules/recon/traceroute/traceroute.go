@@ -9,9 +9,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	mgo "gopkg.in/mgo.v2"
-
 	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
 )
 
@@ -101,7 +100,7 @@ func (T *Traceroute) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T Traceroute) WriteDb(result modules.Result, sessionDB *mgo.Session, projectName string) error {
+func (T Traceroute) WriteDb(result modules.Result, db *models.Database, projectName string) error {
 	log.Debug("Writing to the database.")
 	// var data TracerouteResult
 	// data = result.Data.(TracerouteResult)

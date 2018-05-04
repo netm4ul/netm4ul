@@ -12,7 +12,6 @@ import (
 	"github.com/netm4ul/netm4ul/modules/recon/nmap"
 	"github.com/netm4ul/netm4ul/modules/recon/shodan"
 	"github.com/netm4ul/netm4ul/modules/recon/traceroute"
-	mgo "gopkg.in/mgo.v2"
 )
 
 // Connection type, to handle either use of TLS or not
@@ -25,7 +24,6 @@ type Session struct {
 	ModulesEnabled map[string]modules.Module
 	Modules        map[string]modules.Module
 	Config         config.ConfigToml
-	ConnectionDB   *mgo.Session
 	Connector      Connector
 }
 

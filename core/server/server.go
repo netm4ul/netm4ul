@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -12,12 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/netm4ul/netm4ul/modules"
-	mgo "gopkg.in/mgo.v2"
 
 	"crypto/tls"
 
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/core/requirements"
 	"github.com/netm4ul/netm4ul/core/session"
 )
@@ -63,8 +62,7 @@ func (server *Server) Listen() {
 	// Close the listener when the application closes.
 	defer l.Close()
 
-	database.InitDatabase(&server.Session.Config)
-	mgoSession := database.Connect()
+	db := database.NewDatabase(&server.Session.Config)
 
 	log.Infof("Listenning on : %s", ipport)
 
@@ -75,26 +73,27 @@ func (server *Server) Listen() {
 			log.Fatalf("Error accepting : %s", err.Error())
 		}
 
-		mgoSessionClone := mgoSession.Clone()
+		// mgoSessionClone := mgoSession.Clone()
+		(*db).Connect(&server.Session.Config)
 		// Handle connections in a new goroutine. (multi-client)
-		go server.handleRequest(conn, mgoSessionClone)
+		go server.handleRequest(conn, db)
 	}
 }
 
-func (server *Server) handleRequest(conn net.Conn, mgoSession *mgo.Session) {
+func (server *Server) handleRequest(conn net.Conn, db *models.Database) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 
-	server.handleHello(conn, rw, mgoSession)
+	server.handleHello(conn, rw)
 
 	stop := false
 	for !stop {
-		stop = server.handleData(conn, rw, mgoSession)
+		stop = server.handleData(conn, rw, db)
 	}
 }
 
 // Recv basic info for the node at connection time.
-func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) {
+func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 
 	var node config.Node
 
@@ -104,7 +103,6 @@ func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSessio
 		return
 	}
 
-	fmt.Printf("NIQUE %+v", node)
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
 	if server.Session.Config.Verbose {
@@ -122,10 +120,10 @@ func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSessio
 	server.Nodes[ip] = conn
 	// database.CreateDatabase(mgoSession, config.Da)
 
-	p := database.GetProjects(mgoSession)
+	// p := database.GetProjects(mgoSession)
 
-	log.Debugf("Nodes : %+v", server.Session.Config.Nodes)
-	log.Debugf("Projects : %+v", p)
+	// log.Debugf("Nodes : %+v", server.Session.Config.Nodes)
+	// log.Debugf("Projects : %+v", p)
 
 }
 
@@ -197,7 +195,7 @@ func (server *Server) getAvailableNodes(req requirements.Requirements) ([]net.Co
 }
 
 // handleData decode and route all data after the "hello". It listens forever until connection closed.
-func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session) bool {
+func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter, db *models.Database) bool {
 	var data modules.Result
 
 	err := gob.NewDecoder(rw).Decode(&data)
@@ -224,7 +222,7 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession
 	projectName, err := server.getProjectByNodeIP(ip)
 
 	log.Debugf("%+v", data)
-	err = module.WriteDb(data, mgoSession, projectName)
+	err = module.WriteDb(data, db, projectName)
 
 	if err != nil {
 		log.Errorf("Database error : %+v", err)

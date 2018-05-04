@@ -13,8 +13,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/miekg/dns"
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
-	mgo "gopkg.in/mgo.v2"
 )
 
 // DnsResult represent the parsed ouput
@@ -196,7 +196,7 @@ func (D *Dns) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (D *Dns) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+func (D *Dns) WriteDb(result modules.Result, db *models.Database, projectName string) error {
 	log.Println("Write to the database.")
 	// var data DnsResult
 	// data = result.Data.(DnsResult)
