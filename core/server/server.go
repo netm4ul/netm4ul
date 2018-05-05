@@ -26,6 +26,7 @@ type Server struct {
 	Nodes map[string]net.Conn
 	//Session represent the server side's session. Hold all the modules
 	Session *session.Session
+	Db      *models.Database
 }
 
 //Command represents the communication protocol between clients and the master node
@@ -38,6 +39,8 @@ type Command struct {
 // CreateServer : Initialise the infinite server loop on the master node
 func CreateServer(s *session.Session) *Server {
 	server := Server{Nodes: make(map[string]net.Conn), Session: s}
+	server.Db = database.NewDatabase(&server.Session.Config)
+
 	return &server
 }
 
@@ -58,11 +61,8 @@ func (server *Server) Listen() {
 	if err != nil {
 		log.Fatalf("Error listening : %s", err.Error())
 	}
-
 	// Close the listener when the application closes.
 	defer l.Close()
-
-	db := database.NewDatabase(&server.Session.Config)
 
 	log.Infof("Listenning on : %s", ipport)
 
@@ -73,14 +73,12 @@ func (server *Server) Listen() {
 			log.Fatalf("Error accepting : %s", err.Error())
 		}
 
-		// mgoSessionClone := mgoSession.Clone()
-		(*db).Connect(&server.Session.Config)
 		// Handle connections in a new goroutine. (multi-client)
-		go server.handleRequest(conn, db)
+		go server.handleRequest(conn)
 	}
 }
 
-func (server *Server) handleRequest(conn net.Conn, db *models.Database) {
+func (server *Server) handleRequest(conn net.Conn) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 
@@ -88,7 +86,7 @@ func (server *Server) handleRequest(conn net.Conn, db *models.Database) {
 
 	stop := false
 	for !stop {
-		stop = server.handleData(conn, rw, db)
+		stop = server.handleData(conn, rw)
 	}
 }
 
@@ -195,7 +193,7 @@ func (server *Server) getAvailableNodes(req requirements.Requirements) ([]net.Co
 }
 
 // handleData decode and route all data after the "hello". It listens forever until connection closed.
-func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter, db *models.Database) bool {
+func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	var data modules.Result
 
 	err := gob.NewDecoder(rw).Decode(&data)
@@ -222,7 +220,9 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter, db *models
 	projectName, err := server.getProjectByNodeIP(ip)
 
 	log.Debugf("%+v", data)
-	err = module.WriteDb(data, db, projectName)
+
+	(*server.Db).Connect(&server.Session.Config)
+	err = module.WriteDb(data, server.Db, projectName)
 
 	if err != nil {
 		log.Errorf("Database error : %+v", err)

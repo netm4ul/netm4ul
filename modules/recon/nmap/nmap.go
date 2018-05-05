@@ -13,7 +13,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/mgo.v2/bson"
 
 	"github.com/BurntSushi/toml"
 	// gonmap "github.com/lair-framework/go-nmap"
@@ -101,7 +100,7 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 
 	// Port range option : -p- for all ports, -p x-y for specific range, nothing for default
 	// TODO : load ports from []inputs.Ports ?
-	log.Println(N.Config.PortRange)
+	log.Infof("PortRange : %+v", N.Config.PortRange)
 	if N.Config.PortRange != "Null" {
 		opt = append(opt, "-p"+N.Config.PortRange)
 	} else if N.Config.PortRange == "-" {
@@ -152,7 +151,7 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 	cmd := exec.Command("/usr/bin/nmap", opt...)
 	execErr := cmd.Run()
 	if execErr != nil {
-		log.Fatal(execErr)
+		log.Fatalf("Could not execute : %+v ", execErr)
 	}
 	var err error
 	N.Result, err = ioutil.ReadFile(filename)
@@ -196,7 +195,6 @@ func (N *Nmap) WriteDb(result modules.Result, db *models.Database, projectName s
 	ports := make([]models.Port, len(data.Hosts[0].Ports))
 	for j := range data.Hosts[0].Ports {
 		p := models.Port{
-			ID:       bson.NewObjectId(),
 			Number:   int16(data.Hosts[0].Ports[j].PortId),
 			Protocol: data.Hosts[0].Ports[j].Protocol,
 			Status:   data.Hosts[0].Ports[j].State.State,
@@ -214,7 +212,6 @@ func (N *Nmap) WriteDb(result modules.Result, db *models.Database, projectName s
 
 	// For now, only 1 IP
 	var target models.IP
-	target.ID = bson.NewObjectId()
 	target.Value = data.Hosts[0].Addresses[0].Addr
 	target.Ports = ports
 
@@ -226,7 +223,6 @@ func (N *Nmap) WriteDb(result modules.Result, db *models.Database, projectName s
 	// Update project
 	(*db).UpdateProjectIPs(projectName, target)
 	//save raw data
-	raw := bson.M{projectName + ".results." + result.Module: data}
-	(*db).AppendRawData(projectName, raw)
+	(*db).AppendRawData(projectName, result.Module, data)
 	return nil
 }

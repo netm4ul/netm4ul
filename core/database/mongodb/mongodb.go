@@ -1,7 +1,6 @@
 package mongodb
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/netm4ul/netm4ul/core/config"
@@ -50,8 +49,8 @@ func (mongo *MongoDB) firstConnect(cfg *config.ConfigToml) {
 		Password: cfg.Database.Password,
 	}
 
-	fmt.Println(cfg.Database.User)
-	fmt.Println(cfg.Database.Database)
+	log.Debugf("User : %+v", cfg.Database.User)
+	log.Debugf("Datbase : %+v", cfg.Database.Database)
 	s, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 	if err != nil {
@@ -136,7 +135,7 @@ func (mongo *MongoDB) AppendIP(ip models.IP) {
 
 	portsArr := make([]bson.ObjectId, len(ip.Ports))
 	for k := range ip.Ports {
-		portsArr[k] = ip.Ports[k].ID
+		portsArr[k] = bson.ObjectIdHex(ip.Ports[k].ID)
 	}
 
 	_, err := c.Upsert(bson.M{"Name": "ips"}, bson.M{"_id": ip.ID, "Value": ip.Value, "Ports": portsArr})
@@ -232,9 +231,8 @@ func (mongo *MongoDB) GetPortsByIP(projectName string, ip string) ([]models.Port
 }
 
 //AppendRawData is used by module to store raw results into the database.
-func (mongo *MongoDB) AppendRawData(projectName string, dataRaw interface{}) {
-
-	data := dataRaw.(bson.M)
+func (mongo *MongoDB) AppendRawData(projectName string, moduleName string, dataRaw interface{}) {
+	data := bson.M{projectName + ".results." + moduleName: dataRaw}
 
 	dbCollection := mongo.cfg.Database.Database
 	c := mongo.session.DB(dbCollection).C("raw")

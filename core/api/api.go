@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/netm4ul/netm4ul/core/database"
-
 	"github.com/netm4ul/netm4ul/modules"
 
 	"github.com/gorilla/mux"
@@ -50,7 +48,7 @@ type Metadata struct {
 // CreateAPI : Initialise the infinite server loop on the master node
 func CreateAPI(s *session.Session, server *server.Server) *API {
 	api := API{Session: s, Server: server}
-	api.db = database.NewDatabase(&s.Config)
+	api.db = api.Server.Db
 	api.Start()
 	return &api
 }
