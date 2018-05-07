@@ -26,7 +26,7 @@ type Server struct {
 	Nodes map[string]net.Conn
 	//Session represent the server side's session. Hold all the modules
 	Session *session.Session
-	Db      *models.Database
+	Db      models.Database
 }
 
 //Command represents the communication protocol between clients and the master node
@@ -221,7 +221,7 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 
 	log.Debugf("%+v", data)
 
-	(*server.Db).Connect(&server.Session.Config)
+	server.Db.Connect(&server.Session.Config)
 	err = module.WriteDb(data, server.Db, projectName)
 
 	if err != nil {

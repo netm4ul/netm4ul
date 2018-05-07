@@ -35,5 +35,5 @@ type Module interface {
 	DependsOn() []Condition
 	Run([]Input) (Result, error)
 	ParseConfig() error
-	WriteDb(result Result, db *models.Database, projectName string) error
+	WriteDb(result Result, db models.Database, projectName string) error
 }

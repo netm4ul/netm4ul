@@ -62,23 +62,35 @@ type Project struct {
 	IPs         []IP   `json:"ips,omitempty" bson:"IPs,omitempty"`
 }
 
+//Raws wrapper around Raw[projectName][moduleName] is an array. (Each module can load multiple entry)
+type Raws map[string]map[string][]interface{}
+
 //Database is the mandatory interface for all custom database adapter
 type Database interface {
 	// General purpose functions
 	Name() string
 	SetupAuth(username, password, dbname string) error
-	Connect(*config.ConfigToml)
+	Connect(*config.ConfigToml) error
+
 	// Project
-	CreateProject(projectName string)
+	CreateOrUpdateProject(projectName string) error
 	GetProjects() ([]Project, error)
-	GetProjectByName(projectName string) (Project, error)
-	UpdateProjectIPs(projectName string, ip IP)
+	GetProject(projectName string) (Project, error)
+
 	// IP
-	AppendIP(ip IP)
-	GetIPsByProjectName(projectName string) ([]IP, error)
+	CreateOrUpdateIP(projectName string, ip IP) error
+	CreateOrUpdateIPs(projectName string, ip []IP) error
+	GetIPs(projectName string) ([]IP, error)
+	GetIP(projectName string, ip string) (IP, error)
+
 	// Port
-	AppendPorts(ports []Port)
-	GetPortsByIP(projectName string, ip string) ([]Port, error)
+	CreateOrUpdatePort(projectName string, ip string, port Port) error
+	CreateOrUpdatePorts(projectName string, ip string, port []Port) error
+	GetPorts(projectName string, ip string) ([]Port, error)
+	GetPort(projectName string, ip string, port string) (Port, error)
+
 	// Raw data
-	AppendRawData(projectName string, moduleName string, data interface{})
+	AppendRawData(projectName string, moduleName string, data interface{}) error
+	GetRaws(projectName string) (map[string]map[string][]interface{}, error)
+	GetRaw(projectName string, moduleName string) ([]interface{}, error)
 }

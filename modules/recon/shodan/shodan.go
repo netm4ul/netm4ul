@@ -168,7 +168,7 @@ func (S Shodan) ParseConfig() error {
 	return nil
 }
 
-func (S Shodan) WriteDb(result modules.Result, db *models.Database, projectName string) error {
+func (S Shodan) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Debug("Write to the database.")
 	// var data ShodanResult
 	// data = result.Data.(ShodanResult)

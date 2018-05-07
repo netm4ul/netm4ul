@@ -182,7 +182,7 @@ func (N *Nmap) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (N *Nmap) WriteDb(result modules.Result, db *models.Database, projectName string) error {
+func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Println("Write raw to the database.")
 
 	// result.Data = result.Data.(NmapRun)
@@ -217,12 +217,11 @@ func (N *Nmap) WriteDb(result modules.Result, db *models.Database, projectName s
 
 	// put everything in db
 	//IP
-	(*db).AppendIP(target)
+	//change to CreateOrUpdateIPs
+	db.CreateOrUpdateIP(projectName, target)
 	// Ports
-	(*db).AppendPorts(ports)
-	// Update project
-	(*db).UpdateProjectIPs(projectName, target)
+	db.CreateOrUpdatePorts(projectName, target.Value, ports)
 	//save raw data
-	(*db).AppendRawData(projectName, result.Module, data)
+	db.AppendRawData(projectName, result.Module, data)
 	return nil
 }

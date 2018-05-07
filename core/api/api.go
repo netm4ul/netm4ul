@@ -30,7 +30,7 @@ type API struct {
 	// Session defines the global session for the API.
 	Session *session.Session
 	Server  *server.Server
-	db      *models.Database
+	db      models.Database
 }
 
 //Info provides general purpose information for this API
@@ -47,8 +47,12 @@ type Metadata struct {
 
 // CreateAPI : Initialise the infinite server loop on the master node
 func CreateAPI(s *session.Session, server *server.Server) *API {
-	api := API{Session: s, Server: server}
-	api.db = api.Server.Db
+	api := API{
+		Session: s,
+		Server:  server,
+		db:      server.Db,
+	}
+
 	api.Start()
 	return &api
 }
@@ -117,7 +121,7 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 
 	var res Result
-	p, err := (*api.db).GetProjects()
+	p, err := api.db.GetProjects()
 
 	if err != nil {
 		res = CodeToResult[CodeDatabaseError]
@@ -149,7 +153,7 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	log.Debugf("Requesting project : %s", vars["name"])
-	p, err := (*api.db).GetProjectByName(vars["name"])
+	p, err := api.db.GetProject(vars["name"])
 
 	//TOFIX
 	if err != nil && err.Error() == "not found" {
@@ -196,7 +200,7 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	name := vars["name"]
 
 	// calling the private function !
-	ips, err := (*api.db).GetIPsByProjectName(name)
+	ips, err := api.db.GetIPs(name)
 
 	// Database error
 	if err != nil {
@@ -270,7 +274,7 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ports, err := (*api.db).GetPortsByIP(name, ip)
+	ports, err := api.db.GetPorts(name, ip)
 
 	if err != nil {
 		log.Debugf("Error : %s", err)
@@ -370,8 +374,8 @@ func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("JSON input : %+v", project)
 	defer r.Body.Close()
 
-	//Create project in DB
-	(*api.db).CreateProject(project)
+	//Create project in DBk
+	api.db.CreateOrUpdateProject(project)
 
 	res = CodeToResult[CodeOK]
 	res.Message = "Command Sent"

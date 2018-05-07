@@ -99,20 +99,24 @@ func prompt(param string) (answer string) {
 
 // setupDB => create user in db for future requests
 func setupDB() {
+	// TODO : check if the db isn't already setup (and use previous creds)
+	CLISession.Config.Database.User = ""
+	CLISession.Config.Database.Password = ""
+
+	db := database.NewDatabase(&CLISession.Config)
 
 	if userIMode {
 		CLISession.Config.Database.User = prompt("dbuser")
 	}
+
 	if passwordIMode {
 		CLISession.Config.Database.Password = prompt("dbpassword")
 	}
 
-	db := database.NewDatabase(&CLISession.Config)
-
 	username := CLISession.Config.Database.User
 	password := CLISession.Config.Database.Password
 
-	err := (*db).SetupAuth(username, password, dbname)
+	err := db.SetupAuth(username, password, dbname)
 
 	check(err)
 
@@ -184,15 +188,6 @@ func ex2Conf() {
 func init() {
 	rootCmd.AddCommand(setupCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// setupCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// setupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	setupCmd.PersistentFlags().StringVarP(&cliDBSetupUser, "user", "", "", "Custom database user")
 	setupCmd.PersistentFlags().StringVarP(&cliDBSetupPassword, "password", "", "", "Custom database password")
 }

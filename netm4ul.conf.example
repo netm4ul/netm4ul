@@ -26,6 +26,7 @@
   port = 444
 
 [Database]
+  databaseType = "mongodb"
   user = "admin"
   password = "admin"
   database = "NetM4ul"

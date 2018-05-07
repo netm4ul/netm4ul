@@ -100,12 +100,17 @@ func (T *Traceroute) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T Traceroute) WriteDb(result modules.Result, db *models.Database, projectName string) error {
+func (T Traceroute) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Debug("Writing to the database.")
-	// var data TracerouteResult
-	// data = result.Data.(TracerouteResult)
 
-	// raw := bson.M{projectName + ".results." + result.Module: data}
-	// database.UpsertRawData(sessionDB, projectName, raw)
+	var data TracerouteResult
+	data = result.Data.(TracerouteResult)
+
+	ipSrc := models.IP{Value: data.Source}
+	ipDest := models.IP{Value: data.Destination}
+
+	db.CreateOrUpdateIP(projectName, ipSrc)
+	db.CreateOrUpdateIP(projectName, ipDest)
+	db.AppendRawData(projectName, T.Name(), data)
 	return nil
 }

@@ -196,7 +196,7 @@ func (D *Dns) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (D *Dns) WriteDb(result modules.Result, db *models.Database, projectName string) error {
+func (D *Dns) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Println("Write to the database.")
 	// var data DnsResult
 	// data = result.Data.(DnsResult)

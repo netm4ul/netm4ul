@@ -29,6 +29,7 @@ clientCert = "certificates/NetM4ul_Client.crt"
 clientPrivateKey = "certificates/NetM4ul_Client.pem"
 
 [database]
+databaseType = "mongodb"
 ip = "mongodb"
 port = 27017
 user = "NetM4ul"
