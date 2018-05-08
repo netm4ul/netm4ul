@@ -113,7 +113,9 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
   "code": CodeOK, // real value in /core/api/codes.go
   "data": [
     {
-      "name": "FirstProject"
+	  "name": "FirstProject",
+	  "description": "Some description",
+	  "updated_at": 12345678
     }
   ]
 }
@@ -121,7 +123,7 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 
 	var res Result
-	p, err := api.db.GetProjects()
+	projects, err := api.db.GetProjects()
 
 	if err != nil {
 		res = CodeToResult[CodeDatabaseError]
@@ -132,7 +134,12 @@ func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res = CodeToResult[CodeOK]
-	res.Data = p
+
+	// delete sub field info
+	for i := range projects {
+		projects[i].IPs = nil
+	}
+	res.Data = projects
 
 	json.NewEncoder(w).Encode(res)
 }
@@ -172,6 +179,11 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(CodeToResult[CodeDatabaseError].HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
+	}
+
+	// we don't want all data
+	if p.IPs != nil {
+		p.IPs = nil
 	}
 
 	res = CodeToResult[CodeOK]

@@ -11,6 +11,7 @@ import (
 	"text/template"
 )
 
+//GenerateAdapter generate boilerplate for adapter
 func GenerateAdapter(adapterName, adapterShortName string) {
 	templateAdapter := `
 package {{.adapterName}}
@@ -97,7 +98,7 @@ func ({{.adapterShortName}} *{{.adapterName}}) GetRaws(projectName string) (mode
 	return raws, errors.New("Not implemented yet")
 }
 
-func ({{.adapterShortName}} *{{.adapterName}}) GetRaw(projectName string, moduleName string) ([]interface{}, error){
+func ({{.adapterShortName}} *{{.adapterName}}) GetRawModule(projectName string, moduleName string) (map[string]interface{}, error) {
 	return nil, errors.New("Not implemented yet")
 }
 `

@@ -299,6 +299,6 @@ func (mongo *MongoDB) GetRaws(projectName string) (models.Raws, error) {
 	return raws, errors.New("Not implemented yet")
 }
 
-func (mongo *MongoDB) GetRaw(projectName string, moduleName string) ([]interface{}, error) {
+func (mongo *MongoDB) GetRawModule(projectName string, moduleName string) (map[string]interface{}, error) {
 	return nil, errors.New("Not implemented yet")
 }

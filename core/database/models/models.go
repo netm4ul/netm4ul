@@ -62,8 +62,11 @@ type Project struct {
 	IPs         []IP   `json:"ips,omitempty" bson:"IPs,omitempty"`
 }
 
-//Raws wrapper around Raw[projectName][moduleName] is an array. (Each module can load multiple entry)
-type Raws map[string]map[string][]interface{}
+//Raws is a map, the key is module name (string). Each module write in a map of interface (key : string version of current timestamp)
+type Raws map[string]map[string]interface{}
+
+//AllRaws represents all Raws output, for a project string
+type AllRaws map[string]Raws
 
 //Database is the mandatory interface for all custom database adapter
 type Database interface {
@@ -92,5 +95,5 @@ type Database interface {
 	// Raw data
 	AppendRawData(projectName string, moduleName string, data interface{}) error
 	GetRaws(projectName string) (Raws, error)
-	GetRaw(projectName string, moduleName string) ([]interface{}, error)
+	GetRawModule(projectName string, moduleName string) (map[string]interface{}, error)
 }

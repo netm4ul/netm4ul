@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -16,42 +17,55 @@ import (
 	"github.com/netm4ul/netm4ul/core/database/models"
 )
 
-var (
+//JsonDB implements the models.Database interface
+type JsonDB struct {
+	cfg           *config.ConfigToml
+	BaseDir       string
+	RawPathFmt    string
+	RawGlob       string
+	ResultPathFmt string
+	ProjectGlob   string
+}
+
+//InitDatabase check if data dir is created and return the JsonDB struct
+func InitDatabase(c *config.ConfigToml) *JsonDB {
+
+	j := JsonDB{}
+
+	//BaseDir is the data folder
+	j.BaseDir = "./data"
+
 	//RawPathFmt defines the format's string for the raw file
 	//first %s is the project name
-	//seconde %s is the module name
-	RawPathFmt = "./data/raw-%s-%s.json"
+	//second %s is the module name
+	j.RawPathFmt = j.BaseDir + "/raw-%s-%s.json"
 	// RawGlob is the prefix glob
-	RawGlob = "./data/raw-"
+	j.RawGlob = j.BaseDir + "/raw-"
 
 	//ResultPathFmt defines the format's string for all the formated result
 	//%s is the project name
-	ResultPathFmt = "./data/project-%s.json"
-	ProjectGlob   = "./data/project-*"
-)
+	j.ResultPathFmt = j.BaseDir + "/project-%s.json"
+	//ProjectGlob defines the glob for project files
+	j.ProjectGlob = j.BaseDir + "/project-*"
 
-type JsonDB struct {
-	cfg *config.ConfigToml
-}
+	j.cfg = c
 
-func InitDatabase(c *config.ConfigToml) *JsonDB {
 	//ensure data folder exists
-	if _, err := os.Stat("./data"); os.IsNotExist(err) {
-		os.Mkdir("./data", 0755)
+	if _, err := os.Stat(j.BaseDir); os.IsNotExist(err) {
+		os.Mkdir(j.BaseDir, 0755)
 	}
 
-	m := JsonDB{}
-	m.cfg = c
-	return &m
+	return &j
 }
 
-func GetRawPath(projectName, moduleName string) string {
-	return fmt.Sprintf(RawPathFmt, projectName, moduleName)
+func (f *JsonDB) getRawPath(projectName, moduleName string) string {
+	return fmt.Sprintf(f.RawPathFmt, projectName, moduleName)
 }
-func GetResultPath(projectName string) string {
-	return fmt.Sprintf(ResultPathFmt, projectName)
+func (f *JsonDB) getResultPath(projectName string) string {
+	return fmt.Sprintf(f.ResultPathFmt, projectName)
 }
 
+//Name return the adapter name
 func (f *JsonDB) Name() string {
 	return "JsonDB"
 }
@@ -110,7 +124,7 @@ func (f *JsonDB) writeProject(p models.Project) error {
 }
 
 func (f *JsonDB) openRawFile(project, module string) (*os.File, error) {
-	file, err := os.OpenFile(GetRawPath(project, module), os.O_RDWR|os.O_CREATE, 0755)
+	file, err := os.OpenFile(f.getRawPath(project, module), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +132,7 @@ func (f *JsonDB) openRawFile(project, module string) (*os.File, error) {
 }
 
 func (f *JsonDB) openResultFile(project string) (*os.File, error) {
-	file, err := os.OpenFile(GetResultPath(project), os.O_RDWR|os.O_CREATE, 0755)
+	file, err := os.OpenFile(f.getResultPath(project), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -126,21 +140,24 @@ func (f *JsonDB) openResultFile(project string) (*os.File, error) {
 	return file, nil
 }
 
-func (f *JsonDB) writeRaws(file *os.File, r models.Raws) error {
+func (f *JsonDB) writeRaws(file *os.File, r map[string]interface{}) error {
 	return json.NewEncoder(file).Encode(r)
 }
 
+//SetupAuth is not used in this adapters. Filesystem permission are used for that
 func (f *JsonDB) SetupAuth(username, password, dbname string) error {
 	// no auth for FS ?
 	return nil
 }
 
+//Connect is only there to fully implement the models.Database interface. Always return nil
 func (f *JsonDB) Connect(c *config.ConfigToml) error {
 	return nil
 }
 
 // Project
 
+//CreateOrUpdateProject handle project. It will update the project if it does not exist.
 func (f *JsonDB) CreateOrUpdateProject(projectName string) error {
 	projects, err := f.GetProjects()
 	if err != nil {
@@ -164,11 +181,12 @@ func (f *JsonDB) CreateOrUpdateProject(projectName string) error {
 	return nil
 }
 
+//GetProjects will return all projects available. Use GetProject to select only one
 func (f *JsonDB) GetProjects() ([]models.Project, error) {
 	var projects []models.Project
 	var project models.Project
 
-	files, err := filepath.Glob(ProjectGlob)
+	files, err := filepath.Glob(f.ProjectGlob)
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +215,7 @@ func (f *JsonDB) GetProjects() ([]models.Project, error) {
 	return projects, err
 }
 
+//GetProject return only one project by its name. It use GetProjects internally
 func (f *JsonDB) GetProject(projectName string) (models.Project, error) {
 	projects, err := f.GetProjects()
 
@@ -214,6 +233,7 @@ func (f *JsonDB) GetProject(projectName string) (models.Project, error) {
 
 // IP
 
+//CreateOrUpdateIP add an ip to a project if it doesn't already exist.
 func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	project, err := f.GetProject(projectName)
 	// Refactor needed
@@ -229,11 +249,9 @@ func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 				return errors.New("Could not save project : " + projectName)
 			}
 			return nil
-
-		} else {
-			// undefined error
-			return errors.New("Could not get project " + projectName + "," + err.Error())
 		}
+		// undefined error
+		return errors.New("Could not get project " + projectName + "," + err.Error())
 	}
 
 	found := false
@@ -255,6 +273,9 @@ func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 
 	return nil
 }
+
+//CreateOrUpdateIPs is not implemented yet.
+// It should be only usefull for bulk update. It might use CreateOrUpdateIP internally
 func (f *JsonDB) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 	return errors.New("Not implemented yet")
 }
@@ -287,6 +308,7 @@ func (f *JsonDB) GetIP(projectName string, ip string) (models.IP, error) {
 
 // Port
 
+//CreateOrUpdatePort create or update one port for a givent project name and ip.
 func (f *JsonDB) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
 	portsFromFile, err := f.GetPorts(projectName, ip)
 	if err != nil {
@@ -308,6 +330,8 @@ func (f *JsonDB) CreateOrUpdatePort(projectName string, ip string, port models.P
 
 	return f.writePorts(projectName, ip, portsFromFile)
 }
+
+//CreateOrUpdatePorts loop around CreateOrUpdatePort and *fail* on the first error of it.
 func (f *JsonDB) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
 	for _, port := range ports {
 		err := f.CreateOrUpdatePort(projectName, ip, port)
@@ -318,6 +342,7 @@ func (f *JsonDB) CreateOrUpdatePorts(projectName string, ip string, ports []mode
 	return nil
 }
 
+//GetPorts return all the port for a given project and ip
 func (f *JsonDB) GetPorts(projectName string, ip string) ([]models.Port, error) {
 	ipFromFile, err := f.GetIP(projectName, ip)
 
@@ -328,6 +353,7 @@ func (f *JsonDB) GetPorts(projectName string, ip string) ([]models.Port, error) 
 	return ipFromFile.Ports, nil
 }
 
+//GetPort return only one port by it's number. Use GetPorts internally
 func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Port, error) {
 	ports, err := f.GetPorts(projectName, ip)
 
@@ -352,42 +378,47 @@ func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Por
 // AppendRawData is append only. Adds data to Raws[projectName][modules] array
 func (f *JsonDB) AppendRawData(projectName string, moduleName string, data interface{}) error {
 
-	file, err := os.OpenFile(GetRawPath(projectName, moduleName), os.O_RDWR|os.O_CREATE, 0755)
-
+	file, err := os.OpenFile(f.getRawPath(projectName, moduleName), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return err
 	}
 
+	now := strconv.Itoa(int(time.Now().UnixNano()))
 	raws, err := f.GetRaws(projectName)
+
 	if err != nil {
 		//empty file, cannot parse
 		if err == io.EOF {
 			raws = make(models.Raws)
 
-			modulesData := make(map[string][]interface{})
-			modulesData[moduleName] = []interface{}{data}
+			modulesData := make(map[string]interface{})
+			modulesData[now] = data
 
-			raws[projectName] = modulesData
-			return f.writeRaws(file, raws)
+			raws[moduleName] = modulesData
+			return f.writeRaws(file, raws[moduleName])
 		}
+
 		return errors.New("Could not get raws for project : " + err.Error())
 	}
 
 	// if the project exist
-	if _, ok := raws[projectName]; ok {
-		raws[projectName][moduleName] = append(raws[projectName][moduleName], data)
+	if _, ok := raws[moduleName]; ok {
+		raws[moduleName][now] = data
+	} else {
+		raws[moduleName] = make(map[string]interface{})
+		raws[moduleName][now] = data
 	}
 
-	return f.writeRaws(file, raws)
+	return f.writeRaws(file, raws[moduleName])
 }
 
+//GetRaws return all the raws input for a project
 func (f *JsonDB) GetRaws(projectName string) (models.Raws, error) {
-	var raws models.Raws
-	raws = make(models.Raws, 0)
+	raws := models.Raws{}
 
-	var dataInterface []interface{}
+	var data map[string]interface{}
 
-	files, err := filepath.Glob(RawGlob + projectName + "-*.json")
+	files, err := filepath.Glob(f.RawGlob + projectName + "-*.json")
 	if err != nil {
 		return nil, err
 	}
@@ -397,29 +428,25 @@ func (f *JsonDB) GetRaws(projectName string) (models.Raws, error) {
 		file, err := os.Open(filePath)
 		splitted := strings.Split(filePath, "-")
 		moduleName := strings.Replace(splitted[2], ".json", "", -1)
-
-		err = json.NewDecoder(file).Decode(&dataInterface)
-		raws[projectName] = make(map[string][]interface{})
-		raws[projectName][moduleName] = dataInterface
-
+		err = json.NewDecoder(file).Decode(&data)
 		if err != nil {
 			return nil, err
 		}
+		raws[moduleName] = data
 	}
-
 	return raws, nil
 }
 
-func (f *JsonDB) GetRaw(projectName string, moduleName string) ([]interface{}, error) {
+//GetRawModule return the raw data for one project's module
+func (f *JsonDB) GetRawModule(projectName string, moduleName string) (map[string]interface{}, error) {
 	res, err := f.GetRaws(projectName)
-
 	if err != nil {
 		return nil, err
 	}
-
-	raw, ok := res[projectName][moduleName]
+	log.Debugf("res : %+v", res)
+	raw, ok := res[moduleName]
 	if !ok {
-		return nil, errors.New("not found")
+		return nil, errors.New("not found : " + projectName + ", " + moduleName)
 	}
 
 	return raw, nil
