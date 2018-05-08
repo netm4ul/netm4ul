@@ -16,8 +16,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/netm4ul/netm4ul/scripts/generate"
 	"github.com/spf13/cobra"
+)
+
+var (
+	adapterName      string
+	adapterShortName string
 )
 
 // createCmd represents the create command
@@ -33,6 +40,24 @@ var createCmd = &cobra.Command{
 	},
 }
 
+var createAdapterCmd = &cobra.Command{
+	Use:   "adapter",
+	Short: "Generate a new adapter",
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if adapterName == "" {
+			fmt.Println("You must provide an adapter name")
+			cmd.Help()
+			os.Exit(1)
+		}
+		generate.GenerateAdapter(adapterName, adapterShortName)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(createCmd)
+
+	createCmd.AddCommand(createAdapterCmd)
+	createAdapterCmd.Flags().StringVar(&adapterName, "name", "", "Adapter name (folder and struct)")
+	createAdapterCmd.Flags().StringVar(&adapterShortName, "short-name", "", "Adapter short name (name of struct)")
 }

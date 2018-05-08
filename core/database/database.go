@@ -23,13 +23,14 @@ func NewDatabase(c *config.ConfigToml) models.Database {
 
 	Register(m)
 	Register(f)
+
 	db := adapters[strings.ToLower(c.Database.DatabaseType)]
-	log.Infof("Using database : %+v, and param %+v", adapters, c.Database.DatabaseType)
-	log.Info("Using database : " + db.Name())
+	log.Infof("Database list %+v, using %s from config file", adapters, c.Database.DatabaseType)
 
 	return db
 }
 
+//Register : append the new database to the list of avaible connector
 func Register(d models.Database) {
 	adapters[strings.ToLower(d.Name())] = d
 }

@@ -21,10 +21,13 @@ var (
 	//first %s is the project name
 	//seconde %s is the module name
 	RawPathFmt = "./data/raw-%s-%s.json"
+	// RawGlob is the prefix glob
+	RawGlob = "./data/raw-"
 
 	//ResultPathFmt defines the format's string for all the formated result
 	//%s is the project name
 	ResultPathFmt = "./data/project-%s.json"
+	ProjectGlob   = "./data/project-*"
 )
 
 type JsonDB struct {
@@ -32,9 +35,11 @@ type JsonDB struct {
 }
 
 func InitDatabase(c *config.ConfigToml) *JsonDB {
+	//ensure data folder exists
 	if _, err := os.Stat("./data"); os.IsNotExist(err) {
 		os.Mkdir("./data", 0755)
 	}
+
 	m := JsonDB{}
 	m.cfg = c
 	return &m
@@ -163,7 +168,7 @@ func (f *JsonDB) GetProjects() ([]models.Project, error) {
 	var projects []models.Project
 	var project models.Project
 
-	files, err := filepath.Glob("./data/project-*")
+	files, err := filepath.Glob(ProjectGlob)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +387,7 @@ func (f *JsonDB) GetRaws(projectName string) (models.Raws, error) {
 
 	var dataInterface []interface{}
 
-	files, err := filepath.Glob("./data/raw-" + projectName + "-*.json")
+	files, err := filepath.Glob(RawGlob + projectName + "-*.json")
 	if err != nil {
 		return nil, err
 	}
