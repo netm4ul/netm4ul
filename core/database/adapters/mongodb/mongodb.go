@@ -19,12 +19,12 @@ type MongoDB struct {
 func InitDatabase(c *config.ConfigToml) *MongoDB {
 	m := MongoDB{}
 	m.cfg = c
-	m.firstConnect(c)
+	// m.firstConnect(c)
 	return &m
 }
 
 func (mongo *MongoDB) Name() string {
-	return "mongodb"
+	return "MongoDB"
 }
 
 func (mongo *MongoDB) SetupAuth(username, password, dbname string) error {
@@ -294,8 +294,8 @@ func (mongo *MongoDB) CreateOrUpdatePort(projectName string, ip string, port mod
 // 	return err
 // }
 
-func (mongo *MongoDB) GetRaws(projectName string) (map[string]map[string][]interface{}, error) {
-	var raws map[string]map[string][]interface{}
+func (mongo *MongoDB) GetRaws(projectName string) (models.Raws, error) {
+	var raws models.Raws
 	return raws, errors.New("Not implemented yet")
 }
 

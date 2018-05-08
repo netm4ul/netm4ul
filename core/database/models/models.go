@@ -91,6 +91,6 @@ type Database interface {
 
 	// Raw data
 	AppendRawData(projectName string, moduleName string, data interface{}) error
-	GetRaws(projectName string) (map[string]map[string][]interface{}, error)
+	GetRaws(projectName string) (Raws, error)
 	GetRaw(projectName string, moduleName string) ([]interface{}, error)
 }

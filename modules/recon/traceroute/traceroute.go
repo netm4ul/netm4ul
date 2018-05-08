@@ -109,8 +109,19 @@ func (T Traceroute) WriteDb(result modules.Result, db models.Database, projectNa
 	ipSrc := models.IP{Value: data.Source}
 	ipDest := models.IP{Value: data.Destination}
 
-	db.CreateOrUpdateIP(projectName, ipSrc)
-	db.CreateOrUpdateIP(projectName, ipDest)
-	db.AppendRawData(projectName, T.Name(), data)
+	err := db.CreateOrUpdateIP(projectName, ipSrc)
+	if err != nil {
+		log.Errorf("Could not create or update ip : %+v", err)
+	}
+
+	err = db.CreateOrUpdateIP(projectName, ipDest)
+	if err != nil {
+		log.Errorf("Could not create or update ip : %+v", err)
+	}
+
+	err = db.AppendRawData(projectName, T.Name(), data)
+	if err != nil {
+		log.Errorf("Could not append : %+v", err)
+	}
 	return nil
 }
