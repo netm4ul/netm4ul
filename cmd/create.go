@@ -90,5 +90,5 @@ func init() {
 	createCmd.PersistentFlags().StringVar(&name, "name", "", "Name used for the folder and struct")
 	createCmd.PersistentFlags().StringVar(&shortName, "short-name", "", "Short name used for the instancied struct")
 	createCmd.PersistentFlags().StringVar(&author, "author", "", "Author name")
-	createCmd.PersistentFlags().StringVar(&moduleType, "module-type", "", "Type of the new module")
+	createCmd.PersistentFlags().StringVar(&moduleType, "type", "", "Type of the new module")
 }
