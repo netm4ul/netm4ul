@@ -53,12 +53,19 @@ func CreateAPI(s *session.Session, server *server.Server) *API {
 		db:      server.Db,
 	}
 
-	api.Start()
 	return &api
 }
 
 //Start the API and route endpoints to functions
 func (api *API) Start() {
+
+	ipport := api.Session.GetAPIIPPort()
+	router := api.Handler()
+	log.Fatal(http.ListenAndServe(ipport, router))
+}
+
+//Handler return a new mux router. All
+func (api *API) Handler() *mux.Router {
 
 	ipport := api.Session.GetAPIIPPort()
 	version := api.Session.Config.Versions.Api
@@ -90,8 +97,7 @@ func (api *API) Start() {
 
 	// DELETE
 	router.HandleFunc(prefix+"/projects/{name}", api.DeleteProject).Methods("DELETE")
-
-	log.Fatal(http.ListenAndServe(ipport, router))
+	return router
 }
 
 //GetIndex returns a link to the documentation on the root path
