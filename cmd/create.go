@@ -23,8 +23,10 @@ import (
 )
 
 var (
-	adapterName      string
-	adapterShortName string
+	name       string
+	shortName  string
+	moduleType string
+	author     string
 )
 
 // createCmd represents the create command
@@ -45,12 +47,38 @@ var createAdapterCmd = &cobra.Command{
 	Short: "Generate a new adapter",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		if adapterName == "" {
+		if name == "" {
 			fmt.Println("You must provide an adapter name")
 			cmd.Help()
 			os.Exit(1)
 		}
-		generate.GenerateAdapter(adapterName, adapterShortName)
+		generate.GenerateAdapter(name, shortName)
+	},
+}
+
+var createModuleCmd = &cobra.Command{
+	Use:   "module",
+	Short: "Generate a new module",
+	Run: func(cmd *cobra.Command, args []string) {
+		allowedType := map[string]bool{
+			"recon":   true,
+			"report":  true,
+			"exploit": true,
+		}
+
+		if name == "" {
+			fmt.Println("You must provide a module name")
+			cmd.Help()
+			os.Exit(1)
+		}
+
+		if _, ok := allowedType[moduleType]; ok {
+			generate.Module(name, shortName, moduleType, author)
+		} else {
+			fmt.Println("Unknown type of module")
+			cmd.Help()
+			os.Exit(1)
+		}
 	},
 }
 
@@ -58,6 +86,9 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 
 	createCmd.AddCommand(createAdapterCmd)
-	createAdapterCmd.Flags().StringVar(&adapterName, "name", "", "Adapter name (folder and struct)")
-	createAdapterCmd.Flags().StringVar(&adapterShortName, "short-name", "", "Adapter short name (name of struct)")
+	createCmd.AddCommand(createModuleCmd)
+	createCmd.PersistentFlags().StringVar(&name, "name", "", "Name used for the folder and struct")
+	createCmd.PersistentFlags().StringVar(&shortName, "short-name", "", "Short name used for the instancied struct")
+	createCmd.PersistentFlags().StringVar(&author, "author", "", "Author name")
+	createCmd.PersistentFlags().StringVar(&moduleType, "module-type", "", "Type of the new module")
 }

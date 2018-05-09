@@ -113,7 +113,7 @@ func ({{.adapterShortName}} *{{.adapterName}}) GetRawModule(projectName string, 
 		fmt.Println("You must provide an adapter name")
 		os.Exit(1)
 	}
-	// if not short name are provided, use the first letter of the long version, in lowercase
+	// if no short name are provided, use the first letter of the long version, in lowercase
 	if adapterShortName == "" {
 		adapterShortName = string(strings.ToLower(adapterName)[0])
 	}
