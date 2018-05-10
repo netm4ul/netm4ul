@@ -34,9 +34,20 @@ import (
 
 	"path/filepath"
 	"github.com/netm4ul/netm4ul/core/config"
+	"strconv"
+	"github.com/spf13/viper"
 )
 
-// setupCmd represents the setup command
+var (
+	nNodes 					uint
+	serverID 				string
+	ecdsaCurve 				string
+	certDuration 			time.Duration
+	organisationSubject 	string
+	certificateDirectory 	string
+)
+
+// pkiCmd represents the pki command
 var pkiCmd = &cobra.Command{
 	Use:   "pki",
 	Short: "Set up PKI (CA, Server and clients)",
@@ -49,27 +60,47 @@ var pkiCmd = &cobra.Command{
 	The master node has probably an IP address as hostname, if you run your instance from a box without DNS indexing.
 	
 	The client nodes don't need a publicly known hostname, but you may assign them a name that suits your use (e.g. your logs may see "client_x successfully connected to API"")`,
+	Args: cobra.MinimumNArgs(1),
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		config.LoadConfig(configPath)
+		//config.LoadConfig(configPath)
 
-		config.Config.ConfigPath = configPath
-		config.Config.Verbose = verbose
+		if serverID == "" {
+			serverID = config.Config.Server.IP
+		}
 
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("pki called")
-		cmd.Help()
-		os.Exit(1)
+		fmt.Println("PKI setup called")
+		pkiSetup(organisationSubject, nNodes, certDuration, ecdsaCurve, certificateDirectory, serverID)
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(pkiCmd)
+
+	pkiCmd.Flags().UintVarP(&nNodes, "nodes", "n", 1, "Number of nodes to create certificates for")
+	pkiCmd.Flags().StringVarP(&serverID, "server", "@", "", "Server address, with IP or DNS name")
+	pkiCmd.Flags().StringVarP(&ecdsaCurve, "ec", "e", "P256", "Elliptic curve to use for certificates. Accepted values : P224, P256 (default and recommended), P384 and P521.")
+	pkiCmd.Flags().DurationVarP(&certDuration, "duration", "d", 365*24*time.Hour, "Duration for certificate. Default is a year (365*24*time.Hour)")
+	pkiCmd.Flags().StringVarP(&organisationSubject, "subject", "s", "Netm4ul", "Organisation Subject to use in server certificate. (default is Netm4ul)")
+	pkiCmd.Flags().StringVarP(&certificateDirectory, "dir", "t", "./certificates", "Local directory to store PKI certs and keys. (default is ./certificates")
+
+	viper.SetDefault("ec", "P256")
+	viper.SetDefault("duration", 365*24*time.Hour)
+	viper.SetDefault("subject", "Netm4ul")
+	viper.SetDefault("dir", "./certificates")
+
+
+	pkiCmd.MarkFlagRequired("nodes")
 }
 
 // Extract public key from private
 func publicKey(priv interface{}) interface{} {
 	switch k := priv.(type) {
-	case *rsa.PrivateKey:
-		return &k.PublicKey
+	/*case *rsa.PrivateKey:
+		return &k.PublicKey*/
 	case *ecdsa.PrivateKey:
 		return &k.PublicKey
 	default:
@@ -181,7 +212,7 @@ func buildServerCert(template *x509.Certificate, host string, privateKey interfa
 	return buildCert(template, signerCert, privateKey, signerPrivKey)
 }
 
-// Wrappe function to generate the client certificate
+// Wrapper function to generate the client certificate
 func buildClientCert(template *x509.Certificate, id string, privateKey interface{}, signerCert *x509.Certificate, signerPrivKey interface{}) []byte{
 	template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 	template.Subject.CommonName = id
@@ -191,6 +222,12 @@ func buildClientCert(template *x509.Certificate, id string, privateKey interface
 
 // Write key material to disk. Note : the CA's private key is not written to disk.
 func writeCertAndKeyToDisk(entityType string, privateKey interface{}, certFilename string, keyFilename string, derBytes []byte){
+
+	// Make sure target directory exists
+	err := os.MkdirAll(filepath.Dir(certFilename), 0700)
+	if err != nil{
+		log.Fatalf("failed to create directory for cert : %s.\n%s", certFilename, err)
+	}
 
 	// Write Certificate to File
 	certOut, err := os.Create(certFilename)
@@ -234,8 +271,8 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 	serialNumber := generateSerial()
 
 	// Define a name for the certificate
-	certFilename := destDir + "/" + entityID + "_cert.pem"
-	keyFilename := destDir + "/" + entityID + "_key.pem"
+	certFilename := destDir + "/" + entityID + "/" + entityID + "_cert.pem"
+	keyFilename := destDir + "/" + entityID + "/" + entityID + "_key.pem"
 
 
 	// Build Certificate Template
@@ -286,46 +323,30 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 func checkDir(targetDirectory string){
 
 	newpath := filepath.Join(".", targetDirectory)
-	err := os.MkdirAll(newpath, os.ModePerm)
+	err := os.MkdirAll(newpath, 0700)
 	if err == nil{
 		log.Println("WARNING : The certificate directory already exists. All certificates and keys that already exist will be overwritten if they have the same name as the new. The old, overwritten data would not be usable nor recoverable.")
 	}
 }
 
-func setup()  {
-	certDuration := 365*24*time.Hour
-	recommendedCurve := "P256"
-	organisationSubject := "Netm4ul"
-	certificateDirectory := "./certificates"
+func pkiSetup(organisationSubject string, numberClients uint, certDuration time.Duration, ecdsaCurve string, certificateDirectory string, serverID string) {
 
 	// Perform Checks and pre-setup
 	checkDir(certificateDirectory)
 
 	// Create CA
-	caCert, caKey, _, _ := create("ca", certDuration, "CA", recommendedCurve, nil, nil,organisationSubject, certificateDirectory)
-	if caCert == nil || caKey == nil{
+	caCert, caKey, _, _ := create("ca", certDuration, "CA", ecdsaCurve, nil, nil, organisationSubject, certificateDirectory)
+	if caCert == nil || caKey == nil {
 		log.Print("Failed to created CA cert\n")
 	}
 
-
 	// Create Server
-	_, _, _, _ = create("localhost", certDuration, "Server", recommendedCurve, caCert, caKey, organisationSubject, certificateDirectory)
+	_, _, _, _ = create(serverID, certDuration, "Server", ecdsaCurve, caCert, caKey, organisationSubject, certificateDirectory)
 
+	// Create clients
+	clientsDir := certificateDirectory + "/clients"
+	for i := 0; i < int(numberClients); i++ {
+		_, _, _, _ = create("client_"+strconv.Itoa(i), certDuration, "Client", ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
 
-	// Create Client
-	_, _, _, _ = create("client_01", certDuration, "Client", recommendedCurve, caCert, caKey, organisationSubject, certificateDirectory)
-}
-
-func init() {
-	rootCmd.AddCommand(pkiCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// setupCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// setupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	}
 }
