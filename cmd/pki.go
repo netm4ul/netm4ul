@@ -42,6 +42,7 @@ var (
 	nNodes               uint
 	serverID             string
 	ecdsaCurve           string
+	keepPrivCA           bool
 	certDuration         time.Duration
 	organisationSubject  string
 	certificateDirectory string
@@ -60,10 +61,9 @@ var pkiCmd = &cobra.Command{
 	The master node has probably an IP address as hostname, if you run your instance from a box without DNS indexing.
 	
 	The client nodes don't need a publicly known hostname, but you may assign them a name that suits your use (e.g. your logs may see "client_x successfully connected to API"")`,
-	//Args: cobra.MinimumNArgs(1),
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		//config.LoadConfig(configPath)
+		config.LoadConfig(configPath)
 
 		if serverID == "" {
 			serverID = config.Config.Server.IP
@@ -72,7 +72,7 @@ var pkiCmd = &cobra.Command{
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("PKI setup called with " + serverID + " !")
+		fmt.Println("Setting up PKI at " + certificateDirectory)
 		pkiSetup(organisationSubject, nNodes, certDuration, ecdsaCurve, certificateDirectory, serverID)
 	},
 }
@@ -83,11 +83,13 @@ func init() {
 	pkiCmd.Flags().UintVarP(&nNodes, "nodes", "n", 1, "Number of nodes to create certificates for")
 	pkiCmd.Flags().StringVarP(&serverID, "server", "@", "", "Server address, with IP or DNS name")
 	pkiCmd.Flags().StringVarP(&ecdsaCurve, "ec", "e", "P256", "Elliptic curve to use for certificates. Accepted values : P224, P256 (recommended), P384 and P521")
+	pkiCmd.Flags().BoolVarP(&keepPrivCA, "keepca", "k", false, "Indicate whether to keep CA private key (i.e. written to disk)")
 	pkiCmd.Flags().DurationVarP(&certDuration, "duration", "d", 365*24*time.Hour, "Duration for certificate. Default is a year")
 	pkiCmd.Flags().StringVarP(&organisationSubject, "org", "o", "Netm4ul", "Organisation Subject to use in server certificate")
 	pkiCmd.Flags().StringVarP(&certificateDirectory, "dir", "t", "./certificates", "Local directory to store PKI certs and keys")
 
 	viper.SetDefault("ec", "P256")
+	viper.SetDefault("keepca", false)
 	viper.SetDefault("duration", 365*24*time.Hour)
 	viper.SetDefault("subject", "Netm4ul")
 	viper.SetDefault("dir", "./certificates")
@@ -235,18 +237,18 @@ func writeCertAndKeyToDisk(entityType string, privateKey interface{}, certFilena
 
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
-	log.Print("wrote " + certFilename + "\n")
+	// log.Print("wrote " + certFilename + "\n")
 
 	// Write key to file if it is not a CA
-	if entityType != "CA" {
+	if entityType != "CA" || keepPrivCA {
 		keyOut, err := os.OpenFile(keyFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			log.Print("failed to open "+keyFilename+"  for writing:", err)
 		}
 		pem.Encode(keyOut, pemBlockForKey(privateKey))
 		keyOut.Close()
-		log.Print("wrote " + keyFilename + "\n")
-		log.Print("Successfully achieved job for " + keyFilename + "\n")
+		// log.Print("wrote " + keyFilename + "\n")
+		// log.Print("Successfully achieved job for " + keyFilename + "\n")
 	}
 
 }
@@ -346,4 +348,7 @@ func pkiSetup(organisationSubject string, numberClients uint, certDuration time.
 		_, _, _, _ = create("client_"+strconv.Itoa(i), certDuration, "Client", ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
 
 	}
+
+	log.Println("It seems PKI creation was successfull.")
+
 }
