@@ -13,10 +13,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/miekg/dns"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // DnsResult represent the parsed ouput
@@ -72,7 +70,7 @@ func (D *Dns) DependsOn() []modules.Condition {
 */
 
 // Run : Main function of the module
-func (D *Dns) Run(data []string) (modules.Result, error) {
+func (D *Dns) Run(inputs []modules.Input) (modules.Result, error) {
 
 	// Banner
 	fmt.Println("DNS world!")
@@ -83,7 +81,15 @@ func (D *Dns) Run(data []string) (modules.Result, error) {
 		log.Println(err)
 	}
 	// Get fqdn of domain
-	domain := "edznux.fr"
+	var domain string
+
+	for _, input := range inputs {
+		//TODO get each domain name
+		if input.Domain != "" {
+			domain = input.Domain
+			break
+		}
+	}
 	fqdn := dns.Fqdn(domain)
 
 	// instanciate DnsResult
@@ -190,13 +196,13 @@ func (D *Dns) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (D *Dns) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
+func (D *Dns) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Println("Write to the database.")
-	var data DnsResult
-	data = result.Data.(DnsResult)
+	// var data DnsResult
+	// data = result.Data.(DnsResult)
 
-	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
+	// raw := bson.M{projectName + ".results." + result.Module: data}
+	// database.UpsertRawData(mgoSession, projectName, raw)
 	return nil
 }
 

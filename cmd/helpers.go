@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -13,18 +12,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/netm4ul/netm4ul/modules"
+
+	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/session"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/mitchellh/mapstructure"
-	"github.com/netm4ul/netm4ul/cmd/colors"
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 )
 
-func getURL(ressource string) string {
-	port := strconv.FormatInt(int64(config.Config.API.Port), 10)
-	url := "http://" + config.Config.Server.IP + ":" + port
+func getURL(ressource string, s *session.Session) string {
+	port := strconv.FormatInt(int64(s.Config.API.Port), 10)
+	url := "http://" + s.Config.Server.IP + ":" + port
 
 	if ressource != "" {
 		url += ressource
@@ -33,14 +36,12 @@ func getURL(ressource string) string {
 	return strings.TrimRight(url, "/")
 }
 
-func getData(ressource string) (api.Result, error) {
+func getData(ressource string, s *session.Session) (api.Result, error) {
 
 	var result api.Result
-	url := getURL(ressource)
+	url := getURL(ressource, s)
 
-	if config.Config.Verbose {
-		log.Println(colors.Yellow("GET : " + url))
-	}
+	log.Debugf("GET : %s", url)
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -59,21 +60,21 @@ func getData(ressource string) (api.Result, error) {
 		return api.Result{}, errors.New("Can't decode json : " + err.Error())
 	}
 
-	if result.Code != 200 {
+	if result.Code != api.CodeOK {
 		return result, errors.New(result.Message)
 	}
 
 	return result, nil
 }
 
-func postData(ressource string, rawdata interface{}) (api.Result, error) {
+func postData(ressource string, s *session.Session, rawdata interface{}) (api.Result, error) {
 	var result api.Result
 
 	jsondata, err := json.Marshal(rawdata)
 	if err != nil {
 		return api.Result{}, errors.New("Could not create project :" + err.Error())
 	}
-	url := getURL(ressource)
+	url := getURL(ressource, s)
 
 	//TODO add header, auth
 	res, err := http.Post(url, "application/json", bytes.NewBuffer(jsondata))
@@ -88,33 +89,33 @@ func postData(ressource string, rawdata interface{}) (api.Result, error) {
 	return result, nil
 }
 
-func createProjectIfNotExist() {
-	p := database.Project{Name: config.Config.Project.Name, Description: config.Config.Project.Description}
+func createProjectIfNotExist(s *session.Session) {
+	p := models.Project{Name: s.Config.Project.Name, Description: s.Config.Project.Description}
 
-	listOfProject, err := GetProjects()
+	listOfProject, err := GetProjects(s)
 	if err != nil {
-		log.Printf(colors.Red("Can't get project list : %s"), err.Error())
+		log.Errorf("Can't get project list : %s", err.Error())
 	}
 
 	for _, project := range listOfProject {
-		if project.Name == config.Config.Project.Name {
+		if project.Name == s.Config.Project.Name {
 			return
 			// already exist, so exit this function
 		}
 	}
 
-	err = CreateProject(p)
+	err = CreateProject(p, s)
 	if err != nil {
-		log.Printf(colors.Red("Can't create project : %s"), err.Error())
+		log.Errorf("Can't create project : %s", err.Error())
 	}
 
 }
 
-func CreateProject(p database.Project) error {
+func CreateProject(p models.Project, s *session.Session) error {
 
 	ressource := "/projects"
 
-	res, err := postData(ressource, p)
+	res, err := postData(ressource, s, p)
 	if err != nil {
 		return errors.New("Can't create project : %s")
 	}
@@ -126,17 +127,15 @@ func CreateProject(p database.Project) error {
 }
 
 type Projects struct {
-	Projects []database.Project
+	Projects []models.Project
 }
 
-func GetProjects() ([]database.Project, error) {
+func GetProjects(s *session.Session) ([]models.Project, error) {
 
-	var data []database.Project
-	resjson, err := getData("/projects")
+	var data []models.Project
+	resjson, err := getData("/projects", s)
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("response : %+v"), resjson)
-	}
+	log.Debugf("response : %+v", resjson)
 
 	if err != nil {
 		return data, err
@@ -147,20 +146,18 @@ func GetProjects() ([]database.Project, error) {
 		return data, err
 	}
 
-	if resjson.Code != 200 {
+	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
 
 	return data, nil
 }
 
-func GetProject(name string) (database.Project, error) {
-	var data database.Project
-	resjson, err := getData("/projects/" + name)
+func GetProject(name string, s *session.Session) (models.Project, error) {
+	var data models.Project
+	resjson, err := getData("/projects/"+name, s)
 
-	if config.Config.Verbose {
-		log.Printf(colors.Yellow("response : %+v"), resjson)
-	}
+	log.Debugf("response : %+v", resjson)
 
 	if err != nil {
 		return data, err
@@ -171,29 +168,29 @@ func GetProject(name string) (database.Project, error) {
 		return data, err
 	}
 
-	if resjson.Code != 200 {
+	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
 
 	return data, nil
 }
 
-func GetIPsByProject(project string) (database.IP, error) {
-	return database.IP{}, nil
+func GetIPsByProject(project string, s *session.Session) (models.IP, error) {
+	return models.IP{}, nil
 }
 
-func GetPortsByIP(project string, ip string) ([]database.Port, error) {
-	return []database.Port{}, nil
+func GetPortsByIP(project string, ip string, s *session.Session) ([]models.Port, error) {
+	return []models.Port{}, nil
 }
 
-func parseModules(modules []string) ([]string, error) {
+func parseModules(modules []string, s *session.Session) ([]string, error) {
 
 	if len(modules) == 0 {
 		return nil, errors.New("Could not parse modules")
 	}
 
 	for _, name := range modules {
-		_, ok := config.Config.Modules[name]
+		_, ok := s.Config.Modules[name]
 		if !ok {
 			return nil, errors.New("Could not find module : " + name)
 		}
@@ -202,22 +199,22 @@ func parseModules(modules []string) ([]string, error) {
 	return modules, nil
 }
 
-func addModules(mods []string) {
+func addModules(mods []string, s *session.Session) {
 
 	found := false
 	for _, mod := range mods {
-		for cmodname, cmod := range config.Config.Modules {
+		for cmodname, cmod := range s.Config.Modules {
 			if cmodname == mod && cmod.Enabled {
 				found = true
 			}
 		}
 		if !found {
-			config.Config.Modules[mod] = config.Module{Enabled: true}
+			s.Config.Modules[mod] = config.Module{Enabled: true}
 		}
 	}
 }
 
-func printProjectsInfo() {
+func printProjectsInfo(s *session.Session) {
 	var err error
 	var data [][]string
 
@@ -225,15 +222,15 @@ func printProjectsInfo() {
 	table.SetHeader([]string{"Project", "Description", "# IPs", "Last update"})
 
 	// get list of projects
-	listOfProjects, err := GetProjects()
+	listOfProjects, err := GetProjects(s)
 	if err != nil {
-		log.Printf(colors.Red("Can't get projects list : %s"), err.Error())
+		log.Errorf("Can't get projects list : %s", err.Error())
 	}
 
 	// build array of array for the table !
 	for _, p := range listOfProjects {
-		if config.Config.Verbose {
-			log.Printf(colors.Green("p : %+v"), p)
+		if s.Config.Verbose {
+			log.Infof("p : %+v", p)
 		}
 		data = append(data, []string{p.Name, p.Description, strconv.Itoa(len(p.IPs)), time.Unix(p.UpdatedAt, 0).String()})
 	}
@@ -242,9 +239,9 @@ func printProjectsInfo() {
 	table.Render()
 }
 
-func printProjectInfo(projectName string) {
+func printProjectInfo(projectName string, s *session.Session) {
 
-	var p database.Project
+	var p models.Project
 	var err error
 	var data [][]string
 
@@ -252,23 +249,21 @@ func printProjectInfo(projectName string) {
 	table.SetHeader([]string{"IP", "Ports"})
 
 	if projectName == "" {
-		log.Fatalln(colors.Red("No project provided"))
+		log.Fatalln("No project provided")
 		// exit
 	}
 
-	p, err = GetProject(projectName)
+	p, err = GetProject(projectName, s)
 	if err != nil {
-		log.Printf(colors.Red("Can't get project %s : %s"), projectName, err.Error())
+		log.Errorf("Can't get project %s : %s", projectName, err.Error())
 	}
 
-	if config.Config.Verbose {
-		log.Printf(colors.Green("Project : %+v"), p)
-	}
+	log.Debugf("Project : %+v", p)
 
 	for _, ip := range p.IPs {
-		log.Printf("ip : %+v", ip)
+		log.Debugf("ip : %+v", ip)
 		for _, port := range ip.Ports {
-			data = append(data, []string{ip.Value.String(), strconv.Itoa(int(port.Number))})
+			data = append(data, []string{ip.Value, strconv.Itoa(int(port.Number))})
 		}
 	}
 
@@ -276,16 +271,18 @@ func printProjectInfo(projectName string) {
 	table.Render()
 }
 
-func parseTargets(targets []string) ([]string, error) {
+func parseTargets(targets []string) ([]modules.Input, error) {
 
-	var res []string
+	var inputs []modules.Input
+	var input modules.Input
 
 	if len(targets) == 0 {
-		return nil, errors.New("Not target found")
+		return []modules.Input{}, errors.New("Not target found")
 	}
 
 	// loop on each targets
 	for _, target := range targets {
+
 		ip, ipNet, err := net.ParseCIDR(target)
 
 		// if this is a domain
@@ -293,42 +290,46 @@ func parseTargets(targets []string) ([]string, error) {
 			ips, err := net.LookupIP(target)
 
 			if err != nil {
-				return nil, err
+				return []modules.Input{}, errors.New("Could lookup address : " + target + ", " + err.Error())
 			}
 
 			if ips == nil {
-				return nil, errors.New("Could not resolve :" + target)
+				return []modules.Input{}, errors.New("Could not resolve :" + target)
 			}
 
 			// convert ips to strings
-			for _, i := range ips {
-				res = append(res, i.String())
+			for _, ip := range ips {
+				input = modules.Input{Domain: target, IP: ip}
+				inputs = append(inputs, input)
 			}
+
 		} else {
 			// if this is an ip
-
 			// check if ip is specified (not :: or 0.0.0.0)
 			if ip.IsUnspecified() {
-				return nil, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
+				return []modules.Input{}, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
 			}
 
-			// check if ip is specified (not :: or 0.0.0.0)
+			// check if ip isn't loopback
 			if ip.IsLoopback() {
-				return nil, errors.New("Target ip is loopback address")
+				return []modules.Input{}, errors.New("Target ip is loopback address")
 			}
 
 			// IP Range (CIDR)
 			if ipNet != nil {
 				h, err := hosts(target)
 				if err != nil {
-					return nil, errors.New("Target ip range is invalid (" + err.Error() + ")")
+					return []modules.Input{}, errors.New("Target ip range is invalid (" + err.Error() + ")")
 				}
-				res = append(res, h...)
+				for _, host := range h {
+					input = modules.Input{IP: host}
+					inputs = append(inputs, input)
+				}
 			}
 		}
 	}
 
-	return res, nil
+	return inputs, nil
 }
 
 func inc(ip net.IP) {
@@ -340,21 +341,21 @@ func inc(ip net.IP) {
 	}
 }
 
-func hosts(cidr string) ([]string, error) {
+func hosts(cidr string) ([]net.IP, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, err
 	}
 
-	var ips []string
+	var ips []net.IP
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		ips = append(ips, ip.String())
+		ips = append(ips, ip)
 	}
 	// remove network address and broadcast address
 	return ips[1 : len(ips)-1], nil
 }
 
 //PrintVersion Prints the version of all the components : The server, the Client, and the HTTP API
-func PrintVersion() {
-	fmt.Printf("Version :\n - Server : %s\n - Client : %s\n - HTTP API : %s\n", config.Config.Versions.Server, config.Config.Versions.Client, config.Config.Versions.Api)
+func PrintVersion(s *session.Session) {
+	fmt.Printf("Version :\n - Server : %s\n - Client : %s\n - HTTP API : %s\n", s.Config.Versions.Server, s.Config.Versions.Client, s.Config.Versions.Api)
 }

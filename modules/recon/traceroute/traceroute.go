@@ -3,19 +3,14 @@ package traceroute
 import (
 	"encoding/gob"
 	"fmt"
-	"log"
-	"time"
-
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/netm4ul/netm4ul/cmd/colors"
-	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server/database"
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
 )
 
@@ -69,7 +64,7 @@ func (T *Traceroute) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (T *Traceroute) Run(data []string) (modules.Result, error) {
+func (T *Traceroute) Run(inputs []modules.Input) (modules.Result, error) {
 	fmt.Println("hello world") //Affiche hello world pour le fun
 	// cmd := exec.Command("traceroute", "8.8.8.8") //
 	// var out bytes.Buffer
@@ -97,22 +92,36 @@ func (T *Traceroute) ParseConfig() error {
 	configPath := filepath.Join(exPath, "config", "traceroute.conf")
 
 	if _, err := toml.DecodeFile(configPath, &T.Config); err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return err
 	}
-	fmt.Println(T.Config.MaxHops)
+	log.Debug(T.Config.MaxHops)
 	return nil
 }
 
 // WriteDb : Save data
-func (T Traceroute) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	if config.Config.Verbose {
-		log.Println(colors.Yellow("Writing to the database."))
-	}
+func (T Traceroute) WriteDb(result modules.Result, db models.Database, projectName string) error {
+	log.Debug("Writing to the database.")
+
 	var data TracerouteResult
 	data = result.Data.(TracerouteResult)
 
-	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
+	ipSrc := models.IP{Value: data.Source}
+	ipDest := models.IP{Value: data.Destination}
+
+	err := db.CreateOrUpdateIP(projectName, ipSrc)
+	if err != nil {
+		log.Errorf("Could not create or update ip : %+v", err)
+	}
+
+	err = db.CreateOrUpdateIP(projectName, ipDest)
+	if err != nil {
+		log.Errorf("Could not create or update ip : %+v", err)
+	}
+
+	err = db.AppendRawData(projectName, T.Name(), data)
+	if err != nil {
+		log.Errorf("Could not append : %+v", err)
+	}
 	return nil
 }

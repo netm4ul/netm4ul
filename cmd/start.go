@@ -17,11 +17,22 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 
-	"github.com/netm4ul/netm4ul/core"
+	"github.com/netm4ul/netm4ul/core/api"
+	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/server"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+)
+
+const (
+	ServerLogPath = "server.log"
+	ClientLogPath = "client.log"
+)
+
+var (
+	CLILogfile bool
 )
 
 // startCmd represents the start command
@@ -29,7 +40,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the requested service",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("To few arguments !")
+		fmt.Printf("\n\nTo few arguments !\n\n")
 		cmd.Help()
 		os.Exit(1)
 	},
@@ -39,17 +50,40 @@ var startCmd = &cobra.Command{
 var startServerCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the server",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+
+		var err error
+		// init session...
+		// there is no chaining of persistent pre run ... so we are doing it manualy...
+		createSessionBase()
+		if CLILogfile {
+			setupLoggingToFile(ServerLogPath)
+		}
+		CLISession.Config.IsServer = isServer
+		CLISession.Config.Nodes = make(map[string]config.Node)
+
+		if CLISession.Config.TLSParams.UseTLS {
+			CLISession.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
+
+			if err != nil {
+				log.Error("Unable to load TLS configuration. Shutting down.")
+				os.Exit(1)
+			}
+		}
+
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		config.Config.IsServer = isServer
-		config.Config.Nodes = make(map[string]config.Node)
 
+		// TODO : not sure if we should use the CLI session or a new one ...
+		// ss := session.NewSession(config.Config)
 		// listen on all interface + Server port
-		addr := ":" + strconv.FormatUint(uint64(config.Config.Server.Port), 10)
-		go core.CreateServer(addr, &config.Config)
-
-		//TODO flag enable / disable api
-		addrAPI := ":" + strconv.FormatUint(uint64(config.Config.API.Port), 10)
-		go core.CreateAPI(addrAPI, &config.Config)
+		s := server.CreateServer(CLISession)
+		go s.Listen()
+		// TODO flag enable / disable api
+		// TODO : not sure if we should use the CLI session or a new one ...
+		// sa := session.NewSession(config.Config)
+		a := api.CreateAPI(CLISession, s)
+		go a.Start()
 
 		gracefulShutdown()
 
@@ -60,13 +94,31 @@ var startServerCmd = &cobra.Command{
 var startClientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Start the client",
-	Run: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+
+		var err error
+		// init session
+		// there is no chaining of persistent pre run ... so we are doing it manualy...
+		createSessionBase()
+		if CLILogfile {
+			setupLoggingToFile(ClientLogPath)
+		}
 		config.Config.IsClient = isClient
 
-		ip := config.Config.Server.IP
-		port := strconv.FormatUint(uint64(config.Config.Server.Port), 10)
-		addr := ip + ":" + port
-		go core.CreateClient(addr, &config.Config)
+		if CLISession.Config.TLSParams.UseTLS {
+			config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()
+
+			if err != nil {
+				log.Error("Unable to load TLS configuration. Shutting down.")
+				os.Exit(1)
+			}
+		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		// TODO : not sure if we should use the CLI session or a new one ...
+		// sc := session.NewSession(config.Config)
+		c := client.CreateClient(CLISession)
+		go c.Start()
 
 		gracefulShutdown()
 	},
@@ -74,6 +126,8 @@ var startClientCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(startCmd)
+
+	startCmd.PersistentFlags().BoolVar(&CLILogfile, "log2file", false, "Enable logging to file")
 
 	startCmd.AddCommand(startServerCmd)
 	startCmd.AddCommand(startClientCmd)

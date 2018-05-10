@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -25,9 +25,12 @@ import (
 var completionCmd = &cobra.Command{
 	Use:   "completion",
 	Short: "Generate autocompletion",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		createSessionBase()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Println("To few arguments, please provide your type of shell : sh or zsh")
+			fmt.Println("To few arguments, please provide your type of shell : sh or zsh")
 			os.Exit(1)
 		}
 
