@@ -82,11 +82,11 @@ func init() {
 
 	pkiCmd.Flags().UintVarP(&nNodes, "nodes", "n", 1, "Number of nodes to create certificates for")
 	pkiCmd.Flags().StringVarP(&serverID, "server", "@", "", "Server address, with IP or DNS name")
-	pkiCmd.Flags().StringVarP(&ecdsaCurve, "ec", "e", "P256", "Elliptic curve to use for certificates. Accepted values : P224, P256 (recommended), P384 and P521")
+	pkiCmd.Flags().StringVarP(&ecdsaCurve, "ec", "e", "", "Elliptic curve to use for certificates. Accepted values : P224, P256 (recommended), P384 and P521")
 	pkiCmd.Flags().BoolVarP(&keepPrivCA, "keepca", "k", false, "Indicate whether to keep CA private key (i.e. written to disk)")
 	pkiCmd.Flags().DurationVarP(&certDuration, "duration", "d", 365*24*time.Hour, "Duration for certificate. Default is a year")
-	pkiCmd.Flags().StringVarP(&organisationSubject, "org", "o", "Netm4ul", "Organisation Subject to use in server certificate")
-	pkiCmd.Flags().StringVarP(&certificateDirectory, "dir", "t", "./certificates", "Local directory to store PKI certs and keys")
+	pkiCmd.Flags().StringVarP(&organisationSubject, "org", "o", "", "Organisation Subject to use in server certificate")
+	pkiCmd.Flags().StringVarP(&certificateDirectory, "dir", "t", "", "Local directory to store PKI certs and keys")
 
 	viper.SetDefault("ec", "P256")
 	viper.SetDefault("keepca", false)
@@ -237,24 +237,21 @@ func writeCertAndKeyToDisk(entityType string, privateKey interface{}, certFilena
 
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
-	// log.Print("wrote " + certFilename + "\n")
 
 	// Write key to file if it is not a CA
 	if entityType != "CA" || keepPrivCA {
 		keyOut, err := os.OpenFile(keyFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
-			log.Print("failed to open "+keyFilename+"  for writing:", err)
+			log.Print("failed to open " + keyFilename + "  for writing:", err)
 		}
 		pem.Encode(keyOut, pemBlockForKey(privateKey))
 		keyOut.Close()
-		// log.Print("wrote " + keyFilename + "\n")
-		// log.Print("Successfully achieved job for " + keyFilename + "\n")
 	}
 
 }
 
 // Creates the certificate for the given entity and writes key material to disk. In case of the CA, also return the certificate and private key to sign the end entity parties
-func create(entityID string, validFor time.Duration, entityType string, ecdsaCurve string, signerCert *x509.Certificate, signerPrivKey interface{}, organisation string, destDir string) (*x509.Certificate, interface{}, string, string) {
+func create(entityID string, validFor time.Duration, entityType string, ecdsaCurve string, signerCert *x509.Certificate, signerPrivKey interface{}, organisation string, targetDir []string) (*x509.Certificate, interface{}, string, string) {
 
 	if len(entityID) == 0 {
 		log.Fatalf("Missing required --host parameter")
@@ -271,8 +268,10 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 	serialNumber := generateSerial()
 
 	// Define a name for the certificate
-	certFilename := destDir + "/" + entityID + "/" + entityID + "_cert.pem"
-	keyFilename := destDir + "/" + entityID + "/" + entityID + "_key.pem"
+	targetDir = append(targetDir, entityID)
+	filePrefix := strings.Join(targetDir, "/")
+	certFilename := filePrefix + "_cert.pem"
+	keyFilename := filePrefix + "_key.pem"
 
 	// Build Certificate Template
 	template := x509.Certificate{
@@ -321,10 +320,16 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 // Checks if directory exists. If not, creates it.
 func checkDir(targetDirectory string) {
 
-	//newpath := filepath.Join(".", targetDirectory)
+	/*newpath := filepath.Join(".", targetDirectory)
 	err := os.MkdirAll(targetDirectory, 0700)
 	if err == nil {
 		log.Println("WARNING : The certificate directory already exists. All certificates and keys that already exist will be overwritten if they have the same name as the new. The old, overwritten data would not be usable nor recoverable.")
+	}*/
+
+	_, err := os.Stat(targetDirectory)
+	if err == nil || !os.IsNotExist(err) {
+		log.Println("WARNING : The certificate directory already exists. All certificates and keys that already exist will be overwritten if they have the same name as the new. The old, overwritten data would not be usable nor recoverable.")
+		return
 	}
 }
 
@@ -332,20 +337,23 @@ func pkiSetup(organisationSubject string, numberClients uint, certDuration time.
 
 	// Perform Checks and pre-setup
 	checkDir(certificateDirectory)
+	targetDir := []string{certificateDirectory}
 
 	// Create CA
-	caCert, caKey, _, _ := create("ca", certDuration, "CA", ecdsaCurve, nil, nil, organisationSubject, certificateDirectory)
+	caDir := append(targetDir, "CA")
+	caCert, caKey, _, _ := create("ca", certDuration, "CA", ecdsaCurve, nil, nil, organisationSubject, caDir)
 	if caCert == nil || caKey == nil {
 		log.Print("Failed to created CA cert\n")
 	}
 
 	// Create Server
-	_, _, _, _ = create(serverID, certDuration, "Server", ecdsaCurve, caCert, caKey, organisationSubject, certificateDirectory)
+	serverDir := append(targetDir, "Server")
+	_, _, _, _ = create(serverID, certDuration, "Server", ecdsaCurve, caCert, caKey, organisationSubject, serverDir)
 
 	// Create clients
-	clientsDir := certificateDirectory + "/clients"
+	clientsDir := append(targetDir, "clients")
 	for i := 0; i < int(numberClients); i++ {
-		_, _, _, _ = create("client_"+strconv.Itoa(i), certDuration, "Client", ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
+		_, _, _, _ = create("client_" + strconv.Itoa(i), certDuration, "Client", ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
 
 	}
 

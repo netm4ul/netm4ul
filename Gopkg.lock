@@ -14,12 +14,6 @@
   version = "v1.4.7"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/google/go-querystring"
   packages = ["query"]
@@ -67,13 +61,6 @@
   version = "v1.7.6"
 
 [[projects]]
-  name = "github.com/mattn/go-isatty"
-  packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
-
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
   revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
@@ -116,6 +103,12 @@
   version = "v0.8.0"
 
 [[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
+
+[[projects]]
   name = "github.com/spf13/afero"
   packages = [
     ".",
@@ -130,17 +123,6 @@
   revision = "8965335b8c7107321228e3e3702cab9832751bac"
   version = "v1.2.0"
 
-[[projects]]
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/sirupsen/logrus"
-  packages = ["."]
-  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
-  version = "v1.0.5"
 [[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
@@ -164,12 +146,6 @@
   packages = ["."]
   revision = "b5e8006cbee93ec955a89ab31e0e3ce3204f3736"
   version = "v1.0.2"
-
-[[projects]]
-  name = "github.com/stretchr/testify"
-  packages = ["assert"]
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -227,20 +203,20 @@
   revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
 
 [[projects]]
-  name = "gopkg.in/yaml.v2"
-  packages = ["."]
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
-
-[[projects]]
   name = "gopkg.in/ns3777k/go-shodan.v3"
   packages = ["shodan"]
   revision = "c1bc298e2b11df7a72949191c4102d5935ede169"
   version = "v3.0.1"
 
+[[projects]]
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9b12fd94c911c94266211a20eb30248af67a4b8e2229c314aa652d8078fed686"
+  inputs-digest = "df8164b803ae4e6458ac2ba897689b41f394eef6345154da7e9572b10d8a802e"
   solver-name = "gps-cdcl"
   solver-version = 1
