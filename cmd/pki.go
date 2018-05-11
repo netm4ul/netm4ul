@@ -20,7 +20,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -78,7 +77,7 @@ var pkiCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(pkiCmd)
+	setupCmd.AddCommand(pkiCmd)
 
 	pkiCmd.Flags().UintVarP(&nNodes, "nodes", "n", 1, "Number of nodes to create certificates for")
 	pkiCmd.Flags().StringVarP(&serverID, "server", "@", "", "Server address, with IP or DNS name")
@@ -97,47 +96,18 @@ func init() {
 	pkiCmd.MarkFlagRequired("nodes")
 }
 
-// Extract public key from private
-func publicKey(priv interface{}) interface{} {
-	switch k := priv.(type) {
-	/*case *rsa.PrivateKey:
-	return &k.PublicKey*/
-	case *ecdsa.PrivateKey:
-		return &k.PublicKey
-	default:
-		return nil
+func pemBlockForKey(priv *ecdsa.PrivateKey) *pem.Block {
+	b, err := x509.MarshalECPrivateKey(priv)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to marshal ECDSA private key: %v", err)
+		os.Exit(1)
 	}
+	return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}
 }
-
-func pemBlockForKey(priv interface{}) *pem.Block {
-	switch k := priv.(type) {
-	case *rsa.PrivateKey:
-		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
-	case *ecdsa.PrivateKey:
-		b, err := x509.MarshalECPrivateKey(k)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to marshal ECDSA private key: %v", err)
-			os.Exit(2)
-		}
-		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}
-	default:
-		return nil
-	}
-}
-
-/*
-func get_formatted_time() string {
-	now := time.Now()
-
-	nowH, nowM, nowS := now.Clock()
-
-	return fmt.Sprintf("%s %d %d:%d:%d %d", now.Month(), now.Day(), nowH, nowM, nowS, now.Year())
-}
-*/
 
 // Generates a ecdsa private key from a cryptographically secure prng
-func generatePrivateKey(ecdsaCurve string) interface{} {
-	var priv interface{}
+func generatePrivateKey(ecdsaCurve string) *ecdsa.PrivateKey {
+	var priv *ecdsa.PrivateKey
 	var err error
 	switch ecdsaCurve {
 	case "P224":
@@ -171,8 +141,8 @@ func generateSerial() *big.Int {
 }
 
 // Wrapper function to create a certificate from private key and certificate template
-func buildCert(template *x509.Certificate, signerCert *x509.Certificate, privateKey interface{}, signerPrivKey interface{}) []byte {
-	derBytes, err := x509.CreateCertificate(rand.Reader, template, signerCert, publicKey(privateKey), signerPrivKey)
+func buildCert(template *x509.Certificate, signerCert *x509.Certificate, publicKey *ecdsa.PublicKey, signerPrivKey *ecdsa.PrivateKey) []byte {
+	derBytes, err := x509.CreateCertificate(rand.Reader, template, signerCert, publicKey, signerPrivKey)
 	if err != nil {
 		log.Fatalf("Failed to create certificate: %s", err)
 	}
@@ -181,11 +151,11 @@ func buildCert(template *x509.Certificate, signerCert *x509.Certificate, private
 }
 
 // Wrapper function to generate the CA certificate
-func buildCACert(template *x509.Certificate, privateKey interface{}) ([]byte, *x509.Certificate) {
+func buildCACert(template *x509.Certificate, privateKey *ecdsa.PrivateKey) ([]byte, *x509.Certificate) {
 	template.IsCA = true
 	template.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 
-	derBytes := buildCert(template, template, privateKey, privateKey)
+	derBytes := buildCert(template, template, &privateKey.PublicKey, privateKey)
 
 	caCert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
@@ -196,7 +166,7 @@ func buildCACert(template *x509.Certificate, privateKey interface{}) ([]byte, *x
 }
 
 // Wrapper function to generate the server certificate
-func buildServerCert(template *x509.Certificate, host string, privateKey interface{}, signerCert *x509.Certificate, signerPrivKey interface{}) []byte {
+func buildServerCert(template *x509.Certificate, host string, privateKey *ecdsa.PrivateKey, signerCert *x509.Certificate, signerPrivKey *ecdsa.PrivateKey) []byte {
 
 	hosts := strings.Split(host, ",")
 	for _, h := range hosts {
@@ -209,19 +179,19 @@ func buildServerCert(template *x509.Certificate, host string, privateKey interfa
 
 	template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 
-	return buildCert(template, signerCert, privateKey, signerPrivKey)
+	return buildCert(template, signerCert, &privateKey.PublicKey, signerPrivKey)
 }
 
 // Wrapper function to generate the client certificate
-func buildClientCert(template *x509.Certificate, id string, privateKey interface{}, signerCert *x509.Certificate, signerPrivKey interface{}) []byte {
+func buildClientCert(template *x509.Certificate, id string, privateKey *ecdsa.PrivateKey, signerCert *x509.Certificate, signerPrivKey *ecdsa.PrivateKey) []byte {
 	template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 	template.Subject.CommonName = id
 
-	return buildCert(template, signerCert, privateKey, signerPrivKey)
+	return buildCert(template, signerCert, &privateKey.PublicKey, signerPrivKey)
 }
 
 // Write key material to disk. Note : the CA's private key is not written to disk.
-func writeCertAndKeyToDisk(entityType string, privateKey interface{}, certFilename string, keyFilename string, derBytes []byte) {
+func writeCertAndKeyToDisk(entityType string, privateKey *ecdsa.PrivateKey, certFilename string, keyFilename string, derBytes []byte) {
 
 	// Make sure target directory exists
 	err := os.MkdirAll(filepath.Dir(certFilename), 0700)
@@ -251,7 +221,7 @@ func writeCertAndKeyToDisk(entityType string, privateKey interface{}, certFilena
 }
 
 // Creates the certificate for the given entity and writes key material to disk. In case of the CA, also return the certificate and private key to sign the end entity parties
-func create(entityID string, validFor time.Duration, entityType string, ecdsaCurve string, signerCert *x509.Certificate, signerPrivKey interface{}, organisation string, targetDir []string) (*x509.Certificate, interface{}, string, string) {
+func create(entityID string, validFor time.Duration, entityType string, ecdsaCurve string, signerCert *x509.Certificate, signerPrivKey *ecdsa.PrivateKey, organisation string, targetDir []string) (*x509.Certificate, *ecdsa.PrivateKey) {
 
 	if len(entityID) == 0 {
 		log.Fatalf("Missing required --host parameter")
@@ -311,10 +281,10 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 	writeCertAndKeyToDisk(entityType, privateKey, certFilename, keyFilename, derBytes)
 
 	if entityType == "CA" {
-		return caCert, privateKey, certFilename, keyFilename
+		return caCert, privateKey
 	}
 
-	return nil, nil, certFilename, keyFilename
+	return nil, nil
 }
 
 // Checks if directory exists. If not, creates it.
@@ -341,19 +311,19 @@ func pkiSetup(organisationSubject string, numberClients uint, certDuration time.
 
 	// Create CA
 	caDir := append(targetDir, "CA")
-	caCert, caKey, _, _ := create("ca", certDuration, "CA", ecdsaCurve, nil, nil, organisationSubject, caDir)
+	caCert, caKey := create("ca", certDuration, "CA", ecdsaCurve, nil, nil, organisationSubject, caDir)
 	if caCert == nil || caKey == nil {
 		log.Print("Failed to created CA cert\n")
 	}
 
 	// Create Server
 	serverDir := append(targetDir, "Server")
-	_, _, _, _ = create(serverID, certDuration, "Server", ecdsaCurve, caCert, caKey, organisationSubject, serverDir)
+	create(serverID, certDuration, "Server", ecdsaCurve, caCert, caKey, organisationSubject, serverDir)
 
 	// Create clients
 	clientsDir := append(targetDir, "clients")
 	for i := 0; i < int(numberClients); i++ {
-		_, _, _, _ = create("client_" + strconv.Itoa(i), certDuration, "Client", ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
+		create("client_" + strconv.Itoa(i), certDuration, "Client", ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
 
 	}
 
