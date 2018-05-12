@@ -64,7 +64,7 @@ func (mongo *MongoDB) firstConnect(cfg *config.ConfigToml) {
 	mongo.session = s
 }
 
-// CreateProject create a new project structure inside db
+// CreateOrUpdateProject create a new project structure inside db
 func (mongo *MongoDB) CreateOrUpdateProject(projectName string) error {
 	// mongodb will create collection on use.
 
@@ -81,6 +81,7 @@ func (mongo *MongoDB) CreateOrUpdateProject(projectName string) error {
 	return err
 }
 
+//GetProjects will return all projects available. Use GetProject to select only one
 func (mongo *MongoDB) GetProjects() ([]models.Project, error) {
 	var project []models.Project
 
@@ -100,6 +101,7 @@ func (mongo *MongoDB) GetProjects() ([]models.Project, error) {
 	return project, err
 }
 
+//GetProject return only one project by its name
 func (mongo *MongoDB) GetProject(projectName string) (models.Project, error) {
 	var project models.Project
 
@@ -128,7 +130,7 @@ func (mongo *MongoDB) GetProject(projectName string) (models.Project, error) {
 	return project, err
 }
 
-//CreateOrUpdateIP is used by module to store ip data into the database
+//CreateOrUpdateIP is used by modules to store ip data into the database
 //TOFIX
 func (mongo *MongoDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 

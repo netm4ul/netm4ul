@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/netm4ul/netm4ul/modules/recon/dns"
 	"github.com/netm4ul/netm4ul/modules/recon/nmap"
@@ -25,6 +27,8 @@ type Session struct {
 	Modules        map[string]modules.Module
 	Config         config.ConfigToml
 	Connector      Connector
+	Algo           loadbalancing.Algorithm
+	Nodes          []communication.Node
 }
 
 func NewSession(c config.ConfigToml) *Session {

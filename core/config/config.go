@@ -80,12 +80,6 @@ type Versions struct {
 	Client string `toml:"client" json:"client"`
 }
 
-// Node : Node info
-type Node struct {
-	Modules []string `json:"modules"`
-	Project string   `json:"project"`
-}
-
 type Project struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -106,7 +100,6 @@ type ConfigToml struct {
 	Keys       Keys
 	Server     Server
 	Database   Database
-	Nodes      map[string]Node
 	Modules    map[string]Module
 	TLSParams  TLSParams
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 
 	"github.com/gorilla/mux"
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/core/server"
@@ -41,8 +42,8 @@ type Info struct {
 
 //Metadata of the current system (node, api, database)
 type Metadata struct {
-	Nodes map[string]config.Node `json:"nodes"`
-	Info  Info                   `json:"api"`
+	Nodes []communication.Node `json:"nodes"`
+	Info  Info                 `json:"api"`
 }
 
 // CreateAPI : Initialise the infinite server loop on the master node
@@ -104,7 +105,7 @@ func (api *API) Handler() *mux.Router {
 func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 
 	info := Info{Port: api.Session.Config.API.Port, Versions: api.Session.Config.Versions}
-	d := Metadata{Info: info, Nodes: api.Server.Session.Config.Nodes}
+	d := Metadata{Info: info, Nodes: api.Server.Session.Nodes}
 
 	res := CodeToResult[CodeOK]
 	res.Data = d
@@ -428,7 +429,7 @@ func (api *API) RunModules(w http.ResponseWriter, r *http.Request) {
 
 	for _, module := range api.Session.ModulesEnabled {
 		moduleName := strings.ToLower(module.Name())
-		cmd := server.Command{Name: moduleName, Options: inputs}
+		cmd := communication.Command{Name: moduleName, Options: inputs}
 		log.Debugf("RunModule for cmd : %+v", cmd)
 
 		err = api.Server.SendCmd(cmd)
@@ -482,7 +483,7 @@ func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("JSON input : %+v", inputs)
 	defer r.Body.Close()
 
-	cmd := server.Command{Name: module, Options: inputs}
+	cmd := communication.Command{Name: module, Options: inputs}
 
 	log.Debugf("RunModule for cmd : %+v", cmd)
 
