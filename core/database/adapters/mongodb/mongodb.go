@@ -241,6 +241,23 @@ func (mongo *MongoDB) GetPort(projectName string, ip string, port string) (model
 	return models.Port{}, errors.New("Not implemented yet")
 }
 
+// URI (directory and files)
+func (mongo *MongoDB) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) CreateOrUpdateURIs(projectName string, ip string, port string, dir []models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) GetURIs(projectName string, ip string) ([]models.URI, error) {
+	return []models.URI{}, errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
+	return models.URI{}, errors.New("Not implemented yet")
+}
+
 //AppendRawData is used by module to store raw results into the database.
 func (mongo *MongoDB) AppendRawData(projectName string, moduleName string, dataRaw interface{}) error {
 	data := bson.M{projectName + ".results." + moduleName: dataRaw}

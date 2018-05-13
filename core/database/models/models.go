@@ -28,8 +28,8 @@ type Route struct {
 	Hops        []Hop  `json:"hops,omitempty" bson:"Hops,omitempty"`
 }
 
-// Directory defines one directory from a remote target (webserver)
-type Directory struct {
+// URI defines one ressource from a remote target (webserver), either files or directory
+type URI struct {
 	ID   string `json:"-" bson:"_id,omitempty"`
 	Name string `json:"name" bson:"Name"`
 	Code string `json:"code,omitempty" bson:"Code,omitempty"`
@@ -37,13 +37,13 @@ type Directory struct {
 
 // Port defines the basic structure for each port scanned on the target
 type Port struct {
-	ID          string      `json:"-" bson:"_id,omitempty"`
-	Number      int16       `json:"number,omitempty" bson:"Number"`
-	Protocol    string      `json:"protocol,omitempty" bson:"Protocol"`
-	Status      string      `json:"status,omitempty" bson:"Status"` // open, filtered, closed
-	Banner      string      `json:"banner,omitempty" bson:"Banner,omitempty"`
-	Type        string      `json:"type,omitempty" bson:"Type,omitempty"`
-	Directories []Directory `json:"value,omitempty" bson:"Value,omitempty"`
+	ID          string `json:"-" bson:"_id,omitempty"`
+	Number      int16  `json:"number,omitempty" bson:"Number"`
+	Protocol    string `json:"protocol,omitempty" bson:"Protocol"`
+	Status      string `json:"status,omitempty" bson:"Status"` // open, filtered, closed
+	Banner      string `json:"banner,omitempty" bson:"Banner,omitempty"`
+	Type        string `json:"type,omitempty" bson:"Type,omitempty"`
+	Directories []URI  `json:"value,omitempty" bson:"Value,omitempty"`
 }
 
 //IP defines the IP address of a target.
@@ -91,6 +91,12 @@ type Database interface {
 	CreateOrUpdatePorts(projectName string, ip string, port []Port) error
 	GetPorts(projectName string, ip string) ([]Port, error)
 	GetPort(projectName string, ip string, port string) (Port, error)
+
+	// URI (directory and files)
+	CreateOrUpdateURI(projectName string, ip string, port string, dir URI) error
+	CreateOrUpdateURIs(projectName string, ip string, port string, dir []URI) error
+	GetURIs(projectName string, ip string) ([]URI, error)
+	GetURI(projectName string, ip string, port string, dir string) (URI, error)
 
 	// Raw data
 	AppendRawData(projectName string, moduleName string, data interface{}) error

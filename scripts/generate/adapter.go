@@ -86,6 +86,23 @@ func ({{.adapterShortName}} *{{.adapterName}}) GetPort(projectName string, ip st
 	return models.Port{}, errors.New("Not implemented yet")
 }
 
+// URI (directory and files)
+func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateURIs(projectName string, ip string, port string, dir []models.URI) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) GetURIs(projectName string, ip string) ([]models.URI, error){
+	return []models.URI{},errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) GetURI(projectName string, ip string, port string, dir string) (models.URI, error){
+	return models.URI{}, errors.New("Not implemented yet")
+}
+
 // Raw data
 func ({{.adapterShortName}} *{{.adapterName}}) AppendRawData(projectName string, moduleName string, data interface{}) error{
 	return errors.New("Not implemented yet")

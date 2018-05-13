@@ -373,6 +373,23 @@ func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Por
 	return models.Port{}, errors.New("not found")
 }
 
+// URI (directory and files)
+func (f *JsonDB) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) CreateOrUpdateURIs(projectName string, ip string, port string, dir []models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) GetURIs(projectName string, ip string) ([]models.URI, error) {
+	return []models.URI{}, errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
+	return models.URI{}, errors.New("Not implemented yet")
+}
+
 // Raw data
 
 // AppendRawData is append only. Adds data to Raws[projectName][modules] array
