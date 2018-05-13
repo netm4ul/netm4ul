@@ -12,11 +12,11 @@ build:
 	@go build $(FLAGS) -o $(TARGET) .
 	@echo "Building done"
 
-#vet:
-#	@go vet $(GO_FILES)
+vet:
+	@go vet $(GO_FILES)
 
-#fmt:
-#	@go fmt $(GO_FILES)
+fmt:
+	@go fmt $(GO_FILES)
 
 lint:
 	@golint $(GO_FILES)

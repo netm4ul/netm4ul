@@ -87,7 +87,7 @@ var pkiCmd = &cobra.Command{
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Setting up PKI at " + certificateDirectory)
+		log.Println("Setting up PKI at " + certificateDirectory)
 		pkiSetup(organisationSubject, nNodes, certDuration, ecdsaCurve, certificateDirectory, serverID)
 	},
 }
