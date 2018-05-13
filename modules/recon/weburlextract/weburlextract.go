@@ -16,13 +16,12 @@ import (
 )
 
 var s[]string
-var domain string = "https://facebook.com"
+var domain string = "https://google.com"
 
-type WebURLExtractConfig struct {
-}
+// type WebURLExtractConfig struct {
+// }
 
 type WebURLExtract struct {
-	Config WebURLExtractConfig
 }
 
 // NewWebURLExtract generate a new WebURLExtract module (type modules.Module)
@@ -38,7 +37,7 @@ func (wue *WebURLExtract) Name() string {
 }
 
 func (wue *WebURLExtract) Version() string {
-	return "1.0"
+	return "0.1"
 }
 
 func (wue *WebURLExtract) Author() string {
@@ -85,7 +84,7 @@ func (wue *WebURLExtract) Run([]modules.Input) (modules.Result, error) {
     document.Find("a").Each(ProcessElement)
 
     fmt.Println("Domain :", domain)
-    fmt.Println("Résults :")
+    fmt.Println("Found :", len(s), "urls")
     // fmt.Println(s)
     for i:=0;i<len(s);i++ {
         fmt.Println(" - " + s[i])
