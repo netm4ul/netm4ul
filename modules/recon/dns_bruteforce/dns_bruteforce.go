@@ -6,6 +6,13 @@ import (
 	"time"
 	"log"
 
+	"encoding/gob"
+	"errors"
+	log "github.com/sirupsen/logrus"
+
+	//"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/modules"
+
 	"github.com/OJ/gobuster/libgobuster"
 	"github.com/BurntSushi/toml"
 
@@ -251,6 +258,7 @@ func (D *DnsBF) ParseConfig() error {
 		return err
 	}
 	return nil
+}
 
 //WriteDb : Save data
 func (D *DnsBF) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
