@@ -1,0 +1,57 @@
+[Project]
+  Name = "netm4ul"
+  Description = "This is an awesome Netm4ul project"
+
+[Versions]
+  api = "v1"
+  server = "0.1"
+  client = "0.1"
+
+[API]
+  port = 8080
+  user = "toto"
+  password = "P@ssW0rd!"
+
+[DNS]
+  resolvers = "1.1.1.1,8.8.8.8"
+
+[Keys]
+  google = "apikey"
+  shodan = "apikey"
+
+[Server]
+  user = "user"
+  password = "password"
+  ip = "localhost"
+  port = 444
+
+[Database]
+  databaseType = "mongodb"
+  user = "admin"
+  password = "admin"
+  database = "NetM4ul"
+  ip = "localhost"
+  collection = "netm4ul"
+  port = 27017
+
+[Modules]
+  [Modules.dns]
+    enabled = true
+  [Modules.dorks]
+    enabled = true
+  [Modules.nmap]
+    enabled = true
+  [Modules.shodan]
+    enabled = true
+  [Modules.sqlmap]
+    enabled = false
+  [Modules.traceroute]
+    enabled = true
+
+[TLSParams]
+  usetls = true
+  caCert = "certificates/NetM4ul_CA.crt"
+  serverCert = "certificates/NetM4ul_Server.crt"
+  serverPrivateKey = "certificates/NetM4ul_Server.pem"
+  clientCert = "certificates/NetM4ul_Client.crt"
+  clientPrivateKey = "certificates/NetM4ul_Client.pem"

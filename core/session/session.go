@@ -6,14 +6,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/netm4ul/netm4ul/modules/recon/dns"
 	"github.com/netm4ul/netm4ul/modules/recon/masscan"
 	"github.com/netm4ul/netm4ul/modules/recon/nmap"
 	"github.com/netm4ul/netm4ul/modules/recon/shodan"
 	"github.com/netm4ul/netm4ul/modules/recon/traceroute"
-	mgo "gopkg.in/mgo.v2"
 )
 
 // Connector type, to handle either use of TLS or not
@@ -24,16 +25,19 @@ type Connector struct {
 
 // Session type :
 type Session struct {
-	Modules      map[string]modules.Module
-	Config       config.ConfigToml
-	ConnectionDB *mgo.Session
-	Connector    Connector
+	ModulesEnabled map[string]modules.Module
+	Modules        map[string]modules.Module
+	Config         config.ConfigToml
+	Connector      Connector
+	Algo           loadbalancing.Algorithm
+	Nodes          []communication.Node
 }
 
 // NewSession func :
 func NewSession(c config.ConfigToml) *Session {
 	s := Session{
-		Modules: make(map[string]modules.Module, 0),
+		Modules:        make(map[string]modules.Module, 0),
+		ModulesEnabled: make(map[string]modules.Module, 0),
 	}
 	// populate all modules
 	s.Config = c
@@ -43,7 +47,12 @@ func NewSession(c config.ConfigToml) *Session {
 
 // Register func :
 func (s *Session) Register(m modules.Module) {
-	s.Modules[strings.ToLower(m.Name())] = m
+	moduleName := strings.ToLower(m.Name())
+	s.Modules[moduleName] = m
+
+	if s.Config.Modules[moduleName].Enabled {
+		s.ModulesEnabled[moduleName] = m
+	}
 }
 
 // loadModule func

@@ -14,13 +14,13 @@ import (
 
 	"github.com/netm4ul/netm4ul/modules"
 
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/core/session"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 )
@@ -60,7 +60,7 @@ func getData(ressource string, s *session.Session) (api.Result, error) {
 		return api.Result{}, errors.New("Can't decode json : " + err.Error())
 	}
 
-	if result.Code != 200 {
+	if result.Code != api.CodeOK {
 		return result, errors.New(result.Message)
 	}
 
@@ -90,7 +90,7 @@ func postData(ressource string, s *session.Session, rawdata interface{}) (api.Re
 }
 
 func createProjectIfNotExist(s *session.Session) {
-	p := database.Project{Name: s.Config.Project.Name, Description: s.Config.Project.Description}
+	p := models.Project{Name: s.Config.Project.Name, Description: s.Config.Project.Description}
 
 	listOfProject, err := GetProjects(s)
 	if err != nil {
@@ -111,7 +111,7 @@ func createProjectIfNotExist(s *session.Session) {
 
 }
 
-func CreateProject(p database.Project, s *session.Session) error {
+func CreateProject(p models.Project, s *session.Session) error {
 
 	ressource := "/projects"
 
@@ -127,12 +127,12 @@ func CreateProject(p database.Project, s *session.Session) error {
 }
 
 type Projects struct {
-	Projects []database.Project
+	Projects []models.Project
 }
 
-func GetProjects(s *session.Session) ([]database.Project, error) {
+func GetProjects(s *session.Session) ([]models.Project, error) {
 
-	var data []database.Project
+	var data []models.Project
 	resjson, err := getData("/projects", s)
 
 	log.Debugf("response : %+v", resjson)
@@ -146,15 +146,15 @@ func GetProjects(s *session.Session) ([]database.Project, error) {
 		return data, err
 	}
 
-	if resjson.Code != 200 {
+	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
 
 	return data, nil
 }
 
-func GetProject(name string, s *session.Session) (database.Project, error) {
-	var data database.Project
+func GetProject(name string, s *session.Session) (models.Project, error) {
+	var data models.Project
 	resjson, err := getData("/projects/"+name, s)
 
 	log.Debugf("response : %+v", resjson)
@@ -168,19 +168,19 @@ func GetProject(name string, s *session.Session) (database.Project, error) {
 		return data, err
 	}
 
-	if resjson.Code != 200 {
+	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
 
 	return data, nil
 }
 
-func GetIPsByProject(project string, s *session.Session) (database.IP, error) {
-	return database.IP{}, nil
+func GetIPsByProject(project string, s *session.Session) (models.IP, error) {
+	return models.IP{}, nil
 }
 
-func GetPortsByIP(project string, ip string, s *session.Session) ([]database.Port, error) {
-	return []database.Port{}, nil
+func GetPortsByIP(project string, ip string, s *session.Session) ([]models.Port, error) {
+	return []models.Port{}, nil
 }
 
 func parseModules(modules []string, s *session.Session) ([]string, error) {
@@ -241,7 +241,7 @@ func printProjectsInfo(s *session.Session) {
 
 func printProjectInfo(projectName string, s *session.Session) {
 
-	var p database.Project
+	var p models.Project
 	var err error
 	var data [][]string
 
@@ -263,7 +263,7 @@ func printProjectInfo(projectName string, s *session.Session) {
 	for _, ip := range p.IPs {
 		log.Debugf("ip : %+v", ip)
 		for _, port := range ip.Ports {
-			data = append(data, []string{ip.Value.String(), strconv.Itoa(int(port.Number))})
+			data = append(data, []string{ip.Value, strconv.Itoa(int(port.Number))})
 		}
 	}
 

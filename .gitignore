@@ -28,6 +28,11 @@ data/
 
 # personnal conf
 netm4ul.conf.my
+netm4ul.conf
+netm4ul.conf.old
 
 # Don't include certs
 certificates/*
+
+# Random Files
+127.0.0.1.xml
