@@ -1,4 +1,4 @@
-package WebURLExtract
+package main
 
 import (
 	"encoding/gob"
@@ -7,6 +7,11 @@ import (
 
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
+
+	"fmt"
+	"net/http"
+
+    "github.com/PuerkitoBio/goquery"
 )
 
 type WebURLExtractConfig struct {
@@ -33,14 +38,43 @@ func (wue *WebURLExtract) Version() string {
 }
 
 func (wue *WebURLExtract) Author() string {
-	return Skawak
+	return "Skawak"
 }
 
 func (wue *WebURLExtract) DependsOn() []modules.Condition {
-	return nil
+	// return nil
+	var _ modules.Condition
+	return []modules.Condition{}
 }
 
-func (wue *WebURLExtract) Run([]modules.Input) (modules.Result, error) {
+// This will get called for each HTML element found
+func ProcessElement(index int, element *goquery.Selection) {
+    // See if the href attribute exists on the element
+    href, exists := element.Attr("href")
+    if exists {
+        fmt.Println(href)
+    }
+}
+
+func (wue *WebURLExtract) main([]modules.Input) (modules.Result, error) {
+
+	// Make HTTP request
+    response, err := http.Get("https://google.com")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer response.Body.Close()
+
+    // Create a goquery document from the HTTP response
+    document, err := goquery.NewDocumentFromReader(response.Body)
+    if err != nil {
+        log.Fatal("Error loading HTTP response body. ", err)
+    }
+
+    // Find all links and process them with the function
+    // defined earlier
+    document.Find("a").Each(ProcessElement)
+
 	return modules.Result{}, errors.New("Not implemented yet")
 }
 

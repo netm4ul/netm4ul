@@ -8,6 +8,18 @@
   version = "v0.3.0"
 
 [[projects]]
+  name = "github.com/PuerkitoBio/goquery"
+  packages = ["."]
+  revision = "a86ea073017a6beddef78c8659e7224e8ca634b0"
+  version = "v1.4.0"
+
+[[projects]]
+  name = "github.com/andybalholm/cascadia"
+  packages = ["."]
+  revision = "901648c87902174f774fac311d7f176f8647bdaa"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/google/go-querystring"
   packages = ["query"]
@@ -100,6 +112,8 @@
   name = "golang.org/x/net"
   packages = [
     "bpf",
+    "html",
+    "html/atom",
     "internal/iana",
     "internal/socket",
     "ipv4",
@@ -136,6 +150,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fd49ce0a6e5c9b970f7f87c483312fd89c25da56863fb94323c1eecbe940ce57"
+  inputs-digest = "888c0bb24e7acf42df1b8a9ff0cfe058a28589ccdd6f5b3b5022ef10b6e8ea41"
   solver-name = "gps-cdcl"
   solver-version = 1
