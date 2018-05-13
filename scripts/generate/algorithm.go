@@ -1,14 +1,13 @@
 package generate
 
 import (
-	"bytes"
 	"fmt"
-	"go/format"
 	"log"
 	"os"
 	"path"
 	"strings"
-	"text/template"
+
+	"github.com/netm4ul/netm4ul/scripts"
 )
 
 //GenerateAlgorithm generate boilerplate for algorithm
@@ -48,13 +47,6 @@ func ({{.algorithmShortName}} *{{.algorithmName}}) NextExecutionNodes(cmd commun
 	return selectedNode
 }
 `
-
-	tmpl, err := template.New("algorithm").Parse(templateAlgorithm)
-
-	if err != nil {
-		panic(err)
-	}
-
 	if algorithmName == "" {
 		fmt.Println("You must provide an algorithm name")
 		os.Exit(1)
@@ -71,29 +63,16 @@ func ({{.algorithmShortName}} *{{.algorithmName}}) NextExecutionNodes(cmd commun
 	}
 
 	//ensure data folder exists
-	algorithmDirPath := path.Join("./core/loadbalancing/algorithms", strings.ToLower(algorithmName))
-	if _, err := os.Stat(algorithmDirPath); os.IsNotExist(err) {
-		os.Mkdir(algorithmDirPath, 0755)
-	} else {
-		log.Fatalf("Folder %s already exist, aborting.", algorithmDirPath)
-	}
-	algorithmFilePath := path.Join(algorithmDirPath, strings.ToLower(algorithmName)+".go")
-	algorithmFile, err := os.OpenFile(algorithmFilePath, os.O_CREATE|os.O_RDWR, 0666)
+	dirpath := path.Join("./core/loadbalancing/algorithms", strings.ToLower(algorithmName))
+	filepath := path.Join(dirpath, strings.ToLower(algorithmName)+".go")
 
+	bytes, err := scripts.GenerateSourceTemplate(templateAlgorithm, data)
 	if err != nil {
-		log.Fatalf("Could not open file %s", algorithmFilePath)
+		log.Fatal(err)
 	}
 
-	var buf bytes.Buffer
-
-	err = tmpl.Execute(&buf, data)
+	err = scripts.SaveFileToPath(filepath, bytes)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-
-	p, err := format.Source(buf.Bytes())
-	if err != nil {
-		panic(err)
-	}
-	algorithmFile.Write(p)
 }
