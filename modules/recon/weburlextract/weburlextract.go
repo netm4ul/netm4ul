@@ -1,4 +1,4 @@
-package main
+package WebURLExtract
 
 import (
 	"encoding/gob"
@@ -48,7 +48,7 @@ func (wue *WebURLExtract) DependsOn() []modules.Condition {
 }
 
 // This will get called for each HTML element found
-func ProcessElement(index int, element *goquery.Selection) {
+func (wue *WebURLExtract) ProcessElement(index int, element *goquery.Selection) {
     // See if the href attribute exists on the element
     href, exists := element.Attr("href")
     if exists {
@@ -56,7 +56,7 @@ func ProcessElement(index int, element *goquery.Selection) {
     }
 }
 
-func (wue *WebURLExtract) main([]modules.Input) (modules.Result, error) {
+func (wue *WebURLExtract) Run([]modules.Input) (modules.Result, error) {
 
 	// Make HTTP request
     response, err := http.Get("https://google.com")
@@ -73,7 +73,7 @@ func (wue *WebURLExtract) main([]modules.Input) (modules.Result, error) {
 
     // Find all links and process them with the function
     // defined earlier
-    document.Find("a").Each(ProcessElement)
+    document.Find("a").Each(wue.ProcessElement)
 
 	return modules.Result{}, errors.New("Not implemented yet")
 }
