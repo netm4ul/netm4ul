@@ -1,14 +1,13 @@
 package generate
 
 import (
-	"bytes"
 	"fmt"
-	"go/format"
 	"log"
 	"os"
 	"path"
 	"strings"
-	"text/template"
+
+	"github.com/netm4ul/netm4ul/scripts"
 )
 
 //GenerateAdapter generate boilerplate for adapter
@@ -54,7 +53,7 @@ func ({{.adapterShortName}} *{{.adapterName}}) GetProject(projectName string) (m
 }
 
 // IP
-func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateIP(projectName string, ip IP) error{
+func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateIP(projectName string, ip models.IP) error{
 	return errors.New("Not implemented yet")
 }
 
@@ -103,12 +102,6 @@ func ({{.adapterShortName}} *{{.adapterName}}) GetRawModule(projectName string, 
 }
 `
 
-	tmpl, err := template.New("adapter").Parse(templateAdapter)
-
-	if err != nil {
-		panic(err)
-	}
-
 	if adapterName == "" {
 		fmt.Println("You must provide an adapter name")
 		os.Exit(1)
@@ -123,30 +116,17 @@ func ({{.adapterShortName}} *{{.adapterName}}) GetRawModule(projectName string, 
 		"adapterShortName": adapterShortName,
 	}
 
-	//ensure data folder exists
-	adapterDirPath := "./core/database/adapters/" + strings.ToLower(adapterName)
-	if _, err := os.Stat(adapterDirPath); os.IsNotExist(err) {
-		os.Mkdir(adapterDirPath, 0755)
-	} else {
-		log.Fatalf("Folder %s already exist, aborting.", adapterDirPath)
-	}
-	adapterFilePath := path.Join(adapterDirPath, strings.ToLower(adapterName)+".go")
-	adapterFile, err := os.OpenFile(adapterFilePath, os.O_CREATE|os.O_RDWR, 0666)
+	dirpath := "./core/database/adapters/" + strings.ToLower(adapterName)
+	filepath := path.Join(dirpath, strings.ToLower(adapterName)+".go")
 
+	bytes, err := scripts.GenerateSourceTemplate(templateAdapter, data)
 	if err != nil {
-		log.Fatalf("Could not open file %s", adapterFilePath)
+		log.Fatal(err)
 	}
 
-	var buf bytes.Buffer
-
-	err = tmpl.Execute(&buf, data)
+	err = scripts.SaveFileToPath(filepath, bytes)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	p, err := format.Source(buf.Bytes())
-	if err != nil {
-		panic(err)
-	}
-	adapterFile.Write(p)
 }

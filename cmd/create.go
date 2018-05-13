@@ -81,12 +81,26 @@ var createModuleCmd = &cobra.Command{
 		}
 	},
 }
+var createAlgorithmCmd = &cobra.Command{
+	Use:   "algorithm",
+	Short: "Generate a new load balancing module",
+	Run: func(cmd *cobra.Command, args []string) {
+		if name == "" {
+			fmt.Println("You must provide a module name")
+			cmd.Help()
+			os.Exit(1)
+		}
+
+		generate.GenerateAlgorithm(name, shortName)
+	},
+}
 
 func init() {
 	rootCmd.AddCommand(createCmd)
 
 	createCmd.AddCommand(createAdapterCmd)
 	createCmd.AddCommand(createModuleCmd)
+	createCmd.AddCommand(createAlgorithmCmd)
 	createCmd.PersistentFlags().StringVar(&name, "name", "", "Name used for the folder and struct")
 	createCmd.PersistentFlags().StringVar(&shortName, "short-name", "", "Short name used for the instancied struct")
 	createCmd.PersistentFlags().StringVar(&author, "author", "", "Author name")

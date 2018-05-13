@@ -36,5 +36,16 @@ To facilitate the development, you can generate all the boiler-plate with this c
 If `--short-name` is not provided, it will be set to the first letter of the `--name`, in lowercase.
 You should find your boiler plate code inside the `core/database/adapters/<mydatabase>` directory (where `<mydatabase>` is the lowercase `--name`)
 
-*Then*, you will need to `Register` your adapter inside the `database.go`.
+*Then*, you will need to `Register` your adapter inside `database.go`.
 
+## Create a new load balance algorithm
+
+To add a new algorithm, you will need to implement the algorithm.Algorithm interface (available in the `core/loadbalancing/algorithms/` directory)
+
+To facilitate the development, you can generate all the boiler-plate with this command :
+`netm4ul create algorithm --name MyAlgo --short-name ma`
+`--name` defines the structure name and `--short-name` defines the used variable name.
+If `--short-name` is not provided, it will be set to the first letter of the `--name`, in lowercase.
+You should find your boiler plate code inside the `core/loadbalancing/algorithms/<myalgorithm>` directory (where `<myalgorithm>` is the lowercase `--name`)
+
+*Then*, you will need to `Register` your adapter inside `core/loadbalancing/loadbalancing.go`.

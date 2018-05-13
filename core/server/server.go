@@ -14,32 +14,35 @@ import (
 
 	"crypto/tls"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/database/models"
-	"github.com/netm4ul/netm4ul/core/requirements"
+	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/core/session"
 )
 
 type Server struct {
-	//Nodes represent a map to net.Conn
-	Nodes map[string]net.Conn
 	//Session represent the server side's session. Hold all the modules
 	Session *session.Session
 	Db      models.Database
-}
-
-//Command represents the communication protocol between clients and the master node
-type Command struct {
-	Name         string                    `json:"name"`
-	Options      []modules.Input           `json:"options"`
-	Requirements requirements.Requirements `json:"requirements"`
+	Algo    loadbalancing.Algorithm
 }
 
 // CreateServer : Initialise the infinite server loop on the master node
 func CreateServer(s *session.Session) *Server {
-	server := Server{Nodes: make(map[string]net.Conn), Session: s}
+	server := Server{Session: s}
 	server.Db = database.NewDatabase(&server.Session.Config)
+
+	server.Session.Nodes = make([]communication.Node, 0)
+	server.Session.Config.Modules = make(map[string]config.Module)
+	algo, err := loadbalancing.NewAlgo()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	server.Algo = algo
 
 	return &server
 }
@@ -93,50 +96,35 @@ func (server *Server) handleRequest(conn net.Conn) {
 // Recv basic info for the node at connection time.
 func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 
-	var node config.Node
+	var node communication.Node
 
 	err := gob.NewDecoder(rw).Decode(&node)
 	if err != nil {
 		log.Errorf("Cannot read hello data : %s", err.Error())
 		return
 	}
-
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
-	if server.Session.Config.Verbose {
-		if _, ok := server.Session.Config.Nodes[ip]; ok {
-			log.Infoln("Node known. Updating")
-		} else {
-			log.Infoln("Unknown node. Creating")
+	node.Conn = conn
+	node.IP = ip
+
+	// check if the node is known and create or update it.
+	found := false
+	var i int
+	var n communication.Node
+	for i, n = range server.Session.Nodes {
+		if n.ID == node.ID {
+			found = true
 		}
 	}
 
-	server.Session.Config.Nodes = make(map[string]config.Node)
-	server.Session.Config.Modules = make(map[string]config.Module)
-	server.Session.Config.Nodes[ip] = node
-
-	server.Nodes[ip] = conn
-	// database.CreateDatabase(mgoSession, config.Da)
-
-	// p := database.GetProjects(mgoSession)
-
-	// log.Debugf("Nodes : %+v", server.Session.Config.Nodes)
-	// log.Debugf("Projects : %+v", p)
-
-}
-
-func (server *Server) getProjectByNodeIP(ip string) (string, error) {
-
-	var err error
-
-	n, ok := server.Session.Config.Nodes[ip]
-	if !ok {
-		return "", errors.New("Unknown node ! Could not get project name")
+	if found {
+		log.Infoln("Node known. Updating")
+		server.Session.Nodes[i] = node
+	} else {
+		server.Session.Nodes = append(server.Session.Nodes, node)
+		log.Infoln("Unknown node. Creating")
 	}
-
-	project := n.Project
-
-	return project, err
 }
 
 //SendCmdByName is a wrapper to the SendCommand function.
@@ -152,20 +140,26 @@ func (server *Server) SendCmdByName(name string, options []string) {
 }
 
 //SendCmd sends one commands with its options to selected clients
-func (server *Server) SendCmd(command Command) error {
+func (server *Server) SendCmd(command communication.Command) error {
 
-	conns, err := server.getAvailableNodes(command.Requirements)
+	server.Algo.SetNodes(server.Session.Nodes)
+	nodes, err := server.getNextNodes(command)
 
-	log.Debugf("Available node(s) : %d", len(conns))
+	log.Debugf("Command (%s) will be executed on %d node(s), Total nodes : %d [ %+v ]",
+		command.Name,
+		len(nodes),
+		len(server.Session.Nodes),
+		server.Session.Nodes,
+	)
 
 	if err != nil {
 		return errors.New("Could not get nodes :" + err.Error())
 	}
 
 	// Send to all nodes following the requirements
-	for _, conn := range conns {
+	for _, node := range nodes {
 
-		rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+		rw := bufio.NewReadWriter(bufio.NewReader(node.Conn), bufio.NewWriter(node.Conn))
 		err := gob.NewEncoder(rw).Encode(command)
 
 		if err != nil {
@@ -176,20 +170,22 @@ func (server *Server) SendCmd(command Command) error {
 		if err != nil {
 			return errors.New("Could not send command :" + err.Error())
 		}
-		log.Infof("Sent command \"%s\" to %s", command.Name, conn.RemoteAddr().String())
+		log.Infof("Sent command \"%s\" to %s", command.Name, node.Conn.RemoteAddr().String())
+
+		node.IsAvailable = false
 	}
 
 	return nil
 }
 
-//getAvailableNodes return a list of net.Conn available. They must follows the requirements.
-func (server *Server) getAvailableNodes(req requirements.Requirements) ([]net.Conn, error) {
+//getNextNodes return a list of net.Conn available. They must follows the requirements.
+//The next command will be sent on all of these
+func (server *Server) getNextNodes(cmd communication.Command) ([]communication.Node, error) {
 	// TODO : Requirements for each modules and load balance
-	var availables []net.Conn
-	for _, conn := range server.Nodes {
-		availables = append(availables, conn)
-	}
-	return availables, nil
+	nodes := server.Algo.NextExecutionNodes(cmd)
+	log.Debug("Selected nodes : ", nodes)
+
+	return nodes, nil
 }
 
 // handleData decode and route all data after the "hello". It listens forever until connection closed.
@@ -210,6 +206,7 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 		log.Errorf("Error while decoding data : %s", err.Error())
 		return false
 	}
+	log.Debugf("%+v", data)
 
 	module, ok := server.Session.Modules[strings.ToLower(data.Module)]
 	if !ok {
@@ -217,16 +214,26 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	}
 
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
-	projectName, err := server.getProjectByNodeIP(ip)
 
-	log.Debugf("%+v", data)
+	found := false
+	var node communication.Node
+	var i int
+	for i, node = range server.Session.Nodes {
+		if node.IP == ip {
+			found = true
+		}
+	}
+
+	if !found {
+		log.Error("Coulnd't get this node, unknown ip :", ip)
+		return false
+	}
 
 	server.Db.Connect(&server.Session.Config)
-	err = module.WriteDb(data, server.Db, projectName)
+	err = module.WriteDb(data, server.Db, server.Session.Nodes[i].Project)
 
 	if err != nil {
 		log.Errorf("Database error : %+v", err)
 	}
 	return false
-
 }
