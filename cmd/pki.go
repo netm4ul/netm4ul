@@ -32,7 +32,6 @@ import (
 	"time"
 
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/spf13/viper"
 	"path/filepath"
 	"strconv"
 )
@@ -81,17 +80,11 @@ func init() {
 
 	pkiCmd.Flags().UintVarP(&nNodes, "nodes", "n", 1, "Number of nodes to create certificates for")
 	pkiCmd.Flags().StringVarP(&serverID, "server", "@", "", "Server address, with IP or DNS name")
-	pkiCmd.Flags().StringVarP(&ecdsaCurve, "ec", "e", "", "Elliptic curve to use for certificates. Accepted values : P224, P256 (recommended), P384 and P521")
+	pkiCmd.Flags().StringVarP(&ecdsaCurve, "ec", "e", "P256", "Elliptic curve to use for certificates. Accepted values : P224, P256 (recommended), P384 and P521")
 	pkiCmd.Flags().BoolVarP(&keepPrivCA, "keepca", "k", false, "Indicate whether to keep CA private key (i.e. written to disk)")
 	pkiCmd.Flags().DurationVarP(&certDuration, "duration", "d", 365*24*time.Hour, "Duration for certificate. Default is a year")
-	pkiCmd.Flags().StringVarP(&organisationSubject, "org", "o", "", "Organisation Subject to use in server certificate")
-	pkiCmd.Flags().StringVarP(&certificateDirectory, "dir", "t", "", "Local directory to store PKI certs and keys")
-
-	viper.SetDefault("ec", "P256")
-	viper.SetDefault("keepca", false)
-	viper.SetDefault("duration", 365*24*time.Hour)
-	viper.SetDefault("subject", "Netm4ul")
-	viper.SetDefault("dir", "./certificates")
+	pkiCmd.Flags().StringVarP(&organisationSubject, "org", "o", "Netm4ul", "Organisation Subject to use in server certificate")
+	pkiCmd.Flags().StringVarP(&certificateDirectory, "dir", "t", "./certificates", "Local directory to store PKI certs and keys")
 
 	pkiCmd.MarkFlagRequired("nodes")
 }
