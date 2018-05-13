@@ -1,6 +1,6 @@
 TARGET=netm4ul
-GO_FILES=$(shell find . -iname '*.go' -type f 2>&1 -not -path "./vendor/*" | grep -v "Permission non accordée")
-GO_TEST_PKG=$(shell find . -iname '*_test.go' -type f 2>&1 -not -path "./vendor/*" -exec dirname {} \; | grep -v "Permission non accordée")
+GO_FILES=$(shell find . -iname '*.go' -type f 2>&1 -not -path "./vendor/*" | grep -v "Permission denied")
+GO_TEST_PKG=$(shell find . -iname '*_test.go' -type f 2>&1 -not -path "./vendor/*" -exec dirname {} \; | grep -v "Permission denied")
 all: deps build # fmt vet
 	@echo "All done"
 
