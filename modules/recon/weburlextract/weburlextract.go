@@ -68,7 +68,7 @@ func ProcessElement(index int, element *goquery.Selection) {
 func (wue *WebURLExtract) Run([]modules.Input) (modules.Result, error) {
 
 	// Make HTTP request
-    response, err := http.Get("https://google.com")
+    response, err := http.Get(domain)
     if err != nil {
         log.Fatal(err)
     }
