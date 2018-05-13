@@ -10,9 +10,13 @@ import (
 
 	"fmt"
 	"net/http"
+	"strings"
 
     "github.com/PuerkitoBio/goquery"
 )
+
+var s[]string
+var domain string = "https://facebook.com"
 
 type WebURLExtractConfig struct {
 }
@@ -48,11 +52,16 @@ func (wue *WebURLExtract) DependsOn() []modules.Condition {
 }
 
 // This will get called for each HTML element found
-func (wue *WebURLExtract) ProcessElement(index int, element *goquery.Selection) {
+func ProcessElement(index int, element *goquery.Selection) {
     // See if the href attribute exists on the element
     href, exists := element.Attr("href")
     if exists {
-        fmt.Println(href)
+        // fmt.Println(href)
+        if strings.HasPrefix(href, "http") {
+            s = append(s, href)
+        } else if strings.HasPrefix(href, "/") {
+            s = append(s, domain+href)
+        }
     }
 }
 
@@ -73,8 +82,15 @@ func (wue *WebURLExtract) Run([]modules.Input) (modules.Result, error) {
 
     // Find all links and process them with the function
     // defined earlier
-    document.Find("a").Each(wue.ProcessElement)
+    document.Find("a").Each(ProcessElement)
 
+    fmt.Println("Domain :", domain)
+    fmt.Println("Résults :")
+    // fmt.Println(s)
+    for i:=0;i<len(s);i++ {
+        fmt.Println(" - " + s[i])
+    }
+    
 	return modules.Result{}, errors.New("Not implemented yet")
 }
 
