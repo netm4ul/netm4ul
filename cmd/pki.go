@@ -46,6 +46,23 @@ var (
 	certificateDirectory string
 )
 
+var (
+
+	caEntityID = "ca"
+	caEntityType = "CA"
+	caDirectoryName	= "CA"
+
+	serverEntityType = "Server"
+	serverDirectoryName = "Server"
+
+	clientEntityType = "Client"
+	clientDirectoryName = "Clients"
+	clientEntityIDPrefix = "client_"
+
+	keySuffix = "_key.pem"
+	certSuffix = "_cert.pem"
+)
+
 // pkiCmd represents the pki command
 var pkiCmd = &cobra.Command{
 	Use:   "pki",
@@ -202,7 +219,7 @@ func writeCertAndKeyToDisk(entityType string, privateKey *ecdsa.PrivateKey, cert
 	certOut.Close()
 
 	// Write key to file if it is not a CA
-	if entityType != "CA" || keepPrivCA {
+	if entityType != caEntityType || keepPrivCA {
 		keyOut, err := os.OpenFile(keyFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			log.Print("failed to open " + keyFilename + "  for writing:", err)
@@ -233,8 +250,8 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 	// Define a name for the certificate
 	targetDir = append(targetDir, entityID)
 	filePrefix := strings.Join(targetDir, "/")
-	certFilename := filePrefix + "_cert.pem"
-	keyFilename := filePrefix + "_key.pem"
+	certFilename := filePrefix + certSuffix
+	keyFilename := filePrefix + keySuffix
 
 	// Build Certificate Template
 	template := x509.Certificate{
@@ -254,14 +271,14 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 
 	switch entityType {
 
-	case "CA":
+	case caEntityType:
 		derBytes, caCert = buildCACert(&template, privateKey)
 
-	case "Server":
+	case serverEntityType:
 		template.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 		derBytes = buildServerCert(&template, entityID, privateKey, signerCert, signerPrivKey)
 
-	case "Client":
+	case clientEntityType:
 		template.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 		derBytes = buildClientCert(&template, entityID, privateKey, signerCert, signerPrivKey)
 
@@ -283,12 +300,6 @@ func create(entityID string, validFor time.Duration, entityType string, ecdsaCur
 // Checks if directory exists. If not, creates it.
 func checkDir(targetDirectory string) {
 
-	/*newpath := filepath.Join(".", targetDirectory)
-	err := os.MkdirAll(targetDirectory, 0700)
-	if err == nil {
-		log.Println("WARNING : The certificate directory already exists. All certificates and keys that already exist will be overwritten if they have the same name as the new. The old, overwritten data would not be usable nor recoverable.")
-	}*/
-
 	_, err := os.Stat(targetDirectory)
 	if err == nil || !os.IsNotExist(err) {
 		log.Println("WARNING : The certificate directory already exists. All certificates and keys that already exist will be overwritten if they have the same name as the new. The old, overwritten data would not be usable nor recoverable.")
@@ -303,20 +314,20 @@ func pkiSetup(organisationSubject string, numberClients uint, certDuration time.
 	targetDir := []string{certificateDirectory}
 
 	// Create CA
-	caDir := append(targetDir, "CA")
-	caCert, caKey := create("ca", certDuration, "CA", ecdsaCurve, nil, nil, organisationSubject, caDir)
+	caDir := append(targetDir, caDirectoryName)
+	caCert, caKey := create(caEntityID, certDuration, caEntityType, ecdsaCurve, nil, nil, organisationSubject, caDir)
 	if caCert == nil || caKey == nil {
 		log.Print("Failed to created CA cert\n")
 	}
 
 	// Create Server
-	serverDir := append(targetDir, "Server")
-	create(serverID, certDuration, "Server", ecdsaCurve, caCert, caKey, organisationSubject, serverDir)
+	serverDir := append(targetDir, serverDirectoryName)
+	create(serverID, certDuration, serverEntityType, ecdsaCurve, caCert, caKey, organisationSubject, serverDir)
 
 	// Create clients
-	clientsDir := append(targetDir, "clients")
+	clientsDir := append(targetDir, clientDirectoryName)
 	for i := 0; i < int(numberClients); i++ {
-		create("client_" + strconv.Itoa(i), certDuration, "Client", ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
+		create(clientEntityIDPrefix + strconv.Itoa(i), certDuration, clientEntityType, ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
 
 	}
 
