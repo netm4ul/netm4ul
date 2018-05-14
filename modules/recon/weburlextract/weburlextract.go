@@ -1,6 +1,9 @@
 package WebURLExtract
 
 import (
+	
+	// https://www.devdungeon.com/content/web-scraping-go
+	
 	"encoding/gob"
 	"errors"
 	log "github.com/sirupsen/logrus"
@@ -16,12 +19,14 @@ import (
 )
 
 var s[]string
-var domain string = "https://google.com"
+var v[]string
+// var domain string = "https://google.com"
 
 // type WebURLExtractConfig struct {
 // }
 
 type WebURLExtract struct {
+	Result []byte
 }
 
 // NewWebURLExtract generate a new WebURLExtract module (type modules.Module)
@@ -64,38 +69,67 @@ func ProcessElement(index int, element *goquery.Selection) {
     }
 }
 
-func (wue *WebURLExtract) Run([]modules.Input) (modules.Result, error) {
+func (wue *WebURLExtract) Run(inputs []modules.Input) (modules.Result, error) {
 
-	// Make HTTP request
-    response, err := http.Get(domain)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer response.Body.Close()
+	log.Debug("Web URL Extract")
 
-    // Create a goquery document from the HTTP response
-    document, err := goquery.NewDocumentFromReader(response.Body)
-    if err != nil {
-        log.Fatal("Error loading HTTP response body. ", err)
-    }
+	var domains map[string][]string
 
-    // Find all links and process them with the function
-    // defined earlier
-    document.Find("a").Each(ProcessElement)
+	log.Debug("Get domains or IP")
+	for _, input := range inputs {
+		if input.Domain != "" {
+			domains = append(domains, input.Domain)
+		}
+		if input.IP != nil {
+			domains = append(domains, input.IP.String())
+		}
+	}
 
-    fmt.Println("Domain :", domain)
-    fmt.Println("Found :", len(s), "urls")
-    // fmt.Println(s)
-    for i:=0;i<len(s);i++ {
-        fmt.Println(" - " + s[i])
-    }
+	log.Debug("Domains / IP recovered:", domains)
+
+	for _, domain := range domains {
+		// reset S
+		s = v
+
+		log.Debug("HTTP request to :", domain)
+		// Make HTTP request
+	    response, err := http.Get(domain)
+	    if err != nil {
+	        log.Fatal(err)
+	    }
+	    defer response.Body.Close()
+
+	    // Create a goquery document from the HTTP response
+	    document, err := goquery.NewDocumentFromReader(response.Body)
+	    if err != nil {
+	        log.Fatal("Error loading HTTP response body. ", err)
+	    }
+
+	    // Find all links and process them with the function
+	    // defined earlier
+	    document.Find("a").Each(ProcessElement)
+
+	    // fmt.Println("Domain :", domain)
+	    // fmt.Println("Found :", len(s), "urls")
+	    // // fmt.Println(s)
+	    // for i:=0;i<len(s);i++ {
+	    //     fmt.Println(" - " + s[i])
+	    // }
+
+	    log.Debug("URL finds :", s)
+	    domains[domain] = s
     
-	return modules.Result{}, errors.New("Not implemented yet")
+	}
+
+	log.Debug("Web URL Extract done.")
+
+	// return modules.Result{}, errors.New("Not implemented yet")
+	return modules.Result{Data: domains, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
-func (wue *WebURLExtract) ParseConfig() error {
-	return errors.New("Not implemented yet")
-}
+// func (wue *WebURLExtract) ParseConfig() error {
+// 	return errors.New("Not implemented yet")
+// }
 
 func (wue *WebURLExtract) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	return errors.New("Not implemented yet")
