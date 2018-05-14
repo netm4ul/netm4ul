@@ -30,13 +30,13 @@ type MasscanResult struct {
 
 // Scan represents the ip and ports output
 type Scan struct {
-	IP        string `json:"ip"`
-	Timestamp string `json:"timestamp"`
-	Ports     []Port `json:"ports"`
+	IP        string  `json:"ip"`
+	Timestamp string  `json:"timestamp"`
+	Ports     []Ports `json:"ports"`
 }
 
-// Port represents the port, proto, service, ttl, reason and status output
-type Port struct {
+// Ports represents the port, proto, service, ttl, reason and status output
+type Ports struct {
 	Port    uint16  `json:"port"`
 	Proto   string  `json:"proto"`
 	Service Service `json:"service,omitempty"`
@@ -116,7 +116,6 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	log.Debug("H3ll-0 M4sscan")
 
 	// Temporary IP forced : 212.47.247.190 = edznux.fr
-	// target := []string{"212.47.247.190"}
 	outputfile := "/tmp/" + generateUUID() + ".json"
 
 	// Get arguments
@@ -134,7 +133,6 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 			opt = append([]string{i.IP.String()}, opt...)
 		}
 	}
-	// opt = append(target, opt...)
 
 	// Command execution
 	cmd := exec.Command("masscan", opt...)
@@ -208,24 +206,32 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 	data = result.Data.(MasscanResult)
 
 	var ips []models.IP
-	//var ports []models.Port
-	for _, item := range data.Resultat {
-		ipn := models.IP{Value: item.IP}
-		log.Debug("ipn: %+v", ipn)
+	var ports []models.Port
+
+	for _, itemIP := range data.Resultat {
+		ipn := models.IP{Value: itemIP.IP}
 		ips = append(ips, ipn)
+		for _, itemPort := range itemIP.Ports {
+			portn := models.Port{
+				Number:   int16(itemPort.Port),
+				Protocol: itemPort.Proto,
+				Status:   itemPort.Status,
+				Banner:   itemPort.Service.Banner}
+			log.Debug("portn: %+v", portn)
+			ports = append(ports, portn)
+		}
 	}
-	//log.Info(ips)
-	//ipTarg := models.IP{Value: data.Resultat.IP}
 
-	//err := db.CreateOrUpdateIP(projectName, ipTarg)
-	//if err != nil {
-	//	log.Errorf("Could not create or update ip : %+v", err)
-	//}
+	err := db.CreateOrUpdateIPs(M.Name(), ips)
+	if err != nil {
+		log.Errorf("Could not create or update ip : %+v", err)
+	}
 
-	err := db.AppendRawData(projectName, M.Name(), data)
+	err = db.AppendRawData(projectName, M.Name(), data)
 	if err != nil {
 		log.Errorf("Could not append : %+v", err)
 	}
+
 	return nil
 }
 
