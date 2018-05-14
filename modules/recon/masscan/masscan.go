@@ -102,7 +102,7 @@ func (M *Masscan) Author() string {
 
 // Version : Version  getter
 func (M *Masscan) Version() string {
-	return "0.3"
+	return "0.9"
 }
 
 // DependsOn : Generate the dependencies requirement
