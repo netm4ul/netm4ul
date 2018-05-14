@@ -37,13 +37,13 @@ type URI struct {
 
 // Port defines the basic structure for each port scanned on the target
 type Port struct {
-	ID          string `json:"-" bson:"_id,omitempty"`
-	Number      int16  `json:"number,omitempty" bson:"Number"`
-	Protocol    string `json:"protocol,omitempty" bson:"Protocol"`
-	Status      string `json:"status,omitempty" bson:"Status"` // open, filtered, closed
-	Banner      string `json:"banner,omitempty" bson:"Banner,omitempty"`
-	Type        string `json:"type,omitempty" bson:"Type,omitempty"`
-	Directories []URI  `json:"value,omitempty" bson:"Value,omitempty"`
+	ID       string `json:"-" bson:"_id,omitempty"`
+	Number   int16  `json:"number,omitempty" bson:"Number"`
+	Protocol string `json:"protocol,omitempty" bson:"Protocol"`
+	Status   string `json:"status,omitempty" bson:"Status"` // open, filtered, closed
+	Banner   string `json:"banner,omitempty" bson:"Banner,omitempty"`
+	Type     string `json:"type,omitempty" bson:"Type,omitempty"`
+	URI      []URI  `json:"value,omitempty" bson:"Value,omitempty"`
 }
 
 //IP defines the IP address of a target.
@@ -95,7 +95,7 @@ type Database interface {
 	// URI (directory and files)
 	CreateOrUpdateURI(projectName string, ip string, port string, dir URI) error
 	CreateOrUpdateURIs(projectName string, ip string, port string, dir []URI) error
-	GetURIs(projectName string, ip string) ([]URI, error)
+	GetURIs(projectName string, ip string, port string) ([]URI, error)
 	GetURI(projectName string, ip string, port string, dir string) (URI, error)
 
 	// Raw data

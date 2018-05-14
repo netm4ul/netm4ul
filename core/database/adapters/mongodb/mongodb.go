@@ -233,41 +233,13 @@ func (mongo *MongoDB) GetPorts(projectName string, ip string) ([]models.Port, er
 
 	err := pipe.All(&ports)
 	log.Debugf("====== %+v", err)
-	log.Debugf("project %+v", ports)
+	log.Debugf("ports %+v", ports)
 
 	return ports, err
 }
+
 func (mongo *MongoDB) GetPort(projectName string, ip string, port string) (models.Port, error) {
 	return models.Port{}, errors.New("Not implemented yet")
-}
-
-// URI (directory and files)
-func (mongo *MongoDB) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
-	return errors.New("Not implemented yet")
-}
-
-func (mongo *MongoDB) CreateOrUpdateURIs(projectName string, ip string, port string, dir []models.URI) error {
-	return errors.New("Not implemented yet")
-}
-
-func (mongo *MongoDB) GetURIs(projectName string, ip string) ([]models.URI, error) {
-	return []models.URI{}, errors.New("Not implemented yet")
-}
-
-func (mongo *MongoDB) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
-	return models.URI{}, errors.New("Not implemented yet")
-}
-
-//AppendRawData is used by module to store raw results into the database.
-func (mongo *MongoDB) AppendRawData(projectName string, moduleName string, dataRaw interface{}) error {
-	data := bson.M{projectName + ".results." + moduleName: dataRaw}
-
-	dbCollection := mongo.cfg.Database.Database
-	c := mongo.session.DB(dbCollection).C("raw")
-	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
-	log.Infof("Info : %+v", info)
-
-	return err
 }
 
 // AppendPorts is used by module to store ports data into the database
@@ -293,25 +265,99 @@ func (mongo *MongoDB) CreateOrUpdatePorts(projectName string, ip string, ports [
 	return nil
 }
 
-// TOFIX
-// UpdatePort to update a port with new information, like directories after dirb
+// UpdatePort to update a port with new information, like URI after dirb
 func (mongo *MongoDB) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
-	dbCollection := mongo.cfg.Database.Database
-	c := mongo.session.DB(dbCollection).C("ports")
-	// Update with directories, port.Directories is []Directories and must contain IDs
-	_, err := c.Upsert(bson.M{"Number": port.Number}, bson.M{"$set": bson.M{"Directories": port.Directories}})
-	return err
+	return mongo.CreateOrUpdatePorts(projectName, ip, []models.Port{port})
 }
 
-// // UpdateProjectIPs Update IP related to a project, for now, only 1 IP
-// func (mongo *MongoDB) UpdateProjectIPs(projectName string, ip models.IP) error {
+// URI (directory and files)
+func (mongo *MongoDB) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
+	return errors.New("Not implemented yet")
+}
 
-// 	dbCollection := mongo.cfg.Database.Database
-// 	c := mongo.session.DB(dbCollection).C("projects")
-// 	_, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix(), "IPs": ip.ID}})
+func (mongo *MongoDB) CreateOrUpdateURIs(projectName string, ip string, port string, uris []models.URI) error {
 
-// 	return err
-// }
+	// dbCollection := mongo.cfg.Database.Database
+	// c := mongo.session.DB(dbCollection).C("uris")
+
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
+	var uris []models.URI
+
+	dbCollection := mongo.cfg.Database.Database
+	c := mongo.session.DB(dbCollection).C("projects")
+
+	// query with "join" and ignoring ports (only getting project & ips)
+	pipe := c.Pipe([]bson.M{
+		{
+			"$match": bson.M{
+				"Name": projectName,
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "ips",
+				"localField":   "IPs",
+				"foreignField": "_id",
+				"as":           "IPs",
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "ports",
+				"localField":   "IPs.Ports",
+				"foreignField": "_id",
+				"as":           "Ports",
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "uri",
+				"localField":   "IPs.URI",
+				"foreignField": "_id",
+				"as":           "URI",
+			},
+		},
+		{
+			"$project": bson.M{
+				"_id":       0,
+				"Name":      0,
+				"UpdatedAt": 0,
+				"IPs":       0,
+				"Ports":     0,
+			},
+		},
+	})
+
+	err := pipe.All(&uris)
+
+	log.Debugf("====== %+v", err)
+	log.Debugf("URIs %+v", uris)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return uris, nil
+}
+
+func (mongo *MongoDB) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
+	return models.URI{}, errors.New("Not implemented yet")
+}
+
+//AppendRawData is used by module to store raw results into the database.
+func (mongo *MongoDB) AppendRawData(projectName string, moduleName string, dataRaw interface{}) error {
+	data := bson.M{projectName + ".results." + moduleName: dataRaw}
+
+	dbCollection := mongo.cfg.Database.Database
+	c := mongo.session.DB(dbCollection).C("raw")
+	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$push": data})
+	log.Infof("Info : %+v", info)
+
+	return err
+}
 
 func (mongo *MongoDB) GetRaws(projectName string) (models.Raws, error) {
 	var raws models.Raws

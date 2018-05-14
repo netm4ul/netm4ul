@@ -70,6 +70,27 @@ func (f *JsonDB) Name() string {
 	return "JsonDB"
 }
 
+//TOFIX
+func (f *JsonDB) writeURI(projectName string, ip string, port string, uri models.URI) error {
+
+	projectFromFile, err := f.GetProject(projectName)
+	if err != nil {
+		return err
+	}
+
+	for _, ipFromFile := range projectFromFile.IPs {
+		if ipFromFile.Value == ip {
+			for _, p := range ipFromFile.Ports {
+				if strconv.Itoa(int(p.Number)) == port {
+					// ipFromFile.Ports =
+				}
+			}
+		}
+	}
+
+	return f.writeProject(projectFromFile)
+}
+
 func (f *JsonDB) writePorts(projectName string, ip string, ports []models.Port) error {
 
 	projectFromFile, err := f.GetProject(projectName)
@@ -382,7 +403,7 @@ func (f *JsonDB) CreateOrUpdateURIs(projectName string, ip string, port string, 
 	return errors.New("Not implemented yet")
 }
 
-func (f *JsonDB) GetURIs(projectName string, ip string) ([]models.URI, error) {
+func (f *JsonDB) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
 	return []models.URI{}, errors.New("Not implemented yet")
 }
 

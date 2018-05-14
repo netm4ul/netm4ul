@@ -12,7 +12,10 @@ services:
     container_name: "netmaulclient"
     build: .
     command: ["./netm4ul","start", "client", "-v"]
-
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: password
   mongodb:
     image: mongo:latest
     container_name: "mongodb"
