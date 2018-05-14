@@ -17,9 +17,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/netm4ul/netm4ul/core/database"
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/netm4ul/netm4ul/core/database/models"
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/modules"
@@ -87,9 +85,9 @@ type Masscan struct {
 //NewMasscan generate a new Masscan module (type modules.Module)
 func NewMasscan() modules.Module {
 	gob.Register(MasscanResult{})
-	var t modules.Module
-	t = &Masscan{}
-	return t
+	var m modules.Module
+	m = &Masscan{}
+	return m
 }
 
 // Name : name getter
@@ -122,12 +120,15 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	outputfile := "/tmp/" + generateUUID() + ".json"
 
 	// Get arguments
+	log.Debug("Get arguments")
 	opt, err := M.ParseOptions()
 	if err != nil {
 		log.Fatal(err)
 	}
 	opt = append(opt, "-oJ", outputfile)
+
 	// Get IP
+	log.Debug("Get IP")
 	for _, i := range inputs {
 		if i.IP != nil {
 			opt = append([]string{i.IP.String()}, opt...)
@@ -145,16 +146,33 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 
 	err = cmd.Run()
 	if err != nil {
-		log.Fatal(stderr.String())
+		log.Info(stderr.String())
 	}
 	log.Debug(stdout.String())
 	res, err := M.Parse(outputfile)
+	log.Debug("res:%+v", res)
+	log.Debug("err:%+v", nil)
 	if err != nil {
 		log.Error(err)
 	}
 	log.Debug("M4sscan done.")
 
 	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
+}
+
+// ParseConfig : Load the config from the config folder
+func (M *Masscan) ParseConfig() error {
+	ex, err := os.Executable()
+	if err != nil {
+		log.Panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	configPath := filepath.Join(exPath, "config", "masscan.conf")
+
+	if _, err := toml.DecodeFile(configPath, &M.Config); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Parse : Parse the result of the execution
@@ -182,19 +200,45 @@ func (M *Masscan) Parse(file string) (MasscanResult, error) {
 	return MasscanResult{Resultat: scans}, nil
 }
 
-// ParseConfig : Load the config from the config folder
-func (M *Masscan) ParseConfig() error {
-	ex, err := os.Executable()
-	if err != nil {
-		log.Panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	configPath := filepath.Join(exPath, "config", "masscan.conf")
+// WriteDb : Save data
+func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName string) error {
+	log.Info("Write to the database.")
 
-	if _, err := toml.DecodeFile(configPath, &M.Config); err != nil {
-		return err
+	var data MasscanResult
+	data = result.Data.(MasscanResult)
+
+	var ips []models.IP
+	//var ports []models.Port
+	for _, item := range data.Resultat {
+		ipn := models.IP{Value: item.IP}
+		log.Debug("ipn: %+v", ipn)
+		ips = append(ips, ipn)
+	}
+	//log.Info(ips)
+	//ipTarg := models.IP{Value: data.Resultat.IP}
+
+	//err := db.CreateOrUpdateIP(projectName, ipTarg)
+	//if err != nil {
+	//	log.Errorf("Could not create or update ip : %+v", err)
+	//}
+
+	err := db.AppendRawData(projectName, M.Name(), data)
+	if err != nil {
+		log.Errorf("Could not append : %+v", err)
 	}
 	return nil
+}
+
+// Generate uuid name for output file
+func generateUUID() string {
+	uuid := make([]byte, 16)
+	_, err := rand.Read(uuid)
+	if err != nil {
+		log.Error(err)
+		return "temp_masscan_output"
+	}
+
+	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:])
 }
 
 // ParseOptions : Parse the args in according to masscan.conf
@@ -293,27 +337,4 @@ func (M *Masscan) ParseOptions() ([]string, error) {
 	}
 
 	return opt, nil
-}
-
-// WriteDb : Save data
-func (M *Masscan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Info("Write to the database.")
-	var data MasscanResult
-	data = result.Data.(MasscanResult)
-
-	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
-	return nil
-}
-
-// Generate uuid name for output file
-func generateUUID() string {
-	uuid := make([]byte, 16)
-	_, err := rand.Read(uuid)
-	if err != nil {
-		log.Error(err)
-		return "temp_masscan_output"
-	}
-
-	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:])
 }
