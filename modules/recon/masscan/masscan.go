@@ -206,7 +206,6 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 	data = result.Data.(MasscanResult)
 
 	var ips []models.IP
-	var ports []models.Port
 
 	for _, itemIP := range data.Resultat {
 		ipn := models.IP{Value: itemIP.IP}
@@ -217,8 +216,10 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 				Protocol: itemPort.Proto,
 				Status:   itemPort.Status,
 				Banner:   itemPort.Service.Banner}
-			log.Debug("portn: %+v", portn)
-			ports = append(ports, portn)
+			err := db.CreateOrUpdatePort(M.Name(), itemIP.IP, portn)
+			if err != nil {
+				log.Errorf("Could not create or update port : %+v", err)
+			}
 		}
 	}
 
