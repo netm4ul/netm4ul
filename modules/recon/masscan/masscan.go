@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os/exec"
@@ -102,7 +103,7 @@ func (M *Masscan) Author() string {
 
 // Version : Version  getter
 func (M *Masscan) Version() string {
-	return "0.9"
+	return "1.0"
 }
 
 // DependsOn : Generate the dependencies requirement
@@ -115,11 +116,9 @@ func (M *Masscan) DependsOn() []modules.Condition {
 func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	log.Debug("H3ll-0 M4sscan")
 
-	// Temporary IP forced : 212.47.247.190 = edznux.fr
-	outputfile := "/tmp/" + generateUUID() + ".json"
+	outputfile := generateUUID() + ".json"
 
 	// Get arguments
-	log.Debug("Get arguments")
 	opt, err := M.ParseOptions()
 	if err != nil {
 		log.Fatal(err)
@@ -127,7 +126,6 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	opt = append(opt, "-oJ", outputfile)
 
 	// Get IP
-	log.Debug("Get IP")
 	for _, i := range inputs {
 		if i.IP != nil {
 			opt = append([]string{i.IP.String()}, opt...)
@@ -146,10 +144,10 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	if err != nil {
 		log.Info(stderr.String())
 	}
+
 	log.Debug(stdout.String())
 	res, err := M.Parse(outputfile)
-	log.Debug("res:%+v", res)
-	log.Debug("err:%+v", nil)
+
 	if err != nil {
 		log.Error(err)
 	}
@@ -210,27 +208,29 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 	for _, itemIP := range data.Resultat {
 		ipn := models.IP{Value: itemIP.IP}
 		ips = append(ips, ipn)
+
 		for _, itemPort := range itemIP.Ports {
 			portn := models.Port{
 				Number:   int16(itemPort.Port),
 				Protocol: itemPort.Proto,
 				Status:   itemPort.Status,
 				Banner:   itemPort.Service.Banner}
+
 			err := db.CreateOrUpdatePort(M.Name(), itemIP.IP, portn)
 			if err != nil {
-				log.Errorf("Could not create or update port : %+v", err)
+				return errors.New("Could not create or update port : %+v" + err.Error())
 			}
 		}
 	}
 
 	err := db.CreateOrUpdateIPs(M.Name(), ips)
 	if err != nil {
-		log.Errorf("Could not create or update ip : %+v", err)
+		return errors.New("Could not create or update ip : %+v" + err.Error())
 	}
 
 	err = db.AppendRawData(projectName, M.Name(), data)
 	if err != nil {
-		log.Errorf("Could not append : %+v", err)
+		return errors.New("Could not append : %+v" + err.Error())
 	}
 
 	return nil
