@@ -19,8 +19,6 @@ import (
 )
 
 var s[]string
-var v[]string
-// var domain string = "https://google.com"
 
 // type WebURLExtractConfig struct {
 // }
@@ -73,7 +71,12 @@ func (wue *WebURLExtract) Run(inputs []modules.Input) (modules.Result, error) {
 
 	log.Debug("Web URL Extract")
 
-	var domains map[string][]string
+	var v[]string
+
+	var res map[string][]string
+    res = make(map[string][]string)
+
+	var domains []string
 
 	log.Debug("Get domains or IP")
 	for _, input := range inputs {
@@ -109,22 +112,16 @@ func (wue *WebURLExtract) Run(inputs []modules.Input) (modules.Result, error) {
 	    // defined earlier
 	    document.Find("a").Each(ProcessElement)
 
-	    // fmt.Println("Domain :", domain)
-	    // fmt.Println("Found :", len(s), "urls")
-	    // // fmt.Println(s)
-	    // for i:=0;i<len(s);i++ {
-	    //     fmt.Println(" - " + s[i])
-	    // }
-
 	    log.Debug("URL finds :", s)
-	    domains[domain] = s
+	    res[domain] = s
     
 	}
 
 	log.Debug("Web URL Extract done.")
+	fmt.Println("Res :\n", res)
 
 	// return modules.Result{}, errors.New("Not implemented yet")
-	return modules.Result{Data: domains, Timestamp: time.Now(), Module: N.Name()}, err
+	return modules.Result{Data: res, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
 // func (wue *WebURLExtract) ParseConfig() error {
@@ -132,5 +129,8 @@ func (wue *WebURLExtract) Run(inputs []modules.Input) (modules.Result, error) {
 // }
 
 func (wue *WebURLExtract) WriteDb(result modules.Result, db models.Database, projectName string) error {
+
+	// log.Debug("Write to the database.")
+
 	return errors.New("Not implemented yet")
 }
