@@ -2,9 +2,10 @@ package postgresql
 
 import (
 	"database/sql"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/netm4ul/netm4ul/core/config"
@@ -16,22 +17,31 @@ import (
 
 const DB_NAME = "netm4ul"
 
-type postgresql struct {
+type PostgreSQL struct {
 	cfg *config.ConfigToml
 	db  *sql.DB
 }
 
+func InitDatabase(c *config.ConfigToml) *PostgreSQL {
+	pg := PostgreSQL{}
+	pg.cfg = c
+	return &pg
+}
+
 // General purpose functions
-func (pg *postgresql) Name() string {
+func (pg *PostgreSQL) Name() string {
 	return "PostgreSQL"
 }
 
-func (pg *postgresql) createTablesIfNotExist() error {
+func (pg *PostgreSQL) createTablesIfNotExist() error {
 
 	if _, err := pg.db.Exec(createTableProjects); err != nil {
 		return err
 	}
 	if _, err := pg.db.Exec(createTableIPs); err != nil {
+		return err
+	}
+	if _, err := pg.db.Exec(createTablePortTypes); err != nil {
 		return err
 	}
 	if _, err := pg.db.Exec(createTablePorts); err != nil {
@@ -46,11 +56,37 @@ func (pg *postgresql) createTablesIfNotExist() error {
 	return nil
 }
 
-func (pg *postgresql) SetupAuth(username, password, dbname string) error {
-	return errors.New("Not implemented yet")
+func (pg *PostgreSQL) createDb() {
+	log.Debug("Create database")
+	db, err := sql.Open("postgres",
+		fmt.Sprintf("user=%s host=%s sslmode=disable",
+			pg.cfg.Database.User,
+			pg.cfg.Database.IP,
+		))
+	// yep, configuration sqli, postgres limitation. cannot prepare this statement
+	_, err = db.Exec(fmt.Sprintf(`create database %s`, strings.ToLower(pg.cfg.Database.Database)))
+
+	// we ignore if the database already exist
+	if err != nil {
+		log.Error(err)
+	}
+	log.Debug("Database created !")
+
+}
+func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
+	log.Debugf("SetupAuth postgres")
+
+	pg.createDb()
+	//TODO : create user/password
+	err := pg.createTablesIfNotExist()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (pg *postgresql) Connect(c *config.ConfigToml) error {
+func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 	db, err := sql.Open("postgres", fmt.Sprintf("user=%s dbname=%s host=%s sslmode=disable",
 		c.Database.User, DB_NAME, c.Database.IP))
 	if err != nil {
@@ -61,12 +97,13 @@ func (pg *postgresql) Connect(c *config.ConfigToml) error {
 }
 
 // Project
-func (pg *postgresql) CreateOrUpdateProject(projectName string) error {
+func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 
 	var lastInsertID int
 	err := pg.db.QueryRow(
 		insertProject,
-		projectName,
+		project.Name,
+		project.Description,
 	).Scan(&lastInsertID)
 
 	if err != nil {
@@ -76,7 +113,7 @@ func (pg *postgresql) CreateOrUpdateProject(projectName string) error {
 	return nil
 }
 
-func (pg *postgresql) GetProjects() ([]models.Project, error) {
+func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
 	rows, err := pg.db.Query(selectProjects)
 	if err != nil {
 		return nil, err
@@ -98,7 +135,7 @@ func (pg *postgresql) GetProjects() ([]models.Project, error) {
 	return projects, nil
 }
 
-func (pg *postgresql) GetProject(projectName string) (models.Project, error) {
+func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 
 	row := pg.db.QueryRow(selectProjectByName, projectName)
 
@@ -108,14 +145,14 @@ func (pg *postgresql) GetProject(projectName string) (models.Project, error) {
 	var updatedAt time.Time
 
 	row.Scan(&id, &name, &description, &updatedAt)
-	idstr := string(id)
+	idstr := strconv.Itoa(int(id))
 	p := models.Project{ID: idstr, Name: name, Description: description, UpdatedAt: updatedAt.Unix()}
 
 	return p, nil
 }
 
 // IP
-func (pg *postgresql) CreateOrUpdateIP(projectName string, ip models.IP) error {
+func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	var lastInsertID int
 	err := pg.db.QueryRow(
 		insertIP,
@@ -124,13 +161,13 @@ func (pg *postgresql) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	).Scan(&lastInsertID)
 
 	if err != nil {
-		log.Error("Could not save project in the database :" + err.Error())
+		log.Error("Could not save ip in the database :" + err.Error())
 		return err
 	}
 	return nil
 }
 
-func (pg *postgresql) CreateOrUpdateIPs(projectName string, ips []models.IP) error {
+func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) error {
 	for _, ip := range ips {
 		err := pg.CreateOrUpdateIP(projectName, ip)
 		if err != nil {
@@ -140,7 +177,7 @@ func (pg *postgresql) CreateOrUpdateIPs(projectName string, ips []models.IP) err
 	return nil
 }
 
-func (pg *postgresql) GetIPs(projectName string) ([]models.IP, error) {
+func (pg *PostgreSQL) GetIPs(projectName string) ([]models.IP, error) {
 
 	ips := []models.IP{}
 	rows, err := pg.db.Query(selectIPsByProjectName, projectName)
@@ -161,7 +198,7 @@ func (pg *postgresql) GetIPs(projectName string) ([]models.IP, error) {
 	return ips, nil
 }
 
-func (pg *postgresql) GetIP(projectName string, ip string) (models.IP, error) {
+func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 
 	row := pg.db.QueryRow(selectIPByProjectName, projectName, ip)
 
@@ -184,7 +221,7 @@ func (pg *postgresql) GetIP(projectName string, ip string) (models.IP, error) {
 }
 
 // Port
-func (pg *postgresql) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
+func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
 	var lastInsertID int
 	err := pg.db.QueryRow(insertPort,
 		port.Number,
@@ -202,7 +239,7 @@ func (pg *postgresql) CreateOrUpdatePort(projectName string, ip string, port mod
 	return nil
 }
 
-func (pg *postgresql) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
+func (pg *PostgreSQL) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
 	for _, port := range ports {
 		err := pg.CreateOrUpdatePort(projectName, ip, port)
 		if err != nil {
@@ -212,7 +249,7 @@ func (pg *postgresql) CreateOrUpdatePorts(projectName string, ip string, ports [
 	return nil
 }
 
-func (pg *postgresql) GetPorts(projectName string, ip string) ([]models.Port, error) {
+func (pg *PostgreSQL) GetPorts(projectName string, ip string) ([]models.Port, error) {
 	ports := []models.Port{}
 	rows, err := pg.db.Query(selectPortsByProjectNameAndIP, projectName, ip)
 	if err != nil {
@@ -232,7 +269,7 @@ func (pg *postgresql) GetPorts(projectName string, ip string) ([]models.Port, er
 	return ports, nil
 }
 
-func (pg *postgresql) GetPort(projectName string, ip string, port string) (models.Port, error) {
+func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (models.Port, error) {
 	ports, err := pg.GetPorts(projectName, ip)
 	if err != nil {
 		return models.Port{}, nil
@@ -248,7 +285,7 @@ func (pg *postgresql) GetPort(projectName string, ip string, port string) (model
 }
 
 // URI (directory and files)
-func (pg *postgresql) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
+func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
 	var lastInsertID int64
 
 	row := pg.db.QueryRow(insertURI, dir.Name, dir.Code, port, ip, projectName)
@@ -261,7 +298,7 @@ func (pg *postgresql) CreateOrUpdateURI(projectName string, ip string, port stri
 	return nil
 }
 
-func (pg *postgresql) CreateOrUpdateURIs(projectName string, ip string, port string, dirs []models.URI) error {
+func (pg *PostgreSQL) CreateOrUpdateURIs(projectName string, ip string, port string, dirs []models.URI) error {
 	for _, dir := range dirs {
 		err := pg.CreateOrUpdateURI(projectName, ip, port, dir)
 		if err != nil {
@@ -271,7 +308,7 @@ func (pg *postgresql) CreateOrUpdateURIs(projectName string, ip string, port str
 	return nil
 }
 
-func (pg *postgresql) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
+func (pg *PostgreSQL) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
 
 	uris := []models.URI{}
 	rows, err := pg.db.Query(selectURIsByProjectNameAndIPAndPort, projectName, port)
@@ -292,7 +329,7 @@ func (pg *postgresql) GetURIs(projectName string, ip string, port string) ([]mod
 	return uris, nil
 }
 
-func (pg *postgresql) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
+func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
 	uris, err := pg.GetURIs(projectName, ip, port)
 	if err != nil {
 		return models.URI{}, err
@@ -307,25 +344,68 @@ func (pg *postgresql) GetURI(projectName string, ip string, port string, dir str
 }
 
 // Raw data
-func (pg *postgresql) AppendRawData(projectName string, moduleName string, data interface{}) error {
+func (pg *PostgreSQL) AppendRawData(projectName string, moduleName string, data interface{}) error {
 	var lastInsertID int64
-	row, err := pg.db.Query(insertRaw, moduleName, data, projectName)
+
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
+	row := pg.db.QueryRow(insertRaw, moduleName, jsonData, projectName)
 	err = row.Scan(&lastInsertID)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (pg *postgresql) GetRaws(projectName string) (models.Raws, error) {
-	var raws models.Raws
-	return raws, errors.New("Not implemented yet")
+func (pg *PostgreSQL) GetRaws(projectName string) (models.Raws, error) {
+	raws := models.Raws{}
+	rows, err := pg.db.Query(selectRawsByProjectName, projectName)
+	if err != nil {
+		return models.Raws{}, err
+	}
+	var id int64
+	var module string
+	var project string
+	var data interface{}
+	var createdAt time.Time
+
+	for rows.Next() {
+		err = rows.Scan(&id, &module, &project, &data, &createdAt)
+		if err != nil {
+			return models.Raws{}, err
+		}
+
+		raws[module] = make(map[string]interface{})
+		raws[module][strconv.Itoa(int(createdAt.Unix()))] = data
+	}
+	return raws, nil
 }
 
-func (pg *postgresql) GetRawModule(projectName string, moduleName string) (map[string]interface{}, error) {
-	return nil, errors.New("Not implemented yet")
+func (pg *PostgreSQL) GetRawModule(projectName string, moduleName string) (map[string]interface{}, error) {
+	raws := map[string]interface{}{}
+	rows, err := pg.db.Query(selectRawsByProjectNameAndModuleName, projectName, moduleName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var id int64
+	var module string
+	var project string
+	var data interface{}
+	var createdAt time.Time
+
+	for rows.Next() {
+		err = rows.Scan(&id, &module, &project, &data, &createdAt)
+		if err != nil {
+			return nil, err
+		}
+
+		raws[strconv.Itoa(int(createdAt.Unix()))] = data
+	}
+	return raws, nil
 }

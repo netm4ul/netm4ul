@@ -366,7 +366,7 @@ func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 }
 */
 func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
-	var project string
+	var project models.Project
 	var res Result
 	fmt.Println(r)
 	decoder := json.NewDecoder(r.Body)

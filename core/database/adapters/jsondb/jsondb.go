@@ -179,7 +179,7 @@ func (f *JsonDB) Connect(c *config.ConfigToml) error {
 // Project
 
 //CreateOrUpdateProject handle project. It will update the project if it does not exist.
-func (f *JsonDB) CreateOrUpdateProject(projectName string) error {
+func (f *JsonDB) CreateOrUpdateProject(project models.Project) error {
 	projects, err := f.GetProjects()
 	if err != nil {
 		return err
@@ -187,14 +187,13 @@ func (f *JsonDB) CreateOrUpdateProject(projectName string) error {
 
 	found := false
 	for _, p := range projects {
-		if p.Name == projectName {
+		if p.Name == project.Name {
 			found = true
 		}
 	}
 
 	if !found {
-		p := models.Project{Name: projectName}
-		projects = append(projects, p)
+		projects = append(projects, project)
 		return f.writeProjects(projects)
 	}
 

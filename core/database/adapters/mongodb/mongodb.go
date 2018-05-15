@@ -65,17 +65,17 @@ func (mongo *MongoDB) firstConnect(cfg *config.ConfigToml) {
 }
 
 // CreateOrUpdateProject create a new project structure inside db
-func (mongo *MongoDB) CreateOrUpdateProject(projectName string) error {
+func (mongo *MongoDB) CreateOrUpdateProject(project models.Project) error {
 	// mongodb will create collection on use.
 
 	dbCollection := mongo.cfg.Database.Database
 	c := mongo.session.DB(dbCollection).C("projects")
 
-	info, err := c.Upsert(bson.M{"Name": projectName}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
+	info, err := c.Upsert(bson.M{"Name": project.Name}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
 	if mongo.cfg.Verbose && info.Updated == 1 {
 		log.Infof("Info : %+v", info)
-		log.Infof("Adding %s to the collections 'projects'", projectName)
+		log.Infof("Adding %s to the collections 'projects'", project.Name)
 	}
 
 	return err

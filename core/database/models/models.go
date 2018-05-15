@@ -76,7 +76,7 @@ type Database interface {
 	Connect(*config.ConfigToml) error
 
 	// Project
-	CreateOrUpdateProject(projectName string) error
+	CreateOrUpdateProject(Project) error
 	GetProjects() ([]Project, error)
 	GetProject(projectName string) (Project, error)
 

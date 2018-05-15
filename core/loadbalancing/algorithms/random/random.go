@@ -31,6 +31,10 @@ func (r *Random) SetNodes(nodes []communication.Node) {
 func (r *Random) NextExecutionNodes(cmd communication.Command) []communication.Node {
 	rand.Seed(time.Now().UnixNano())
 
+	// no client found !
+	if len(r.Nodes) == 0 {
+		return []communication.Node{}
+	}
 	selectedNode := []communication.Node{
 		r.Nodes[rand.Intn(len(r.Nodes))],
 	}

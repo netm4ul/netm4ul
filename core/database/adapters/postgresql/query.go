@@ -1,10 +1,15 @@
 package postgresql
 
-/*       CREATE TABLE     */
+/*     CREATE DATABASE     */
+const createDatabase = `
+CREATE DATABASE $1
+`
+
+/*       CREATE TABLE      */
 const createTableProjects = `
 CREATE TABLE IF NOT EXISTS projects (
-	id serial PRIMARY KEY,
-	name text NOT NULL,
+	id serial,
+	name text PRIMARY KEY,
 	description text NULL,
 	created_at timestamp with time zone DEFAULT current_timestamp,
 	updated_at timestamp with time zone DEFAULT current_timestamp
@@ -34,8 +39,8 @@ CREATE TABLE IF NOT EXISTS ports(
 	protocol varchar(10) NOT NULL,
 	status varchar(10) NOT NULL,
 	banner text,
-	type serial references porttypes(id),
-	ip serial references ips(id)
+	type_id serial references porttypes(id),
+	ip_id serial references ips(id)
 )
 `
 
@@ -44,7 +49,7 @@ CREATE TABLE IF NOT EXISTS uris(
 	id serial PRIMARY KEY,
 	name text NOT NULL,
 	code varchar(100),
-	port_id references 
+	port_id serial references ports(id)
 )
 `
 
@@ -52,9 +57,9 @@ const createTableRaws = `
 CREATE TABLE IF NOT EXISTS raws(
 	id serial PRIMARY KEY,
 	module varchar(100) NOT NULL,
-	project serial references projects(id),
+	project_id serial references projects(id),
 	data json NOT NULL,
-	created_at with time zone DEFAULT current_timestamp
+	created_at timestamp with time zone DEFAULT current_timestamp
 )
 `
 
@@ -86,19 +91,19 @@ AND value = $2
 `
 
 const selectPortsByProjectName = `
-SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type
+SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type_id, ports.ip_id
 FROM ports, ips, projects
 WHERE ips.project_id = projects.id
 AND projects.name = $1
-AND ports.ip = ips.id
+AND ports.ip_id = ips.id
 `
 
 const selectPortsByProjectNameAndIP = `
-SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type
+SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type_id, ports.ip_id
 FROM ports, ips, projects
 WHERE ips.project_id = projects.id
 AND projects.name = $1
-AND ports.ip = ips.id
+AND ports.ip_id = ips.id
 AND ips.value = $2
 `
 
@@ -107,10 +112,23 @@ SELECT uris.id, uris.name, uris.code
 FROM uris, ports, ips, projects
 WHERE ips.project_id = projects.id
 AND project.name = $1
-AND ports.ip = ips.id
-AND ports.ip = $2
-AND uris.port = ports.id
+AND ports.ip_id = ips.id
+AND ips.value = $2
+AND uris.port_id = ports.id
 AND ports.value = $3
+`
+const selectRawsByProjectName = `
+SELECT raws.id, raws.module, raws.project_id, raws.data, raws.created_at
+FROM raws, projects
+WHERE raws.project_id = projects.id
+AND projects.name = $1
+`
+const selectRawsByProjectNameAndModuleName = `
+SELECT raws.id, raws.module, raws.project_id, raws.data, raws.created_at
+FROM raws, projects
+WHERE raws.project_id = projects.id
+AND projects.name = $1
+AND raws.module = $2
 `
 
 /*      INSERT     */
@@ -148,7 +166,7 @@ $6 : project name
 $7 : ip value
 */
 const insertPort = `
-INSERT INTO ports (number, protocol, status, banner, type, ip)
+INSERT INTO ports (number, protocol, status, banner, type_id, ip_id)
 VALUES ($1, $2, $3, $4, $5, 
 	(
 		SELECT ips.id
@@ -175,8 +193,8 @@ VALUE ($1, $2,
 	(
 		SELECT ports.id
 		FROM ports, projects, ips
-		WHERE ports.ip = ips.id
-		AND projects.ip = ips.id
+		WHERE ports.ip_id = ips.id
+		AND projects.id = ips.project_id
 		AND ports.number = $3
 		AND ips.value = $4
 		AND projects.name = $5
@@ -192,7 +210,7 @@ $2 : json data (must be valid json)
 $3 : project name
 */
 const insertRaw = `
-INSERT INTO raws(module, data, project)
+INSERT INTO raws(module, data, project_id)
 VALUES ($1, $2,
 	(
 		SELECT projects.id

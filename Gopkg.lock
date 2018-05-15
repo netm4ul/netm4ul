@@ -47,6 +47,15 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid"
+  ]
+  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
+
+[[projects]]
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
   revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
@@ -161,6 +170,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "30ffdbacca7d6f637b3f1ce30b19a8b6be547d4053ce5529a93b17253002f85d"
+  inputs-digest = "183083644a998bbb35c8788a200a5c68781632232d55c513c5063370a6c915cf"
   solver-name = "gps-cdcl"
   solver-version = 1
