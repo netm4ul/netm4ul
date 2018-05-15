@@ -1,14 +1,13 @@
 package generate
 
 import (
-	"bytes"
 	"fmt"
-	"go/format"
 	"log"
 	"os"
 	"path"
 	"strings"
-	"text/template"
+
+	"github.com/netm4ul/netm4ul/scripts"
 )
 
 //Module generate a new module from it's name, type and author. It implements the Module interface
@@ -70,13 +69,6 @@ func ({{.shortName}} *{{.name}}) WriteDb(result modules.Result, db models.Databa
 	return errors.New("Not implemented yet")
 }
 `
-
-	tmpl, err := template.New("module").Parse(templateModule)
-
-	if err != nil {
-		panic(err)
-	}
-
 	if name == "" {
 		fmt.Println("You must provide an adapter name")
 		os.Exit(1)
@@ -93,36 +85,16 @@ func ({{.shortName}} *{{.name}}) WriteDb(result modules.Result, db models.Databa
 		"author":    author,
 	}
 
-	moduleDirPath := path.Join(
-		"modules",
-		moduleType,
-		strings.ToLower(name))
+	dirpath := path.Join("modules", moduleType, strings.ToLower(name))
+	filepath := path.Join(dirpath, strings.ToLower(name)+".go")
 
-	moduleFilePath := path.Join(moduleDirPath, strings.ToLower(name)+".go")
-
-	//ensure data folder exists
-	if _, err := os.Stat(moduleDirPath); os.IsNotExist(err) {
-		os.Mkdir(moduleDirPath, 0755)
-	} else {
-		log.Fatalf("Folder %s already exist, aborting.", moduleDirPath)
-	}
-	moduleFile, err := os.OpenFile(moduleFilePath, os.O_CREATE|os.O_RDWR, 0666)
-
+	bytes, err := scripts.GenerateSourceTemplate(templateModule, data)
 	if err != nil {
-		log.Fatalf("Could not open file %s", moduleFilePath)
+		log.Fatal(err)
 	}
 
-	var buf bytes.Buffer
-
-	err = tmpl.Execute(&buf, data)
+	err = scripts.SaveFileToPath(filepath, bytes)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-
-	p, err := format.Source(buf.Bytes())
-	if err != nil {
-		panic(err)
-	}
-
-	moduleFile.Write(p)
 }

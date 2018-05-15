@@ -20,6 +20,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/client"
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	log "github.com/sirupsen/logrus"
@@ -59,8 +60,9 @@ var startServerCmd = &cobra.Command{
 		if CLILogfile {
 			setupLoggingToFile(ServerLogPath)
 		}
+
 		CLISession.Config.IsServer = isServer
-		CLISession.Config.Nodes = make(map[string]config.Node)
+		CLISession.Nodes = make([]communication.Node, 0)
 
 		if CLISession.Config.TLSParams.UseTLS {
 			CLISession.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()

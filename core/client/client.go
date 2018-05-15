@@ -2,14 +2,18 @@ package client
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/sha1"
 	"crypto/tls"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"net"
 	"time"
 
-	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/server"
+	"github.com/netm4ul/netm4ul/core/communication"
+	"github.com/netm4ul/netm4ul/core/requirements"
+
 	"github.com/netm4ul/netm4ul/core/session"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/pkg/errors"
@@ -137,10 +141,40 @@ func (client *Client) SendHello() error {
 		rw = bufio.NewReadWriter(bufio.NewReader(client.Session.Connector.TLSConn), bufio.NewWriter(client.Session.Connector.TLSConn))
 	}
 
-	node := config.Node{Modules: client.ListModuleEnabled, Project: client.Session.Config.Project.Name}
+	compcap, err := requirements.GetCPUCapacity()
+	if err != nil {
+		log.Errorf("Couldn't get the CPU Stats : %s", err.Error())
+	}
+
+	memcap, err := requirements.GetMemoryCapacity()
+	if err != nil {
+		log.Errorf("Couldn't get the Memory Stats : %s", err.Error())
+	}
+
+	req := requirements.Requirements{
+		ComputingCapacity: compcap,
+		MemoryCapacity:    memcap,
+		NetworkCapacity:   requirements.CapacityMedium,  // TOFIX, hardcoded network capacity
+		NetworkType:       requirements.NetworkExternal, // TOFIX, hardcoded network type
+	}
+
+	// TODO : save this id into a file, might want to re-use it instead
+	token := make([]byte, 5)
+	rand.Read(token)
+	sha := fmt.Sprintf("%x", sha1.Sum(token))
+	log.Info("New node ID : ", sha)
+
+	node := communication.Node{
+		ID:           sha,
+		Modules:      client.ListModuleEnabled,
+		Project:      client.Session.Config.Project.Name,
+		Requirements: req,
+		IsAvailable:  true,
+	}
+
 	log.Debugf("Node : %+v", node)
 
-	err := gob.NewEncoder(rw).Encode(node)
+	err = gob.NewEncoder(rw).Encode(node)
 	if err != nil {
 		return err
 	}
@@ -153,9 +187,9 @@ func (client *Client) SendHello() error {
 	return nil
 }
 
-// Recv read the incomming data from the server. The server use the server.Command struct.
-func (client *Client) Recv() (server.Command, error) {
-	var cmd server.Command
+// Recv read the incomming data from the server. The server use the communication.Command struct.
+func (client *Client) Recv() (communication.Command, error) {
+	var cmd communication.Command
 
 	log.Debugf("Waiting for incomming data")
 
@@ -171,25 +205,25 @@ func (client *Client) Recv() (server.Command, error) {
 
 	// handle connection closed (server shutdown for example)
 	if err == io.EOF {
-		return server.Command{}, err
+		return communication.Command{}, err
 	}
 
 	if err != nil {
-		return server.Command{}, errors.New("Could not decode received message : " + err.Error())
+		return communication.Command{}, errors.New("Could not decode received message : " + err.Error())
 	}
 
 	log.Debugf("Recieved command %+v", cmd)
 	_, ok := client.Session.Modules[cmd.Name]
 
 	if !ok {
-		return server.Command{}, errors.New("Unsupported (or unknown) command : " + cmd.Name)
+		return communication.Command{}, errors.New("Unsupported (or unknown) command : " + cmd.Name)
 	}
 
 	return cmd, nil
 }
 
 // Execute runs modules with the right options and handle errors.
-func (client *Client) Execute(module modules.Module, cmd server.Command) (modules.Result, error) {
+func (client *Client) Execute(module modules.Module, cmd communication.Command) (modules.Result, error) {
 
 	log.Debugf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
 	//TODO
