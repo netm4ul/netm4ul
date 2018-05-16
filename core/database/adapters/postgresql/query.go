@@ -163,7 +163,12 @@ $7 : ip value
 */
 const insertPort = `
 INSERT INTO ports (number, protocol, status, banner, type_id, ip_id)
-VALUES ($1, $2, $3, $4, $5, 
+VALUES ($1, $2, $3, $4,
+	(
+		SELECT id
+		FROM porttypes
+		WHERE name = $5
+	),
 	(
 		SELECT ips.id
 		FROM ips, projects

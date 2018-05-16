@@ -108,23 +108,25 @@ type ConfigToml struct {
 var Config ConfigToml
 
 // LoadConfig load the configuration file !
-func LoadConfig(file string) {
+func LoadConfig(file string) error {
 	var configPath string
 
 	if file == "" {
 		dir, err := os.Getwd()
 
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-
 		configPath = filepath.Join(dir, "netm4ul.conf")
 	} else {
 		configPath = file
 	}
-	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
-		log.Fatalln(err)
+
+	_, err := toml.DecodeFile(configPath, &Config)
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 // Read CA file and initialise

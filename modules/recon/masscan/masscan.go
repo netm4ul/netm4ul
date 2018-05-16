@@ -218,19 +218,19 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 
 			err := db.CreateOrUpdatePort(M.Name(), itemIP.IP, portn)
 			if err != nil {
-				return errors.New("Could not create or update port : %+v" + err.Error())
+				return errors.New("Could not create or update port : " + err.Error())
 			}
 		}
 	}
 
 	err := db.CreateOrUpdateIPs(M.Name(), ips)
 	if err != nil {
-		return errors.New("Could not create or update ip : %+v" + err.Error())
+		return errors.New("Could not create or update ip : " + err.Error())
 	}
 
 	err = db.AppendRawData(projectName, M.Name(), data)
 	if err != nil {
-		return errors.New("Could not append : %+v" + err.Error())
+		return errors.New("Could not append : " + err.Error())
 	}
 
 	return nil
