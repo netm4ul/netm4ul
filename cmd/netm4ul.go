@@ -42,27 +42,31 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
 	log.SetOutput(os.Stdout)
 	customFormatter := new(log.TextFormatter)
-	customFormatter.TimestampFormat = "2001-02-03 12:34:56"
+	// customFormatter.TimestampFormat = "2001-02-03 12:34:56"
 	customFormatter.FullTimestamp = true
 	log.SetFormatter(customFormatter)
 }
 
 func createSessionBase() {
+	var cfg config.ConfigToml
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	}
 
 	err := config.LoadConfig(configPath)
+	cfg = config.Config
 
 	if err != nil {
 		log.Debugf("Could not load the config file : %s", configPath)
-		CLISession.Config = config.ConfigToml{}
-		CLISession.Config.ConfigPath = DefaultConfigPath
+		cfg = config.ConfigToml{}
 	}
 
-	CLISession = session.NewSession(config.Config)
-	CLISession.Config.ConfigPath = configPath
-	CLISession.Config.Verbose = verbose
+	cfg.ConfigPath = DefaultConfigPath
+	cfg.ConfigPath = configPath
+	cfg.Verbose = verbose
+
+	CLISession = session.NewSession(cfg)
+
 	if CLIprojectName != "" {
 		CLISession.Config.Project.Name = CLIprojectName
 	}
