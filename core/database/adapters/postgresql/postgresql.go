@@ -54,6 +54,10 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 	if _, err := pg.db.Exec(createTableRaws); err != nil {
 		return err
 	}
+	if _, err := pg.db.Exec(insertPortTypes); err != nil {
+		return err
+	}
+
 	return nil
 }
 

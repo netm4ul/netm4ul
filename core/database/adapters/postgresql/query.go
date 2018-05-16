@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS ips(
 const createTablePortTypes = `
 CREATE TABLE IF NOT EXISTS porttypes(
 	id serial PRIMARY KEY,
-	name varchar(50),
+	name varchar(50) UNIQUE,
 	description text
 )
 `
@@ -163,7 +163,12 @@ $7 : ip value
 */
 const insertPort = `
 INSERT INTO ports (number, protocol, status, banner, type_id, ip_id)
-VALUES ($1, $2, $3, $4, $5, 
+VALUES ($1, $2, $3, $4,
+	(
+		SELECT id
+		FROM porttypes
+		WHERE name = $5
+	),
 	(
 		SELECT ips.id
 		FROM ips, projects
@@ -172,6 +177,12 @@ VALUES ($1, $2, $3, $4, $5,
 		AND ips.value = $7
 	)
 )
+returning id;
+`
+
+const insertPortTypes = `
+INSERT INTO portstypes (name, description)
+VALUES ("", "default description"), ("tcp", "default description"), ("udp", "default description")
 returning id;
 `
 
