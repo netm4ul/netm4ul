@@ -8,7 +8,7 @@ CREATE DATABASE $1
 /*       CREATE TABLE      */
 const createTableProjects = `
 CREATE TABLE IF NOT EXISTS projects (
-	id serial,
+	id serial UNIQUE,
 	name text PRIMARY KEY,
 	description text NULL,
 	created_at timestamp with time zone DEFAULT current_timestamp,
@@ -20,7 +20,7 @@ const createTableIPs = `
 CREATE TABLE IF NOT EXISTS ips(
 	id serial PRIMARY KEY,
 	value varchar(50) NOT NULL,
-	project_id serial references projects(id)
+	project_name text references projects(name)
 )
 `
 
@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS ports(
 	status varchar(10) NOT NULL,
 	banner text,
 	type_id serial references porttypes(id),
-	ip_id serial references ips(id)
+	ip_id serial references ips(id),
+	UNIQUE(number, type_id, ip_id)
 )
 `
 
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS uris(
 	id serial PRIMARY KEY,
 	name text NOT NULL,
 	code varchar(100),
-	port_id serial references ports(id)
+	port_id serial references ports(id),
+	UNIQUE(port_id, name)
 )
 `
 
@@ -57,7 +59,7 @@ const createTableRaws = `
 CREATE TABLE IF NOT EXISTS raws(
 	id serial PRIMARY KEY,
 	module varchar(100) NOT NULL,
-	project_id serial references projects(id),
+	project_name text references projects(name),
 	data json NOT NULL,
 	created_at timestamp with time zone DEFAULT current_timestamp
 )
@@ -78,14 +80,14 @@ WHERE name = $1
 const selectIPsByProjectName = `
 SELECT ips.id, ips.value
 FROM ips, projects
-WHERE ips.project_id = project.id
+WHERE ips.project_name = project.name
 AND project.name = $1
 `
 
 const selectIPByProjectName = `
 SELECT ips.id, ips.value
 FROM ips, projects
-WHERE ips.project_id = project.id
+WHERE ips.project_name = project.name
 AND project.name = $1
 AND value = $2
 `
@@ -93,7 +95,7 @@ AND value = $2
 const selectPortsByProjectName = `
 SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type_id, ports.ip_id
 FROM ports, ips, projects
-WHERE ips.project_id = projects.id
+WHERE ips.project_name = projects.name
 AND projects.name = $1
 AND ports.ip_id = ips.id
 `
@@ -101,7 +103,7 @@ AND ports.ip_id = ips.id
 const selectPortsByProjectNameAndIP = `
 SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type_id, ports.ip_id
 FROM ports, ips, projects
-WHERE ips.project_id = projects.id
+WHERE ips.project_name = projects.name
 AND projects.name = $1
 AND ports.ip_id = ips.id
 AND ips.value = $2
@@ -110,7 +112,7 @@ AND ips.value = $2
 const selectURIsByProjectNameAndIPAndPort = `
 SELECT uris.id, uris.name, uris.code
 FROM uris, ports, ips, projects
-WHERE ips.project_id = projects.id
+WHERE ips.project_name = projects.name
 AND project.name = $1
 AND ports.ip_id = ips.id
 AND ips.value = $2
@@ -118,15 +120,15 @@ AND uris.port_id = ports.id
 AND ports.value = $3
 `
 const selectRawsByProjectName = `
-SELECT raws.id, raws.module, raws.project_id, raws.data, raws.created_at
+SELECT raws.id, raws.module, raws.project_name, raws.data, raws.created_at
 FROM raws, projects
-WHERE raws.project_id = projects.id
+WHERE raws.project_name = projects.name
 AND projects.name = $1
 `
 const selectRawsByProjectNameAndModuleName = `
-SELECT raws.id, raws.module, raws.project_id, raws.data, raws.created_at
+SELECT raws.id, raws.module, raws.project_name, raws.data, raws.created_at
 FROM raws, projects
-WHERE raws.project_id = projects.id
+WHERE raws.project_name = projects.name
 AND projects.name = $1
 AND raws.module = $2
 `
@@ -144,14 +146,8 @@ $1 : value
 $2 : project name
 */
 const insertIP = `
-INSERT INTO ips (value, project_id)
-VALUES ($1, 
-	(
-		SELECT projects.id
-		FROM projects
-		WHERE projects.name = $2
-	)
-)
+INSERT INTO ips (value, project_name)
+VALUES ($1, $2)
 returning id;
 `
 
@@ -171,7 +167,7 @@ VALUES ($1, $2, $3, $4, $5,
 	(
 		SELECT ips.id
 		FROM ips, projects
-		WHERE ips.project_id = project.id
+		WHERE ips.project_name = projects.name
 		AND projects.name = $6
 		AND ips.value = $7
 	)
@@ -194,7 +190,7 @@ VALUE ($1, $2,
 		SELECT ports.id
 		FROM ports, projects, ips
 		WHERE ports.ip_id = ips.id
-		AND projects.id = ips.project_id
+		AND projects.name = ips.project_name
 		AND ports.number = $3
 		AND ips.value = $4
 		AND projects.name = $5
@@ -210,13 +206,7 @@ $2 : json data (must be valid json)
 $3 : project name
 */
 const insertRaw = `
-INSERT INTO raws(module, data, project_id)
-VALUES ($1, $2,
-	(
-		SELECT projects.id
-		FROM projects
-		WHERE projects.name = $3
-	)
-)
+INSERT INTO raws(module, data, project_name)
+VALUES ($1, $2, $3)
 returning id;
 `

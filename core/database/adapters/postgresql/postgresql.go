@@ -29,6 +29,7 @@ func InitDatabase(c *config.ConfigToml) *PostgreSQL {
 }
 
 // General purpose functions
+
 func (pg *PostgreSQL) Name() string {
 	return "PostgreSQL"
 }
@@ -58,11 +59,16 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 
 func (pg *PostgreSQL) createDb() {
 	log.Debug("Create database")
-	db, err := sql.Open("postgres",
-		fmt.Sprintf("user=%s host=%s sslmode=disable",
-			pg.cfg.Database.User,
-			pg.cfg.Database.IP,
-		))
+	strConn := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable",
+		pg.cfg.Database.User,
+		pg.cfg.Database.IP,
+		pg.cfg.Database.Password,
+	)
+	db, err := sql.Open("postgres", strConn)
+	log.Debugf("StrConn : %s", strConn)
+	if err != nil {
+		log.Error(err)
+	}
 	// yep, configuration sqli, postgres limitation. cannot prepare this statement
 	_, err = db.Exec(fmt.Sprintf(`create database %s`, strings.ToLower(pg.cfg.Database.Database)))
 
@@ -73,10 +79,11 @@ func (pg *PostgreSQL) createDb() {
 	log.Debug("Database created !")
 
 }
+
 func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 	log.Debugf("SetupAuth postgres")
-
 	pg.createDb()
+	pg.Connect(pg.cfg)
 	//TODO : create user/password
 	err := pg.createTablesIfNotExist()
 	if err != nil {
@@ -87,8 +94,10 @@ func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 }
 
 func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s dbname=%s host=%s sslmode=disable",
-		c.Database.User, DB_NAME, c.Database.IP))
+
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", c.Database.User, c.Database.Password, strings.ToLower(c.Database.Database), c.Database.IP, c.Database.Port)
+	log.Debugf("Connection string : %s", connStr)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return err
 	}

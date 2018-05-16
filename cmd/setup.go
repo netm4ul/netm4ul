@@ -116,7 +116,7 @@ func setupDB() {
 	username := CLISession.Config.Database.User
 	password := CLISession.Config.Database.Password
 
-	db.Connect(&CLISession.Config)
+	// db.Connect(&CLISession.Config)
 	err := db.SetupAuth(username, password, dbname)
 
 	check(err)

@@ -239,5 +239,6 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	if err != nil {
 		log.Errorf("Database error : %+v", err)
 	}
+	log.Infof("Saved database info, module : %s", data.Module)
 	return false
 }
