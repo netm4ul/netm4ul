@@ -52,7 +52,14 @@ func createSessionBase() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	config.LoadConfig(configPath)
+	err := config.LoadConfig(configPath)
+
+	if err != nil {
+		log.Debugf("Could not load the config file : %s", configPath)
+		CLISession.Config = config.ConfigToml{}
+		CLISession.Config.ConfigPath = DefaultConfigPath
+	}
+
 	CLISession = session.NewSession(config.Config)
 	CLISession.Config.ConfigPath = configPath
 	CLISession.Config.Verbose = verbose

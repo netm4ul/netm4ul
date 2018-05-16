@@ -1,17 +1,18 @@
 version: '3.1'
 
 services:
-  netmaulserver:
+  server:
     build: .
-    container_name: "netmaulserver"
+    container_name: "server"
     command: ["./netm4ul","start", "server", "-v"]
     ports:
       - 8080:8080
 
-  netmaulclient:
-    container_name: "netmaulclient"
+  client:
+    container_name: "client"
     build: .
     command: ["./netm4ul","start", "client", "-v"]
+    
   postgres:
     image: postgres
     environment:
