@@ -230,10 +230,15 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	}
 
 	server.Db.Connect(&server.Session.Config)
-	err = module.WriteDb(data, server.Db, server.Session.Nodes[i].Project)
+	//update it every time
+	p := models.Project{Name: server.Session.Nodes[i].Project}
+	server.Db.CreateOrUpdateProject(p)
+
+	err = module.WriteDb(data, server.Db, p.Name)
 
 	if err != nil {
 		log.Errorf("Database error : %+v", err)
 	}
+	log.Infof("Saved database info, module : %s", data.Module)
 	return false
 }

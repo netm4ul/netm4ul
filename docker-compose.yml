@@ -1,4 +1,4 @@
-version: '3'
+version: '3.1'
 
 services:
   netmaulserver:
@@ -12,17 +12,24 @@ services:
     container_name: "netmaulclient"
     build: .
     command: ["./netm4ul","start", "client", "-v"]
-
-  mongodb:
-    image: mongo:latest
-    container_name: "mongodb"
+  postgres:
+    image: postgres
     environment:
-      MONGO_DATA_DIR: /data/db
-      MONGO_LOG_DIR: /dev/null
-      # MONGODB_USER: user
-      # MONGODB_PASS: pass
-    volumes:
-      - ./data/db:/data/db
-    ports:
-      - 27017:27017
-    command: mongod --smallfiles --logpath=/dev/null # --quiet
+      POSTGRES_PASSWORD: password
+  #   volumes:
+  #     - ./data:/var/lib/postgresql/data
+  #   ports:
+  #     - 5432:5432
+#  mongodb:
+#    image: mongo:latest
+#    container_name: "mongodb"
+#    environment:
+#      MONGO_DATA_DIR: /data/db
+#      MONGO_LOG_DIR: /dev/null
+#      # MONGODB_USER: user
+#      # MONGODB_PASS: pass
+#    volumes:
+#      - ./data/db:/data/db
+#    ports:
+#      - 27017:27017
+#    command: mongod --smallfiles --logpath=/dev/null # --quiet

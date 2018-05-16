@@ -55,7 +55,7 @@ var setupCmd = &cobra.Command{
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		ex2Conf()
+		// ex2Conf()
 		if CLISession.Config.Database.User == "" {
 			userIMode = true
 		}
@@ -116,6 +116,7 @@ func setupDB() {
 	username := CLISession.Config.Database.User
 	password := CLISession.Config.Database.Password
 
+	// db.Connect(&CLISession.Config)
 	err := db.SetupAuth(username, password, dbname)
 
 	check(err)

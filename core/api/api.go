@@ -87,7 +87,7 @@ func (api *API) Handler() *mux.Router {
 	router.HandleFunc(prefix+"/projects/{name}/ips", api.GetIPsByProjectName).Methods("GET")
 	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports", api.GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
 	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports/{protocol}", api.GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
-	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", api.GetDirectoryByPort).Methods("GET")
+	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", api.GetURIByPort).Methods("GET")
 	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/routes", api.GetRoutesByIP).Methods("GET")
 	router.HandleFunc(prefix+"/projects/{name}/raw/{module}", api.GetRawModuleByProject).Methods("GET")
 
@@ -304,26 +304,17 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("ports : %s", ports)
 }
 
-//GetDirectoryByPort return this template
+//GetURIByPort return this template
 /*
 {
   "status": "success",
   "code": CodeOK, // real value in /core/api/codes.go
   "data": [
-	  {
-		"number": 22
-		"protocol": "tcp"
-		"status": "open"
-		"banner": "OpenSSH..."
-		"type": "ssh"
-	  },
-	  {
-		  ...
-	  }
+
   ]
 }
 */
-func (api *API) GetDirectoryByPort(w http.ResponseWriter, r *http.Request) {
+func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	res := CodeToResult[CodeNotImplementedYet]
 
@@ -375,7 +366,7 @@ func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 }
 */
 func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
-	var project string
+	var project models.Project
 	var res Result
 	fmt.Println(r)
 	decoder := json.NewDecoder(r.Body)
