@@ -19,9 +19,10 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
-[[constraint]]
-branch = "master"
-name = "github.com/lair-framework/go-nmap"
+# Readd later, maybe ?
+# [[constraint]]
+# branch = "master"
+# name = "github.com/lair-framework/go-nmap"
 
 [[constraint]]
   name = "github.com/gorilla/mux"
@@ -30,10 +31,6 @@ name = "github.com/lair-framework/go-nmap"
 [[constraint]]
   name = "github.com/miekg/dns"
   version = "1.0.5"
-
-[[constraint]]
-  name = "github.com/mattn/go-isatty"
-  version = "0.0.3"
 
 [[constraint]]
   branch = "master"
@@ -50,3 +47,7 @@ name = "github.com/lair-framework/go-nmap"
 [[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.5"
+
+[[constraint]]
+  name = "github.com/shirou/gopsutil"
+  version = "2.18.4"

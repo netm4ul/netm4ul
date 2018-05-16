@@ -1,28 +1,36 @@
-version: '3'
+version: '3.1'
 
 services:
-  netmaulserver:
+  server:
     build: .
-    container_name: "netmaulserver"
-    command: ["/go/src/github.com/netm4ul/netm4ul/netm4ul","-server"]
+    container_name: "server"
+    command: ["./netm4ul","start", "server", "-v"]
     ports:
       - 8080:8080
 
-  netmaulclient:
-    container_name: "netmaulclient"
+  client:
+    container_name: "client"
     build: .
-    command: ["/go/src/github.com/netm4ul/netm4ul/netm4ul"]
-
-  mongodb:
-    image: mongo:latest
-    container_name: "mongodb"
+    command: ["./netm4ul","start", "client", "-v"]
+    
+  postgres:
+    image: postgres
     environment:
-      MONGO_DATA_DIR: /data/db
-      MONGO_LOG_DIR: /dev/null
-      MONGODB_USER: user
-      MONGODB_PASS: pass
-    volumes:
-      - ./data/db:/data/db
-    ports:
-      - 27017:27017
-    command: mongod --smallfiles --logpath=/dev/null # --quiet
+      POSTGRES_PASSWORD: password
+  #   volumes:
+  #     - ./data:/var/lib/postgresql/data
+  #   ports:
+  #     - 5432:5432
+#  mongodb:
+#    image: mongo:latest
+#    container_name: "mongodb"
+#    environment:
+#      MONGO_DATA_DIR: /data/db
+#      MONGO_LOG_DIR: /dev/null
+#      # MONGODB_USER: user
+#      # MONGODB_PASS: pass
+#    volumes:
+#      - ./data/db:/data/db
+#    ports:
+#      - 27017:27017
+#    command: mongod --smallfiles --logpath=/dev/null # --quiet

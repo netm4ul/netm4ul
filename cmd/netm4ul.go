@@ -23,7 +23,7 @@ var (
 	CLItargets     []string
 	CLImodules     []string
 	CLImode        string
-	CLIProjectName string
+	CLIprojectName string
 	verbose        bool
 	version        bool
 
@@ -37,26 +37,39 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", DefaultConfigPath, "Custom config file path")
-	rootCmd.PersistentFlags().StringVarP(&CLIProjectName, "project", "p", DefaultConfigPath, "Uses the provided project name")
+	rootCmd.PersistentFlags().StringVarP(&CLIprojectName, "project", "p", "", "Uses the provided project name")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&noColors, "no-colors", "", false, "Disable color printing")
 	log.SetOutput(os.Stdout)
 	customFormatter := new(log.TextFormatter)
-	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	// customFormatter.TimestampFormat = "2001-02-03 12:34:56"
 	customFormatter.FullTimestamp = true
 	log.SetFormatter(customFormatter)
 }
 
 func createSessionBase() {
+	var cfg config.ConfigToml
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	config.LoadConfig(configPath)
-	CLISession = session.NewSession(config.Config)
-	CLISession.Config.ConfigPath = configPath
-	CLISession.Config.Verbose = verbose
-	CLISession.Config.Project.Name = CLIProjectName
+	err := config.LoadConfig(configPath)
+	cfg = config.Config
+
+	if err != nil {
+		log.Debugf("Could not load the config file : %s", configPath)
+		cfg = config.ConfigToml{}
+	}
+
+	cfg.ConfigPath = DefaultConfigPath
+	cfg.ConfigPath = configPath
+	cfg.Verbose = verbose
+
+	CLISession = session.NewSession(cfg)
+
+	if CLIprojectName != "" {
+		CLISession.Config.Project.Name = CLIprojectName
+	}
 }
 
 var rootCmd = &cobra.Command{

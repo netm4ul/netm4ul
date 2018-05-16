@@ -7,18 +7,20 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 
-	"github.com/netm4ul/netm4ul/core/database"
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
 	// gonmap "github.com/lair-framework/go-nmap"
+<<<<<<< HEAD
+=======
+
+	"github.com/netm4ul/netm4ul/core/database/models"
+>>>>>>> develop
 	"github.com/netm4ul/netm4ul/modules"
 )
 
@@ -74,7 +76,7 @@ func (N *Nmap) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
+func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 	N.ParseConfig()
 	fmt.Println(&N.Config)
 	var opt []string
@@ -100,7 +102,8 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	}
 
 	// Port range option : -p- for all ports, -p x-y for specific range, nothing for default
-	log.Println(N.Config.PortRange)
+	// TODO : load ports from []inputs.Ports ?
+	log.Infof("PortRange : %+v", N.Config.PortRange)
 	if N.Config.PortRange != "Null" {
 		opt = append(opt, "-p"+N.Config.PortRange)
 	} else if N.Config.PortRange == "-" {
@@ -138,15 +141,20 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	opt = append(opt, "-oX", filename)
 
 	// TODO : change it for Run argument, will be passed as an option : ./netm4ul 127.0.0.1
-
-	opt = append(opt, opt2...)
+	for _, input := range inputs {
+		if input.Domain != "" {
+			opt = append(opt, input.Domain)
+		}
+		if input.IP != nil {
+			opt = append(opt, input.IP.String())
+		}
+	}
 
 	fmt.Println(opt)
 	cmd := exec.Command("/usr/bin/nmap", opt...)
-	fmt.Println("My cmd:", cmd)
 	execErr := cmd.Run()
 	if execErr != nil {
-		log.Fatal(execErr)
+		log.Fatalf("Could not execute : %+v ", execErr)
 	}
 	var err error
 	N.Result, err = ioutil.ReadFile(filename)
@@ -157,21 +165,11 @@ func (N *Nmap) Run(opt2 []string) (modules.Result, error) {
 	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
-// HandleMQ : Recv data from the MQ
-func (N *Nmap) HandleMQ() error {
-	return nil
-}
-
-// SendMQ : Send data to the MQ
-func (N *Nmap) SendMQ(data []byte) error {
-	return nil
-}
-
 // ParseConfig : Load the config from the config folder
 func (N *Nmap) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	exPath := filepath.Dir(ex)
@@ -187,16 +185,46 @@ func (N *Nmap) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (N *Nmap) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Println("Write to the database.")
-	// var data NmapRun
-	result.Data = result.Data.(NmapRun)
-	// fmt.Printf("============================%+v", result.Data)
-	//save raw data
-	raw := bson.M{projectName + ".results." + result.Module: result}
-	database.UpsertRawData(mgoSession, projectName, raw)
+func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName string) error {
+	log.Println("Write raw to the database.")
+
+	// result.Data = result.Data.(NmapRun)
+	data := result.Data.(NmapRun)
 
 	//save data in projects
 
+	// define infos to send in db
+	// Ports part
+	ports := make([]models.Port, len(data.Hosts[0].Ports))
+	for j := range data.Hosts[0].Ports {
+		p := models.Port{
+			Number:   int16(data.Hosts[0].Ports[j].PortId),
+			Protocol: data.Hosts[0].Ports[j].Protocol,
+			Status:   data.Hosts[0].Ports[j].State.State,
+			Banner:   data.Hosts[0].Ports[j].Service.Name,
+		}
+		ports[j] = p
+	}
+
+	// IP parts, multi ips ?
+	// var targets []database.IP
+	// for i := range data.Hosts {
+	// 	targets[i].Value = net.ParseIP(data.Hosts[0].Addresses[i].Addr)
+	// 	targets[i].Ports = ports
+	// }
+
+	// For now, only 1 IP
+	var target models.IP
+	target.Value = data.Hosts[0].Addresses[0].Addr
+	target.Ports = ports
+
+	// put everything in db
+	//IP
+	//change to CreateOrUpdateIPs
+	db.CreateOrUpdateIP(projectName, target)
+	// Ports
+	db.CreateOrUpdatePorts(projectName, target.Value, ports)
+	//save raw data
+	db.AppendRawData(projectName, result.Module, data)
 	return nil
 }

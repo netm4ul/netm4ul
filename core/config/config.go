@@ -60,10 +60,12 @@ type TLSParams struct {
 
 // Database : Mongodb config
 type Database struct {
-	User     string `toml:"user"`
-	Password string `toml:"password"`
-	IP       string `toml:"ip"`
-	Port     uint16 `toml:"port"`
+	User         string `toml:"user"`
+	Database     string `toml:"database"`
+	DatabaseType string `toml:"databaseType"`
+	Password     string `toml:"password"`
+	IP           string `toml:"ip"`
+	Port         uint16 `toml:"port"`
 }
 
 // Module : Basic struct for general module config
@@ -78,12 +80,6 @@ type Versions struct {
 	Client string `toml:"client" json:"client"`
 }
 
-// Node : Node info
-type Node struct {
-	Modules []string `json:"modules"`
-	Project string   `json:"project"`
-}
-
 type Project struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -94,7 +90,6 @@ type ConfigToml struct {
 	Project    Project
 	Versions   Versions
 	Verbose    bool
-	NoColors   bool
 	ConfigPath string
 	Mode       string
 	IsServer   bool
@@ -105,7 +100,6 @@ type ConfigToml struct {
 	Keys       Keys
 	Server     Server
 	Database   Database
-	Nodes      map[string]Node
 	Modules    map[string]Module
 	TLSParams  TLSParams
 }
@@ -114,23 +108,25 @@ type ConfigToml struct {
 var Config ConfigToml
 
 // LoadConfig load the configuration file !
-func LoadConfig(file string) {
+func LoadConfig(file string) error {
 	var configPath string
 
 	if file == "" {
 		dir, err := os.Getwd()
 
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-
 		configPath = filepath.Join(dir, "netm4ul.conf")
 	} else {
 		configPath = file
 	}
-	if _, err := toml.DecodeFile(configPath, &Config); err != nil {
-		log.Fatalln(err)
+
+	_, err := toml.DecodeFile(configPath, &Config)
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 // Read CA file and initialise

@@ -20,6 +20,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/client"
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	log "github.com/sirupsen/logrus"
@@ -59,8 +60,9 @@ var startServerCmd = &cobra.Command{
 		if CLILogfile {
 			setupLoggingToFile(ServerLogPath)
 		}
+
 		CLISession.Config.IsServer = isServer
-		CLISession.Config.Nodes = make(map[string]config.Node)
+		CLISession.Nodes = make([]communication.Node, 0)
 
 		if CLISession.Config.TLSParams.UseTLS {
 			CLISession.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
@@ -77,12 +79,13 @@ var startServerCmd = &cobra.Command{
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// ss := session.NewSession(config.Config)
 		// listen on all interface + Server port
-		go server.CreateServer(CLISession)
-
+		s := server.CreateServer(CLISession)
+		go s.Listen()
 		// TODO flag enable / disable api
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// sa := session.NewSession(config.Config)
-		go api.CreateAPI(CLISession)
+		a := api.CreateAPI(CLISession, s)
+		go a.Start()
 
 		gracefulShutdown()
 
@@ -116,7 +119,8 @@ var startClientCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// sc := session.NewSession(config.Config)
-		go client.CreateClient(CLISession)
+		c := client.CreateClient(CLISession)
+		go c.Start()
 
 		gracefulShutdown()
 	},

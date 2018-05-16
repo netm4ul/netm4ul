@@ -98,22 +98,13 @@ It uses the following format :
 ```
 {
 	"status": "success", // only "success" or "error"
-	"code": 200, // see the "code list" below
+	"code": CodeOK, // see the "code list" in godocs
 	"message": "Some message", // required only in ERROR code. Not mandatory on success
 	"data" : // any kind of json type : object, array, string, number, ... If error, no data are returned.
 }
 ```
 
 All the JSON fields are **lowercase** and most of them are omitted if empty.
-
-**Code list**
-
-| Number | Meaning             | Description                                    | Status  |
-| ------ | ------------------- | ---------------------------------------------- | ------- |
-| 200    | OK                  | Expected result                                | success |
-| 404    | Not Found           | The requested item was not found on the server | error   |
-| 998    | Database Error      | Some error occured with the database           | error   |
-| 999    | Not Implemented Yet | This endpoint is not available yet             | error   |
 
 
 ### Module
@@ -262,4 +253,57 @@ Example "final" schema (with all "joins")
         }
     }
 }
+
+
+
+Database Schema :
+
+{
+    DB : netm4ul {
+            Collection_1 = PROJECTS {
+                Document_1 = Project_1 {
+                    ID : P1_ObjectID
+                    Name : "project_1"
+                    IPs : [P1_IP1_ObjectID, P1_IP2_ObjectID, P1_IP3_ObjectID]
+                }
+                Document_2 = Project_2 {
+                    ID : P2_ObjectID
+                    Name : "project_2"
+                    IPs : [P2_IP1_ObjectID, P2_IP2_ObjectID, P3_IP3_ObjectID]
+                }
+            }
+            Collection_2 = IPS {
+                Document_1 = P1_IP_1 {
+                    ID : P1_IP1_ObjectID
+                    Value : "4.4.4.4"
+                    Ports : [P1_IP1_Port1_ObjectID, P1_IP1_Port2_ObjectID, P1_IP1_Port2_ObjectID]
+                }
+                Document_2 = P1_IP_2{
+                    ID : P1_IP2_ObjectID
+                    Value : "4.4.4.5"
+                    Ports : [P1_IP2_Port1_ObjectID, P1_IP2_Port2_ObjectID, P1_IP2_Port3_ObjectID]
+                }
+            }
+            Collection_3 = PORTS {
+                Document_1 = P1_IP1_Port1{
+                    ID : P1_IP1_Port1_ObjectID
+                    Number : Port_nb
+                    State : Filtered, Closed, Opened
+                    Banner : Banner
+                }
+                Document_2 = P1_IP1_Port2{
+                    ID : P1_IP1_Port2_ObjectID
+                    Number : Port_nb
+                    State : Filtered, Closed, Opened
+                    Banner : Banner
+                }
+                Document_3 = P1_IP1_Port3{
+                    ID : P1_IP1_Port3_ObjectID
+                    Number : Port_nb
+                    State : Filtered, Closed, Opened
+                    Banner : Banner
+                }
+            }
+        }
+    }
 ```

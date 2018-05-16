@@ -11,68 +11,52 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/netm4ul/netm4ul/modules"
-	mgo "gopkg.in/mgo.v2"
 
 	"crypto/tls"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
+	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/core/session"
 )
 
-var (
-	Version string
-	//Nodes represent a map to net.Conn
-	Nodes map[string]net.Conn
-	//SessionServer represent the server side's session. Hold all the modules
-	SessionServer *session.Session
-)
-
-const (
-	//CapacityLow defines the lowest tier for a performance metric
-	CapacityLow = 1
-	//CapacityMedium defines the middle tier for a performance metric
-	CapacityMedium = 2
-	//CapacityHigh defines the highest tier for a performance metric
-	CapacityHigh = 3
-)
-
-//Requirements defines all the specification needed for a node to be eligble at executing on command.
-type Requirements struct {
-	NetworkType        string `json:"networktype"`        // "external", "internal", ""
-	ConnectionCapacity uint16 `json:"connectioncapacity"` // CapacityLow, CapacityMedium, CapacityHigh
-	ComputingCapacity  uint16 `json:"computingcapacity"`  // CapacityLow, CapacityMedium, CapacityHigh
-}
-
-//Command represents the communication protocol between clients and the master node
-type Command struct {
-	Name         string       `json:"name"`
-	Options      []string     `json:"options"`
-	Requirements Requirements `json:"requirements"`
-}
-
-func init() {
-	Nodes = make(map[string]net.Conn)
+type Server struct {
+	//Session represent the server side's session. Hold all the modules
+	Session *session.Session
+	Db      models.Database
+	Algo    loadbalancing.Algorithm
 }
 
 // CreateServer : Initialise the infinite server loop on the master node
-func CreateServer(s *session.Session) {
-	SessionServer = s
-	Listen(s)
+func CreateServer(s *session.Session) *Server {
+	server := Server{Session: s}
+	server.Db = database.NewDatabase(&server.Session.Config)
+
+	server.Session.Nodes = make([]communication.Node, 0)
+	server.Session.Config.Modules = make(map[string]config.Module)
+	algo, err := loadbalancing.NewAlgo()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	server.Algo = algo
+
+	return &server
 }
 
 // Listen : create the TCP server
-func Listen(s *session.Session) {
+func (server *Server) Listen() {
 
-	Version = s.Config.Versions.Server
-	ipport := s.GetServerIPPort()
+	ipport := server.Session.GetServerIPPort()
 
 	var err error
 	var l net.Listener
 
-	if s.Config.TLSParams.UseTLS {
-		l, err = tls.Listen("tcp", ipport, s.Config.TLSParams.TLSConfig)
-
+	if server.Session.Config.TLSParams.UseTLS {
+		l, err = tls.Listen("tcp", ipport, server.Session.Config.TLSParams.TLSConfig)
 	} else {
 		l, err = net.Listen("tcp", ipport)
 	}
@@ -80,12 +64,8 @@ func Listen(s *session.Session) {
 	if err != nil {
 		log.Fatalf("Error listening : %s", err.Error())
 	}
-
 	// Close the listener when the application closes.
 	defer l.Close()
-
-	database.InitDatabase(&s.Config)
-	mgoSession := database.Connect()
 
 	log.Infof("Listenning on : %s", ipport)
 
@@ -96,78 +76,59 @@ func Listen(s *session.Session) {
 			log.Fatalf("Error accepting : %s", err.Error())
 		}
 
-		mgoSessionClone := mgoSession.Clone()
 		// Handle connections in a new goroutine. (multi-client)
-		go handleRequest(conn, mgoSessionClone, s)
+		go server.handleRequest(conn)
 	}
 }
 
-func handleRequest(conn net.Conn, mgoSession *mgo.Session, s *session.Session) {
+func (server *Server) handleRequest(conn net.Conn) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-	// defer conn.Close()
 
-	handleHello(conn, rw, mgoSession, s)
+	server.handleHello(conn, rw)
 
 	stop := false
 	for !stop {
-		stop = handleData(conn, rw, mgoSession, s)
+		stop = server.handleData(conn, rw)
 	}
 }
 
 // Recv basic info for the node at connection time.
-func handleHello(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session, s *session.Session) {
+func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 
-	var node config.Node
+	var node communication.Node
 
-	dec := gob.NewDecoder(rw)
-	err := dec.Decode(&node)
-
+	err := gob.NewDecoder(rw).Decode(&node)
 	if err != nil {
 		log.Errorf("Cannot read hello data : %s", err.Error())
 		return
 	}
-
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
 
-	if s.Config.Verbose {
-		if _, ok := s.Config.Nodes[ip]; ok {
-			log.Infoln("Node known. Updating")
-		} else {
-			log.Infoln("Unknown node. Creating")
+	node.Conn = conn
+	node.IP = ip
+
+	// check if the node is known and create or update it.
+	found := false
+	var i int
+	var n communication.Node
+	for i, n = range server.Session.Nodes {
+		if n.ID == node.ID {
+			found = true
 		}
 	}
 
-	s.Config.Nodes = make(map[string]config.Node)
-	s.Config.Modules = make(map[string]config.Module)
-
-	s.Config.Nodes[ip] = node
-	Nodes[ip] = conn
-	database.CreateProject(mgoSession, node.Project)
-
-	p := database.GetProjects(mgoSession)
-
-	log.Debugf("Nodes : %+v", s.Config.Nodes)
-	log.Debugf("Projects : %+v", p)
-
-}
-
-func getProjectByNodeIP(ip string, s *session.Session) (string, error) {
-
-	var err error
-
-	n, ok := s.Config.Nodes[ip]
-	if !ok {
-		return "", errors.New("Unknown node ! Could not get project name")
+	if found {
+		log.Infoln("Node known. Updating")
+		server.Session.Nodes[i] = node
+	} else {
+		server.Session.Nodes = append(server.Session.Nodes, node)
+		log.Infoln("Unknown node. Creating")
 	}
-
-	project := n.Project
-
-	return project, err
 }
 
 //SendCmdByName is a wrapper to the SendCommand function.
-func SendCmdByName(name string, options []string) {
+func (server *Server) SendCmdByName(name string, options []string) {
 	//TODO get the Command by module name & setup options and requirements
 
 	// cmd := Command{
@@ -179,20 +140,26 @@ func SendCmdByName(name string, options []string) {
 }
 
 //SendCmd sends one commands with its options to selected clients
-func SendCmd(command Command, s *session.Session) error {
+func (server *Server) SendCmd(command communication.Command) error {
 
-	conns, err := getAvailableNodes(command.Requirements)
+	server.Algo.SetNodes(server.Session.Nodes)
+	nodes, err := server.getNextNodes(command)
 
-	log.Debugf("Available node(s) : %d", len(conns))
+	log.Debugf("Command (%s) will be executed on %d node(s), Total nodes : %d [ %+v ]",
+		command.Name,
+		len(nodes),
+		len(server.Session.Nodes),
+		server.Session.Nodes,
+	)
 
 	if err != nil {
 		return errors.New("Could not get nodes :" + err.Error())
 	}
 
 	// Send to all nodes following the requirements
-	for _, conn := range conns {
+	for _, node := range nodes {
 
-		rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+		rw := bufio.NewReadWriter(bufio.NewReader(node.Conn), bufio.NewWriter(node.Conn))
 		err := gob.NewEncoder(rw).Encode(command)
 
 		if err != nil {
@@ -203,29 +170,29 @@ func SendCmd(command Command, s *session.Session) error {
 		if err != nil {
 			return errors.New("Could not send command :" + err.Error())
 		}
-		log.Infof("Sent command \"%s\" to %s", command.Name, conn.RemoteAddr().String())
+		log.Infof("Sent command \"%s\" to %s", command.Name, node.Conn.RemoteAddr().String())
+
+		node.IsAvailable = false
 	}
 
 	return nil
 }
 
-//getAvailableNodes return a list of net.Conn available. They must follows the requirements.
-func getAvailableNodes(req Requirements) ([]net.Conn, error) {
+//getNextNodes return a list of net.Conn available. They must follows the requirements.
+//The next command will be sent on all of these
+func (server *Server) getNextNodes(cmd communication.Command) ([]communication.Node, error) {
 	// TODO : Requirements for each modules and load balance
-	var availables []net.Conn
-	for _, conn := range Nodes {
-		availables = append(availables, conn)
-	}
-	return availables, nil
+	nodes := server.Algo.NextExecutionNodes(cmd)
+	log.Debug("Selected nodes : ", nodes)
+
+	return nodes, nil
 }
 
 // handleData decode and route all data after the "hello". It listens forever until connection closed.
-func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session, s *session.Session) bool {
+func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	var data modules.Result
-	var err error
 
-	dec := gob.NewDecoder(rw)
-	err = dec.Decode(&data)
+	err := gob.NewDecoder(rw).Decode(&data)
 
 	// handle connection closed (client shutdown)
 	if err == io.EOF {
@@ -239,21 +206,39 @@ func handleData(conn net.Conn, rw *bufio.ReadWriter, mgoSession *mgo.Session, s 
 		log.Errorf("Error while decoding data : %s", err.Error())
 		return false
 	}
+	log.Debugf("%+v", data)
 
-	module, ok := s.Modules[strings.ToLower(data.Module)]
+	module, ok := server.Session.Modules[strings.ToLower(data.Module)]
 	if !ok {
 		log.Errorf("Unknown module : %s %+v %+v", data.Module, module, ok)
 	}
 
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
-	projectName, err := getProjectByNodeIP(ip, s)
 
-	log.Debugf("%+v", data)
-	err = module.WriteDb(data, mgoSession, projectName)
+	found := false
+	var node communication.Node
+	var i int
+	for i, node = range server.Session.Nodes {
+		if node.IP == ip {
+			found = true
+		}
+	}
+
+	if !found {
+		log.Error("Coulnd't get this node, unknown ip :", ip)
+		return false
+	}
+
+	server.Db.Connect(&server.Session.Config)
+	//update it every time
+	p := models.Project{Name: server.Session.Nodes[i].Project}
+	server.Db.CreateOrUpdateProject(p)
+
+	err = module.WriteDb(data, server.Db, p.Name)
 
 	if err != nil {
 		log.Errorf("Database error : %+v", err)
 	}
+	log.Infof("Saved database info, module : %s", data.Module)
 	return false
-
 }
