@@ -11,15 +11,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/config"
-<<<<<<< HEAD
-	"github.com/netm4ul/netm4ul/core/database"
-	"github.com/netm4ul/netm4ul/modules"
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
-=======
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
->>>>>>> develop
 	"gopkg.in/ns3777k/go-shodan.v3/shodan"
 )
 
@@ -91,11 +84,7 @@ type Services struct {
 */
 
 // Run : Main function of the module
-<<<<<<< HEAD
-func (S Shodan) Run(data []string) (modules.Result, error) {
-=======
 func (S Shodan) Run(inputs []modules.Input) (modules.Result, error) {
->>>>>>> develop
 
 	log.Debug("Shodan World!")
 
@@ -108,16 +97,6 @@ func (S Shodan) Run(inputs []modules.Input) (modules.Result, error) {
 	// Create shodan context
 	shodanContext := context.Background()
 	// Get IP adress
-<<<<<<< HEAD
-	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{"google.com", "edznux.fr"})
-	if err != nil {
-		log.Panic(err)
-	} else {
-		// shodanResult.IP = *dns["edznux.fr"]
-		myIP := *dns["edznux.fr"]
-		shodanResult.IP = myIP.String()
-	}
-=======
 	var domains []string
 	for _, input := range inputs {
 		if input.Domain != "" {
@@ -133,7 +112,6 @@ func (S Shodan) Run(inputs []modules.Input) (modules.Result, error) {
 	// shodanResult.IP = *dns["edznux.fr"]
 	myIP := *dns[domains[0]]
 	shodanResult.IP = myIP.String()
->>>>>>> develop
 
 	hostServiceOption := shodan.HostServicesOptions{}
 
@@ -190,15 +168,6 @@ func (S Shodan) ParseConfig() error {
 	return nil
 }
 
-<<<<<<< HEAD
-func (S Shodan) WriteDb(result modules.Result, mgoSession *mgo.Session, projectName string) error {
-	log.Debug("Write to the database.")
-	var data ShodanResult
-	data = result.Data.(ShodanResult)
-
-	raw := bson.M{projectName + ".results." + result.Module: data}
-	database.UpsertRawData(mgoSession, projectName, raw)
-=======
 func (S Shodan) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Debug("Write to the database.")
 	// var data ShodanResult
@@ -206,7 +175,6 @@ func (S Shodan) WriteDb(result modules.Result, db models.Database, projectName s
 
 	// raw := bson.M{projectName + ".results." + result.Module: data}
 	// database.UpsertRawData(mgoSession, projectName, raw)
->>>>>>> develop
 	return nil
 }
 

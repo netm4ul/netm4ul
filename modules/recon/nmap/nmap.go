@@ -16,11 +16,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	// gonmap "github.com/lair-framework/go-nmap"
-<<<<<<< HEAD
-=======
 
 	"github.com/netm4ul/netm4ul/core/database/models"
->>>>>>> develop
 	"github.com/netm4ul/netm4ul/modules"
 )
 
