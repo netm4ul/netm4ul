@@ -71,24 +71,19 @@ func (f *JsonDB) Name() string {
 }
 
 //TOFIX
-func (f *JsonDB) writeURI(projectName string, ip string, port string, uri models.URI) error {
+func (f *JsonDB) writeURIs(projectName string, ip string, port string, uris []models.URI) error {
 
-	projectFromFile, err := f.GetProject(projectName)
+	portsFromFile, err := f.GetPorts(projectName, ip)
 	if err != nil {
 		return err
 	}
 
-	for _, ipFromFile := range projectFromFile.IPs {
-		if ipFromFile.Value == ip {
-			for _, p := range ipFromFile.Ports {
-				if strconv.Itoa(int(p.Number)) == port {
-					// ipFromFile.Ports =
-				}
-			}
+	for i, p := range portsFromFile {
+		if strconv.Itoa(int(p.Number)) == port {
+			portsFromFile[i].URIs = uris
 		}
 	}
-
-	return f.writeProject(projectFromFile)
+	return f.writePorts(projectName, ip, portsFromFile)
 }
 
 func (f *JsonDB) writePorts(projectName string, ip string, ports []models.Port) error {
@@ -378,7 +373,7 @@ func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Por
 	ports, err := f.GetPorts(projectName, ip)
 
 	if err != nil {
-		return models.Port{}, nil
+		return models.Port{}, err
 	}
 	for _, p := range ports {
 
@@ -394,20 +389,58 @@ func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Por
 }
 
 // URI (directory and files)
-func (f *JsonDB) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
-	return errors.New("Not implemented yet")
+func (f *JsonDB) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
+	urisFromFile, err := f.GetURIs(projectName, ip, port)
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for i, u := range urisFromFile {
+		if uri.Name == u.Name {
+			found = true
+			urisFromFile[i] = uri
+			break
+		}
+	}
+
+	if !found {
+		urisFromFile = append(urisFromFile, uri)
+	}
+	return f.writeURIs(projectName, ip, port, urisFromFile)
 }
 
-func (f *JsonDB) CreateOrUpdateURIs(projectName string, ip string, port string, dir []models.URI) error {
-	return errors.New("Not implemented yet")
+func (f *JsonDB) CreateOrUpdateURIs(projectName string, ip string, port string, uris []models.URI) error {
+	for _, uri := range uris {
+		err := f.CreateOrUpdateURI(projectName, ip, port, uri)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (f *JsonDB) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
-	return []models.URI{}, errors.New("Not implemented yet")
+	p, err := f.GetPort(projectName, ip, port)
+	if err != nil {
+		return nil, errors.New("Could not get URI : " + err.Error())
+	}
+	return p.URIs, nil
 }
 
-func (f *JsonDB) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
-	return models.URI{}, errors.New("Not implemented yet")
+func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) (models.URI, error) {
+	uris, err := f.GetURIs(projectName, ip, port)
+
+	if err != nil {
+		return models.URI{}, err
+	}
+
+	for _, u := range uris {
+		if u.Name == uri {
+			return u, nil
+		}
+	}
+	return models.URI{}, errors.New("not found")
 }
 
 // Raw data

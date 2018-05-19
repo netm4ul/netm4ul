@@ -1,6 +1,7 @@
 package jsondb_test
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/netm4ul/netm4ul/tests"
@@ -8,12 +9,6 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/adapters/jsondb"
 	"github.com/netm4ul/netm4ul/core/database/models"
-)
-
-const (
-	testProjectName = "Test project"
-	testProjectDesc = "Test description"
-	testIPValue     = "1.2.3.4"
 )
 
 var (
@@ -43,41 +38,42 @@ func init() {
 }
 
 func TestJsonDB_CreateOrUpdateProject(t *testing.T) {
-	project := models.Project{Name: testProjectName, Description: testProjectDesc}
+	project := models.Project{Name: tests.NormalProject.Name, Description: tests.NormalProject.Description}
 
 	err := jdb.CreateOrUpdateProject(project)
 	if err != nil {
 		t.Fatalf("Could not create or update project : %s", project.Name)
 	}
 
-	p, err := jdb.GetProject(testProjectName)
+	p, err := jdb.GetProject(tests.NormalProject.Name)
 	if err != nil {
-		t.Errorf("Could not get project %s : %s", testProjectName, err)
+		t.Errorf("Could not get project %s : %s", tests.NormalProject.Name, err)
 	}
 
-	if p.Name != testProjectName {
-		t.Errorf("Bad project name, expected %s, got %s", p.Name, testProjectName)
+	if p.Name != tests.NormalProject.Name {
+		t.Errorf("Bad project name, expected %s, got %s", p.Name, tests.NormalProject.Name)
 	}
 
-	if p.Description != testProjectDesc {
-		t.Errorf("Bad project description, expected %s, got %s", p.Description, testProjectDesc)
+	if p.Description != tests.NormalProject.Description {
+		t.Errorf("Bad project description, expected %s, got %s", p.Description, tests.NormalProject.Description)
 	}
 }
+
 func TestJsonDB_CreateOrUpdateIP(t *testing.T) {
-	ip := models.IP{Value: testIPValue}
-	err := jdb.CreateOrUpdateIP(testProjectName, ip)
+	ip := models.IP{Value: tests.NormalProject.IPs[0].Value}
+	err := jdb.CreateOrUpdateIP(tests.NormalProject.Name, ip)
 	if err != nil {
 		t.Errorf("Could not create or update IP : %s", ip.Value)
 	}
-	ips, err := jdb.GetIPs(testProjectName)
+	ips, err := jdb.GetIPs(tests.NormalProject.Name)
 	if err != nil {
-		t.Fatalf("Could not get IPs for project : %s", testProjectName)
+		t.Fatalf("Could not get IPs for project : %s", tests.NormalProject.Name)
 	}
 	if len(ips) == 0 {
 		t.Fatalf("Didn't get any IP")
 	}
-	if ips[0].Value != testIPValue {
-		t.Errorf("Read bad ip address, expected %s, got %s", testIPValue, ips[0].Value)
+	if ips[0].Value != tests.NormalProject.IPs[0].Value {
+		t.Errorf("Read bad ip address, expected %s, got %s", tests.NormalProject.IPs[0].Value, ips[0].Value)
 	}
 }
 
@@ -85,18 +81,20 @@ func TestJsonDB_CreateOrUpdatePort(t *testing.T) {
 
 	port := tests.NormalProject.IPs[0].Ports[0]
 	port.URIs = nil
-	err := jdb.CreateOrUpdatePort(testProjectName, testIPValue, port)
+	err := jdb.CreateOrUpdatePort(tests.NormalProject.Name, tests.NormalProject.IPs[0].Value, port)
 	if err != nil {
 		t.Errorf("Could not create or update Port : %+v", port)
 	}
 
-	ports, err := jdb.GetPorts(testProjectName, testIPValue)
+	ports, err := jdb.GetPorts(tests.NormalProject.Name, tests.NormalProject.IPs[0].Value)
 	if err != nil {
-		t.Fatalf("Could not get ports for project : %s", testProjectName)
+		t.Fatalf("Could not get ports for project : %s", tests.NormalProject.Name)
 	}
+
 	if len(ports) == 0 {
 		t.Fatalf("Didn't get any port")
 	}
+
 	var gotPort models.Port
 	found := false
 	for _, p := range ports {
@@ -129,6 +127,28 @@ func TestJsonDB_CreateOrUpdatePort(t *testing.T) {
 	if gotPort.Type != port.Type {
 		t.Errorf("Bad Type for port, expected %s got %s", port.Type, gotPort.Type)
 	}
+}
+
+func TestJsonDB_CreateOrUpdateURI(t *testing.T) {
+	project := tests.NormalProject.Name
+	ip := tests.NormalProject.IPs[0].Value
+	port := strconv.Itoa(int(tests.NormalProject.IPs[0].Ports[0].Number))
+	uri := tests.NormalProject.IPs[0].Ports[0].URIs[0]
+
+	err := jdb.CreateOrUpdateURI(project, ip, port, uri)
+
+	if err != nil {
+		t.Errorf("Could not create or update URI : %s", err)
+	}
+	uris, err := jdb.GetURIs(project, ip, port)
+	if err != nil {
+		t.Fatalf("Could not get uris for project : %s", err)
+	}
+
+	if len(uris) == 0 {
+		t.Fatalf("Didn't get any URIs")
+	}
+
 }
 
 func TestJsonDB_GetRawModule(t *testing.T) {
