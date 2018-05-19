@@ -7,12 +7,17 @@ import (
 	"html/template"
 	"os"
 	"path"
+	"strings"
 )
 
 //GenerateSourceTemplate returns the generated template, filled with data or error.
 func GenerateSourceTemplate(templateStr string, data map[string]string) ([]byte, error) {
+	funcMap := template.FuncMap{
+		"ToUpper": strings.ToUpper,
+		"ToLower": strings.ToLower,
+	}
 
-	tmpl, err := template.New("template").Parse(templateStr)
+	tmpl, err := template.New("template").Funcs(funcMap).Parse(templateStr)
 
 	if err != nil {
 		return nil, err

@@ -14,7 +14,7 @@ import (
 func Module(name, shortName, moduleType, author string) {
 
 	templateModule := `
-package {{.name}}
+package {{.name | ToLower}}
 
 import (
 	"encoding/gob"

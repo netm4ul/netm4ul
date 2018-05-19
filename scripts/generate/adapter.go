@@ -13,7 +13,7 @@ import (
 //GenerateAdapter generate boilerplate for adapter
 func GenerateAdapter(adapterName, adapterShortName string) {
 	templateAdapter := `
-package {{.adapterName}}
+package {{.adapterName | ToLower }}
 
 import(
 	"errors"
@@ -26,6 +26,13 @@ type {{.adapterName}} struct {
 	cfg *config.ConfigToml
 }
 
+
+func InitDatabase(c *config.ConfigToml) *{{.adapterName}} {
+	{{.adapterShortName}} := {{.adapterName}}{}
+	{{.adapterShortName}}.cfg = c
+	return &{{.adapterShortName}}
+}
+
 // General purpose functions
 func ({{.adapterShortName}} *{{.adapterName}}) Name() string{
 	return "{{.adapterName}}"
@@ -36,6 +43,23 @@ func ({{.adapterShortName}} *{{.adapterName}}) SetupAuth(username, password, dbn
 }
 
 func ({{.adapterShortName}} *{{.adapterName}}) Connect(*config.ConfigToml) error{
+	return errors.New("Not implemented yet")
+}
+
+//User
+func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateUser(user models.User) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) GetUser(username string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) GenerateNewToken(user models.User) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) DeleteUser(user models.User) error{
 	return errors.New("Not implemented yet")
 }
 
@@ -95,7 +119,7 @@ func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateURIs(projectName st
 	return errors.New("Not implemented yet")
 }
 
-func ({{.adapterShortName}} *{{.adapterName}}) GetURIs(projectName string, ip string) ([]models.URI, error){
+func ({{.adapterShortName}} *{{.adapterName}}) GetURIs(projectName string, ip string, port string) ([]models.URI, error){
 	return []models.URI{},errors.New("Not implemented yet")
 }
 

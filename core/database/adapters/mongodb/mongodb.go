@@ -64,6 +64,23 @@ func (mongo *MongoDB) firstConnect(cfg *config.ConfigToml) {
 	mongo.session = s
 }
 
+//User
+func (mongo *MongoDB) CreateOrUpdateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) GetUser(username string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) GenerateNewToken(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) DeleteUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
 // CreateOrUpdateProject create a new project structure inside db
 func (mongo *MongoDB) CreateOrUpdateProject(project models.Project) error {
 	// mongodb will create collection on use.

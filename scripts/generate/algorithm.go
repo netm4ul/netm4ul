@@ -13,7 +13,7 @@ import (
 //GenerateAlgorithm generate boilerplate for algorithm
 func GenerateAlgorithm(algorithmName, algorithmShortName string) {
 	templateAlgorithm := `
-package {{.algorithmName}}
+package {{.algorithmName | ToLower }}
 
 import (
 	"github.com/netm4ul/netm4ul/core/communication"

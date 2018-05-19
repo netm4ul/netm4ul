@@ -62,6 +62,15 @@ type Project struct {
 	IPs         []IP   `json:"ips,omitempty" bson:"IPs,omitempty"`
 }
 
+type User struct {
+	ID        string `json:"-" bson:"_id,omitempty"`
+	Name      string `json:"name" bson:"Name"`
+	Password  string `json:"password,omitempty"`
+	Token     string `json:"token,omitempty" toml:"token"`
+	CreateAt  int64  `json:"created_at" bson:"CreatedAt,omitempty"`
+	UpdatedAt int64  `json:"updated_at" bson:"UpdatedAt,omitempty"`
+}
+
 //Raws is a map, the key is module name (string). Each module write in a map of interface (key : string version of current timestamp)
 type Raws map[string]map[string]interface{}
 
@@ -74,6 +83,12 @@ type Database interface {
 	Name() string
 	SetupAuth(username, password, dbname string) error
 	Connect(*config.ConfigToml) error
+
+	//Users
+	CreateOrUpdateUser(user User) error
+	GetUser(username string) (User, error)
+	GenerateNewToken(user User) error
+	DeleteUser(user User) error
 
 	// Project
 	CreateOrUpdateProject(Project) error

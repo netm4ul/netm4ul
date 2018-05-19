@@ -79,6 +79,7 @@ func (api *API) Handler() *mux.Router {
 
 	// Add content-type json header !
 	router.Use(jsonMiddleware)
+	router.Use(authMiddleware)
 
 	// GET
 	router.HandleFunc(prefix+"/", api.GetIndex).Methods("GET")
@@ -509,6 +510,14 @@ func jsonMiddleware(next http.Handler) http.Handler {
 		log.Debugf("Request URL : %s", r.RequestURI)
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization := r.Header.Get("Authorization")
+		log.Debugf("Authorization : %s", authorization)
 		next.ServeHTTP(w, r)
 	})
 }

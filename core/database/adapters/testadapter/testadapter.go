@@ -32,6 +32,23 @@ func (test *Test) Connect(*config.ConfigToml) error {
 	return nil
 }
 
+func (test *Test) GetUser(username string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
+//User
+func (test *Test) CreateOrUpdateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (test *Test) GenerateNewToken(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (test *Test) DeleteUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
 // Project
 func (test *Test) CreateOrUpdateProject(projectName models.Project) error {
 	return nil

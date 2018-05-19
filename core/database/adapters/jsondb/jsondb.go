@@ -171,6 +171,23 @@ func (f *JsonDB) Connect(c *config.ConfigToml) error {
 	return nil
 }
 
+//User
+func (f *JsonDB) CreateOrUpdateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) GetUser(username string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) GenerateNewToken(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) DeleteUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
 // Project
 
 //CreateOrUpdateProject handle project. It will update the project if it does not exist.

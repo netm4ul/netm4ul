@@ -3,6 +3,7 @@ package postgresql
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -103,6 +104,23 @@ func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 	}
 	pg.db = db
 	return nil
+}
+
+//User
+func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
+func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+func (pg *PostgreSQL) DeleteUser(user models.User) error {
+	return errors.New("Not implemented yet")
 }
 
 // Project
