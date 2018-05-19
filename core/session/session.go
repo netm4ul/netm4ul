@@ -2,6 +2,7 @@ package session
 
 import (
 	"crypto/tls"
+	"errors"
 	"net"
 	"strconv"
 	"strings"
@@ -38,7 +39,8 @@ type Session struct {
 }
 
 // NewSession func :
-func NewSession(c config.ConfigToml) *Session {
+func NewSession(c config.ConfigToml) (*Session, error) {
+	var err error
 	s := Session{
 		Modules:        make(map[string]modules.Module, 0),
 		ModulesEnabled: make(map[string]modules.Module, 0),
@@ -46,7 +48,13 @@ func NewSession(c config.ConfigToml) *Session {
 	// populate all modules
 	s.Config = c
 	s.loadModule()
-	return &s
+
+	s.Algo, err = loadbalancing.NewAlgo(c.Algorithm.Name)
+
+	if err != nil {
+		return nil, errors.New("Could not create the session : " + err.Error())
+	}
+	return &s, nil
 }
 
 // Register func :

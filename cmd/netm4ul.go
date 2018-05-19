@@ -59,9 +59,13 @@ func createSessionBase() {
 	if err != nil {
 		log.Debugf("Could not load the config file : %s", configPath)
 		cfg = config.ConfigToml{}
+		cfg.Algorithm.Name = defaultAlgorithm
 	}
 
-	CLISession = session.NewSession(cfg)
+	CLISession, err = session.NewSession(cfg)
+	if err != nil {
+		log.Fatalf("Could not create the CLI session : %s", err)
+	}
 	CLISession.ConfigPath = configPath
 	CLISession.Verbose = verbose
 

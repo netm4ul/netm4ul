@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/netm4ul/netm4ul/core/loadbalancing"
 
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/database"
@@ -143,17 +142,17 @@ func prompt(param string) (answer string) {
 	// Database parameters
 	promptString := map[string]PromptRes{
 		"dbuser":         {Message: "Database username (default : %s) : ", DefaultValue: defaultDBSetupUser},
-		"dbpassword":     {Message: "Database password (generated : %s) : ", DefaultValue: color.RedString(defaultDBSetupPassword)},
+		"dbpassword":     {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultDBSetupPassword},
 		"dbip":           {Message: "Database IP (default : %s) : ", DefaultValue: defaultDBIP},
 		"dbport":         {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultDBPort))},
 		"dbtype":         {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: defaultDBType},
 		"apiuser":        {Message: "API username (default : %s) : ", DefaultValue: defaultAPIUser},
-		"apipassword":    {Message: "API password (generated : %s) : ", DefaultValue: color.RedString(defaultAPIPassword)},
+		"apipassword":    {Message: "API password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultAPIPassword},
 		"apiport":        {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultAPIPort))},
 		"serverip":       {Message: "Server IP (default : %s) : ", DefaultValue: defaultServerIP},
 		"serverport":     {Message: "Server port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultServerPort))},
 		"serveruser":     {Message: "Server username (default : %s) : ", DefaultValue: defaultServerUser},
-		"serverpassword": {Message: "Server password (generated : %s) : ", DefaultValue: color.RedString(defaultServerPassword)},
+		"serverpassword": {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultServerPassword},
 		"usetls":         {Message: "Use TLS (default : %s) [Y/n]: ", DefaultValue: defaultTLS},
 		"algorithm":      {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: defaultAlgorithm},
 	}
@@ -235,8 +234,7 @@ func setupServer() error {
 func setupAlgorithm() error {
 	var err error
 	usedAlgo := prompt("algorithm")
-	CLISession.Config.Algorithm = usedAlgo
-	CLISession.Algo, err = loadbalancing.NewAlgo(usedAlgo)
+	CLISession.Config.Algorithm.Name = usedAlgo
 
 	return err
 }

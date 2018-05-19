@@ -6,6 +6,7 @@ Master
 Develop 
 [![Build Status Develop](https://travis-ci.org/netm4ul/netm4ul.svg?branch=develop)](https://travis-ci.org/netm4ul/netm4ul)
 
+[![GoDoc](https://godoc.org/github.com/netm4ul/netm4ul?status.svg)](https://godoc.org/github.com/netm4ul/netm4ul)
 ## Usage
 
 ### Running NetM4ul with Docker (recommanded)

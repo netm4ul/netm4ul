@@ -1,6 +1,9 @@
+[Algorithm]
+  name = "random"
+  
 [Project]
-  Name = "netm4ul"
-  Description = "This is an awesome Netm4ul project"
+  name = "netm4ul"
+  description = "This is an awesome Netm4ul project"
 
 [Versions]
   api = "v1"

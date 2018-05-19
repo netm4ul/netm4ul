@@ -81,8 +81,12 @@ type Versions struct {
 }
 
 type Project struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string `toml:"name" json:"name"`
+	Description string `toml:"description" json:"description"`
+}
+
+type Algorithm struct {
+	Name string `toml:"name"`
 }
 
 // ConfigToml is the global config object
@@ -97,7 +101,7 @@ type ConfigToml struct {
 	Database  Database
 	Modules   map[string]Module
 	TLSParams TLSParams
-	Algorithm string
+	Algorithm Algorithm
 }
 
 // Config : exported config
