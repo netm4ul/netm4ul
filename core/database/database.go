@@ -7,6 +7,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/database/adapters/jsondb"
 	"github.com/netm4ul/netm4ul/core/database/adapters/mongodb"
 	"github.com/netm4ul/netm4ul/core/database/adapters/postgresql"
+	"github.com/netm4ul/netm4ul/core/database/adapters/testadapter"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,10 +23,12 @@ func NewDatabase(c *config.ConfigToml) models.Database {
 	m := mongodb.InitDatabase(c)
 	f := jsondb.InitDatabase(c)
 	p := postgresql.InitDatabase(c)
+	t := testadapter.InitDatabase(c)
 
 	Register(m)
 	Register(f)
 	Register(p)
+	Register(t)
 
 	db := adapters[strings.ToLower(c.Database.DatabaseType)]
 	log.Infof("Database list %+v, using %s from config file", adapters, c.Database.DatabaseType)

@@ -175,14 +175,6 @@ func GetProject(name string, s *session.Session) (models.Project, error) {
 	return data, nil
 }
 
-func GetIPsByProject(project string, s *session.Session) (models.IP, error) {
-	return models.IP{}, nil
-}
-
-func GetPortsByIP(project string, ip string, s *session.Session) ([]models.Port, error) {
-	return []models.Port{}, nil
-}
-
 func parseModules(modules []string, s *session.Session) ([]string, error) {
 
 	if len(modules) == 0 {

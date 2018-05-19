@@ -84,6 +84,7 @@ func (api *API) Handler() *mux.Router {
 	router.HandleFunc(prefix+"/", api.GetIndex).Methods("GET")
 	router.HandleFunc(prefix+"/projects", api.GetProjects).Methods("GET")
 	router.HandleFunc(prefix+"/projects/{name}", api.GetProject).Methods("GET")
+	router.HandleFunc(prefix+"/projects/{name}/algorithm", api.GetAlgorithm).Methods("GET")
 	router.HandleFunc(prefix+"/projects/{name}/ips", api.GetIPsByProjectName).Methods("GET")
 	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports", api.GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
 	router.HandleFunc(prefix+"/projects/{name}/ips/{ip}/ports/{protocol}", api.GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
@@ -93,6 +94,7 @@ func (api *API) Handler() *mux.Router {
 
 	// POST
 	router.HandleFunc(prefix+"/projects", api.CreateProject).Methods("POST")
+	router.HandleFunc(prefix+"/projects/{name}/algorithm", api.ChangeAlgorithm).Methods("POST")
 	router.HandleFunc(prefix+"/projects/{name}/run", api.RunModules).Methods("POST")
 	router.HandleFunc(prefix+"/projects/{name}/run/{module}", api.RunModule).Methods("POST")
 
@@ -113,11 +115,8 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//GetProjects return this template
 /*
-{
-  "status": "success",
-  "code": CodeOK, // real value in /core/api/codes.go
+GetProjects return this template
   "data": [
     {
 	  "name": "FirstProject",
@@ -125,7 +124,6 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 	  "updated_at": 12345678
     }
   ]
-}
 */
 func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 
@@ -151,16 +149,12 @@ func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//GetProject return this template
 /*
-{
-  "status": "success",
-  "code": CodeOK, // real value in /core/api/codes.go
+GetProject return this template
   "data": {
     "name": "FirstProject",
     "updated_at": 1520122127
   }
-}
 */
 func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	var res Result
@@ -197,20 +191,46 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	res.Data = p
 
 	json.NewEncoder(w).Encode(res)
-
 }
 
-//GetIPsByProjectName return this template
+//GetAlgorithm return the current algorithm used by the server
+func (api *API) GetAlgorithm(w http.ResponseWriter, r *http.Request) {
+	var res Result
+	res = CodeToResult[CodeOK]
+	res.Data = api.Server.Session.Algo.Name()
+	json.NewEncoder(w).Encode(res)
+}
+
+func (api *API) ChangeAlgorithm(w http.ResponseWriter, r *http.Request) {
+	var res Result
+	var algorithm string
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&algorithm)
+
+	if err != nil {
+		res = CodeToResult[CodeCouldNotDecodeJSON]
+		w.WriteHeader(CodeToResult[CodeCouldNotDecodeJSON].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	defer r.Body.Close()
+
+	if err != nil {
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(CodeToResult[CodeCouldNotDecodeJSON].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+}
+
 /*
-{
-  "status": "success",
-  "code": CodeOK, // real value in /core/api/codes.go
+GetIPsByProjectName return this template
   "data": [
-	  "10.0.0.1",
-	  "10.0.0.12",
-	  "10.20.3.4"
+    "10.0.0.1",
+    "10.0.0.12",
+    "10.20.3.4"
   ]
-}
 */
 func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	var res Result
@@ -257,24 +277,20 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//GetPortsByIP return this template
 /*
-{
-  "status": "success",
-  "code": CodeOK, // real value in /core/api/codes.go
+GetPortsByIP return this template
   "data": [
-	  {
-		"number": 22
-		"protocol": "tcp"
-		"status": "open"
-		"banner": "OpenSSH..."
-		"type": "ssh"
-	  },
-	  {
-		  ...
-	  }
+    {
+    "number": 22
+    "protocol": "tcp"
+    "status": "open"
+    "banner": "OpenSSH..."
+    "type": "ssh"
+    },
+    {
+      ...
+    }
   ]
-}
 */
 func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	var res Result
@@ -304,11 +320,8 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("ports : %s", ports)
 }
 
-//GetURIByPort return this template
 /*
-{
-  "status": "success",
-  "code": CodeOK, // real value in /core/api/codes.go
+GetURIByPort return this template
   "data": [
 
   ]
@@ -330,25 +343,21 @@ func (api *API) GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//GetRoutesByIP returns all the routes info following this template :
 /*
-{
-	"status": "success",
-	"code": CodeOK, // real value in /core/api/codes.go
-	"data": [
-		{
-			"Source": "1.2.3.4",
-			"Destination": "4.3.2.1",
-			"Hops": {
-				"IP" : "127.0.0.1",
-				"Max": 0.123,
-				"Min": 0.1,
-				"Avg": 0.11
-			}
-		},
-		...
-		]
-	}
+GetRoutesByIP returns all the routes info following this template :
+  "data": [
+    {
+      "Source": "1.2.3.4",
+      "Destination": "4.3.2.1",
+      "Hops": {
+        "IP" : "127.0.0.1",
+        "Max": 0.123,
+        "Min": 0.1,
+        "Avg": 0.11
+      }
+    },
+    ...
+    ]
 */
 func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
@@ -357,13 +366,9 @@ func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//CreateProject return this template after creating the new project
 /*
-{
-	"status": "success",
-	"code": CodeOK, // real value in /core/api/codes.go
-	"data": "ProjectName"
-}
+CreateProject return this template after creating the new project
+  "data": "ProjectName"
 */
 func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var project models.Project
@@ -438,18 +443,14 @@ func (api *API) RunModules(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//RunModule return this template after starting the modules
 /*
-{
-	"status": "success",
-	"code": CodeOK, // real value in /core/api/codes.go
-	"data": {
-		nodes: [
-			"1.2.3.4",
-			"4.3.2.1"
-		]
-	}
-}
+RunModule return this template after starting the modules
+  "data": {
+    nodes: [
+      "1.2.3.4",
+      "4.3.2.1"
+    ]
+  }
 */
 func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 
@@ -492,13 +493,9 @@ func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//DeleteProject return this template after deleting the project
 /*
-{
-	"status": "success",
-	"code": CodeOK, // real value in /core/api/codes.go
-	"data": "ProjectName"
-}
+DeleteProject return this template after deleting the project
+  "data": "ProjectName"
 */
 func (api *API) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	//TODO

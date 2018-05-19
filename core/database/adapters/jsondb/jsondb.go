@@ -98,9 +98,9 @@ func (f *JsonDB) writePorts(projectName string, ip string, ports []models.Port) 
 		return err
 	}
 
-	for _, i := range projectFromFile.IPs {
-		if i.Value == ip {
-			i.Ports = ports
+	for i, ipFromFile := range projectFromFile.IPs {
+		if ipFromFile.Value == ip {
+			projectFromFile.IPs[i].Ports = ports
 		}
 	}
 
@@ -130,17 +130,17 @@ func (f *JsonDB) writeProject(p models.Project) error {
 	}
 
 	found := false
-	for _, projectFromFile := range projects {
+	for i, projectFromFile := range projects {
 		if projectFromFile.Name == p.Name {
 			found = true
-			projectFromFile = p
+			projects[i] = p
 		}
 	}
 
 	if !found {
+		log.Debugf("project not found, creating (%s)", p.Name)
 		projects = append(projects, p)
 	}
-
 	return f.writeProjects(projects)
 }
 
@@ -210,7 +210,7 @@ func (f *JsonDB) GetProjects() ([]models.Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("Read projects files : %+v", files)
+	log.Debugf("Read projects files : %+v", files)
 
 	for _, filePath := range files {
 		file, err := os.Open(filePath)

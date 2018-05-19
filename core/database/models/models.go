@@ -43,7 +43,7 @@ type Port struct {
 	Status   string `json:"status,omitempty" bson:"Status"` // open, filtered, closed
 	Banner   string `json:"banner,omitempty" bson:"Banner,omitempty"`
 	Type     string `json:"type,omitempty" bson:"Type,omitempty"`
-	URI      []URI  `json:"value,omitempty" bson:"Value,omitempty"`
+	URIs     []URI  `json:"uris,omitempty" bson:"uris,omitempty"`
 }
 
 //IP defines the IP address of a target.
