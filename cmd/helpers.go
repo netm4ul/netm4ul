@@ -229,7 +229,7 @@ func printProjectsInfo(s *session.Session) {
 
 	// build array of array for the table !
 	for _, p := range listOfProjects {
-		if s.Config.Verbose {
+		if s.Verbose {
 			log.Infof("p : %+v", p)
 		}
 		data = append(data, []string{p.Name, p.Description, strconv.Itoa(len(p.IPs)), time.Unix(p.UpdatedAt, 0).String()})

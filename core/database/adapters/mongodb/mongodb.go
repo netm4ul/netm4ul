@@ -73,9 +73,9 @@ func (mongo *MongoDB) CreateOrUpdateProject(project models.Project) error {
 
 	info, err := c.Upsert(bson.M{"Name": project.Name}, bson.M{"$set": bson.M{"UpdatedAt": time.Now().Unix()}})
 
-	if mongo.cfg.Verbose && info.Updated == 1 {
-		log.Infof("Info : %+v", info)
-		log.Infof("Adding %s to the collections 'projects'", project.Name)
+	if info.Updated == 1 {
+		log.Debugf("Info : %+v", info)
+		log.Debugf("Adding %s to the collections 'projects'", project.Name)
 	}
 
 	return err

@@ -18,7 +18,6 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/database/models"
-	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/core/session"
 )
 
@@ -26,7 +25,6 @@ type Server struct {
 	//Session represent the server side's session. Hold all the modules
 	Session *session.Session
 	Db      models.Database
-	Algo    loadbalancing.Algorithm
 }
 
 // CreateServer : Initialise the infinite server loop on the master node
@@ -36,13 +34,6 @@ func CreateServer(s *session.Session) *Server {
 
 	server.Session.Nodes = make([]communication.Node, 0)
 	server.Session.Config.Modules = make(map[string]config.Module)
-	algo, err := loadbalancing.NewAlgo()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	server.Algo = algo
 
 	return &server
 }
@@ -142,7 +133,7 @@ func (server *Server) SendCmdByName(name string, options []string) {
 //SendCmd sends one commands with its options to selected clients
 func (server *Server) SendCmd(command communication.Command) error {
 
-	server.Algo.SetNodes(server.Session.Nodes)
+	server.Session.Algo.SetNodes(server.Session.Nodes)
 	nodes, err := server.getNextNodes(command)
 
 	log.Debugf("Command (%s) will be executed on %d node(s), Total nodes : %d [ %+v ]",
@@ -182,7 +173,7 @@ func (server *Server) SendCmd(command communication.Command) error {
 //The next command will be sent on all of these
 func (server *Server) getNextNodes(cmd communication.Command) ([]communication.Node, error) {
 	// TODO : Requirements for each modules and load balance
-	nodes := server.Algo.NextExecutionNodes(cmd)
+	nodes := server.Session.Algo.NextExecutionNodes(cmd)
 	log.Debug("Selected nodes : ", nodes)
 
 	return nodes, nil

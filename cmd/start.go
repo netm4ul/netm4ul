@@ -61,7 +61,7 @@ var startServerCmd = &cobra.Command{
 			setupLoggingToFile(ServerLogPath)
 		}
 
-		CLISession.Config.IsServer = isServer
+		CLISession.IsServer = isServer
 		CLISession.Nodes = make([]communication.Node, 0)
 
 		if CLISession.Config.TLSParams.UseTLS {
@@ -105,7 +105,7 @@ var startClientCmd = &cobra.Command{
 		if CLILogfile {
 			setupLoggingToFile(ClientLogPath)
 		}
-		config.Config.IsClient = isClient
+		CLISession.IsClient = isClient
 
 		if CLISession.Config.TLSParams.UseTLS {
 			config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()

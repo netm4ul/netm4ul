@@ -31,6 +31,10 @@ type Session struct {
 	Connector      Connector
 	Algo           loadbalancing.Algorithm
 	Nodes          []communication.Node
+	IsServer       bool
+	IsClient       bool
+	ConfigPath     string
+	Verbose        bool
 }
 
 // NewSession func :

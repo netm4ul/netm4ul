@@ -124,12 +124,9 @@ func (S Shodan) Run(inputs []modules.Input) (modules.Result, error) {
 
 	shodanResult.Host = host
 
-	// for debug
-	if config.Config.Verbose {
-		printHost(*host)
-		for _, servicesData := range host.Data {
-			log.Debug(servicesData)
-		}
+	printHost(*host)
+	for _, servicesData := range host.Data {
+		log.Debug(servicesData)
 	}
 
 	// Exit message

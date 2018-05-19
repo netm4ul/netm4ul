@@ -47,19 +47,18 @@ var (
 )
 
 var (
+	caEntityID      = "ca"
+	caEntityType    = "CA"
+	caDirectoryName = "CA"
 
-	caEntityID = "ca"
-	caEntityType = "CA"
-	caDirectoryName	= "CA"
-
-	serverEntityType = "Server"
+	serverEntityType    = "Server"
 	serverDirectoryName = "Server"
 
-	clientEntityType = "Client"
-	clientDirectoryName = "Clients"
+	clientEntityType     = "Client"
+	clientDirectoryName  = "Clients"
 	clientEntityIDPrefix = "client_"
 
-	keySuffix = "_key.pem"
+	keySuffix  = "_key.pem"
 	certSuffix = "_cert.pem"
 )
 
@@ -222,7 +221,7 @@ func writeCertAndKeyToDisk(entityType string, privateKey *ecdsa.PrivateKey, cert
 	if entityType != caEntityType || keepPrivCA {
 		keyOut, err := os.OpenFile(keyFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
-			log.Print("failed to open " + keyFilename + "  for writing:", err)
+			log.Print("failed to open "+keyFilename+"  for writing:", err)
 		}
 		pem.Encode(keyOut, pemBlockForKey(privateKey))
 		keyOut.Close()
@@ -327,7 +326,7 @@ func pkiSetup(organisationSubject string, numberClients uint, certDuration time.
 	// Create clients
 	clientsDir := append(targetDir, clientDirectoryName)
 	for i := 0; i < int(numberClients); i++ {
-		create(clientEntityIDPrefix + strconv.Itoa(i), certDuration, clientEntityType, ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
+		create(clientEntityIDPrefix+strconv.Itoa(i), certDuration, clientEntityType, ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
 
 	}
 

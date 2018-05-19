@@ -87,21 +87,17 @@ type Project struct {
 
 // ConfigToml is the global config object
 type ConfigToml struct {
-	Project    Project
-	Versions   Versions
-	Verbose    bool
-	ConfigPath string
-	Mode       string
-	IsServer   bool
-	IsClient   bool
-	Targets    []string
-	API        API
-	DNS        DNS
-	Keys       Keys
-	Server     Server
-	Database   Database
-	Modules    map[string]Module
-	TLSParams  TLSParams
+	Project   Project
+	Versions  Versions
+	Mode      string
+	API       API
+	DNS       DNS
+	Keys      Keys
+	Server    Server
+	Database  Database
+	Modules   map[string]Module
+	TLSParams TLSParams
+	Algorithm string
 }
 
 // Config : exported config

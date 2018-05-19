@@ -61,11 +61,9 @@ func createSessionBase() {
 		cfg = config.ConfigToml{}
 	}
 
-	cfg.ConfigPath = DefaultConfigPath
-	cfg.ConfigPath = configPath
-	cfg.Verbose = verbose
-
 	CLISession = session.NewSession(cfg)
+	CLISession.ConfigPath = configPath
+	CLISession.Verbose = verbose
 
 	if CLIprojectName != "" {
 		CLISession.Config.Project.Name = CLIprojectName

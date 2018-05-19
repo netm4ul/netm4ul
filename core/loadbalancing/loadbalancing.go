@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	algos    map[string]Algorithm
-	usedAlgo = "Random" // TOFIX : read from config
+	algos map[string]Algorithm
 )
 
 //Algorithm is the interface implemented by all load balancing algorithm
@@ -34,7 +33,7 @@ func init() {
 }
 
 //NewAlgo return the selected algo from the config file
-func NewAlgo() (Algorithm, error) {
+func NewAlgo(usedAlgo string) (Algorithm, error) {
 	//usedAlgo is still hardfixed for now
 	a, ok := algos[strings.ToLower(usedAlgo)]
 	log.Debug(algos)
