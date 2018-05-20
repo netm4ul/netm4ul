@@ -36,6 +36,10 @@ func (test *Test) GetUser(username string) (models.User, error) {
 	return models.User{}, errors.New("Not implemented yet")
 }
 
+func (test *Test) GetUserByToken(token string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
 //User
 func (test *Test) CreateOrUpdateUser(user models.User) error {
 	return errors.New("Not implemented yet")

@@ -72,3 +72,12 @@ var NormalProjects = []models.Project{
 var NormalRaws = map[string]models.Raws{
 	NormalProject.Name: NormalRaw,
 }
+
+var NormalUser = models.User{
+	ID:        "1",
+	Name:      "Test user",
+	Password:  "$2y$10$Fu4hg./ZybmFjiPxIpEOROGwQhF3sfwakddzlWFtV.I3rJu6sfy/2", // Test password
+	Token:     "testtoken",
+	CreateAt:  123,
+	UpdatedAt: 456,
+}

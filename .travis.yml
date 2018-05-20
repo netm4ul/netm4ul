@@ -5,16 +5,11 @@ go:
   - master
 
 before_script:
-  - GO_FILES=$(find . -iname '*.go' -type f 2>&1 -not -path "./vendor/*" | grep -v "Permission denied")
-  - GO_TEST_PKG=$(find . -iname '*_test.go' -type f 2>&1 -not -path "./vendor/*" -exec dirname {} \; | grep -v "Permission denied")
-  - go get -u github.com/golang/dep/...
-  - dep ensure
   - cp netm4ul.conf.example netm4ul.conf
 
 script:
-  - test -z $(gofmt -s -l $GO_FILES)
-  - go test -v -race $GO_TEST_PKG
-  - go vet ./...
+  - make
+  - make test
 
 notifications:
   slack:

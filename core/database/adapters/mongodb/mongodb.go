@@ -73,6 +73,10 @@ func (mongo *MongoDB) GetUser(username string) (models.User, error) {
 	return models.User{}, errors.New("Not implemented yet")
 }
 
+func (mongo *MongoDB) GetUserByToken(token string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
 func (mongo *MongoDB) GenerateNewToken(user models.User) error {
 	return errors.New("Not implemented yet")
 }

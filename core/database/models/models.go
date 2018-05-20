@@ -87,6 +87,7 @@ type Database interface {
 	//Users
 	CreateOrUpdateUser(user User) error
 	GetUser(username string) (User, error)
+	GetUserByToken(token string) (User, error)
 	GenerateNewToken(user User) error
 	DeleteUser(user User) error
 

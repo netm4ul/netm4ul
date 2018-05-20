@@ -180,6 +180,10 @@ func (f *JsonDB) GetUser(username string) (models.User, error) {
 	return models.User{}, errors.New("Not implemented yet")
 }
 
+func (f *JsonDB) GetUserByToken(token string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
 func (f *JsonDB) GenerateNewToken(user models.User) error {
 	return errors.New("Not implemented yet")
 }

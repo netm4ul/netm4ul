@@ -115,6 +115,10 @@ func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
 	return models.User{}, errors.New("Not implemented yet")
 }
 
+func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
+	return models.User{}, errors.New("Not implemented yet")
+}
+
 func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
 	return errors.New("Not implemented yet")
 }
