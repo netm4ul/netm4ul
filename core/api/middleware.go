@@ -6,6 +6,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+//UnauthentificatedWhiteList contains all of the allowed ressources without MAC, unprefixed
+var UnauthentificatedWhiteList = []string{
+	"/",
+	"/users/create",
+	"/users/login",
+}
+
+func (api *API) isUnderMAC(r *http.Request) bool {
+	//search in the whitelist
+	for _, whitelisted := range UnauthentificatedWhiteList {
+		if api.Prefix+whitelisted == r.URL.String() {
+			return false
+		}
+	}
+
+	//route not in the whitelist !
+	return true
+}
+
 func (api *API) jsonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("Request URL : %s", r.RequestURI)
@@ -18,18 +37,27 @@ func (api *API) jsonMiddleware(next http.Handler) http.Handler {
 func (api *API) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		//bypass authentification for whitelisted api calls
+		if !api.isUnderMAC(r) {
+			next.ServeHTTP(w, r)
+		}
+
 		token := r.Header.Get("X-Session-Token")
 		user, err := api.db.GetUserByToken(token)
+		log.Debugf("Token : %s", token)
 
 		if err != nil {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			sendDefaultValue(w, CodeForbidden)
+			//ensure we don't write anymore to w
+			return
 		}
 
 		if user.ID != "" {
-			log.Printf("Authenticated user %+v\n", user)
+			log.Debugf("Authenticated user [%s]%s\n", user.ID, user.Name)
 			next.ServeHTTP(w, r)
 		} else {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			sendDefaultValue(w, CodeForbidden)
+			// http.Error(w, AccessForbiddenResponse, http.StatusForbidden)
 		}
 	})
 }

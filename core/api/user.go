@@ -1,9 +1,7 @@
 package api
 
 import (
-	"crypto/rand"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -15,12 +13,6 @@ import (
 type simplifiedUser struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
-}
-
-func generateNewToken() string {
-	b := make([]byte, 20)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
 }
 
 func hashAndSalt(pwd []byte) (string, error) {
@@ -94,7 +86,7 @@ func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	newUser := models.User{
 		Name:     user.Name,
 		Password: pass,
-		Token:    generateNewToken(),
+		Token:    models.GenerateNewToken(),
 	}
 
 	err = api.db.CreateOrUpdateUser(newUser)

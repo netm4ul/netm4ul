@@ -18,9 +18,16 @@ import (
 //Start the API and route endpoints to functions
 func (api *API) Start() {
 
-	ipport := api.Session.GetAPIIPPort()
-	router := api.Handler()
-	log.Fatal(http.ListenAndServe(ipport, router))
+	api.IPPort = api.Session.GetAPIIPPort()
+	api.Version = api.Session.Config.Versions.Api
+	api.Prefix = "/api/" + api.Version
+
+	log.Infof("API Listenning : %s, version : %s", api.IPPort, api.Version)
+	log.Infof("API Endpoint : %s", api.IPPort+api.Prefix)
+
+	api.Routes()
+
+	log.Fatal(http.ListenAndServe(api.IPPort, api.Router))
 }
 
 //GetIndex returns a link to the documentation on the root path

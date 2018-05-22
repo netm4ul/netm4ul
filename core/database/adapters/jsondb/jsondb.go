@@ -51,6 +51,7 @@ func InitDatabase(c *config.ConfigToml) *JsonDB {
 	j.cfg = c
 
 	//ensure data folder exists
+	//TOFIX : call that only on the root executable (tests creates ./data in the jsondb folder...)
 	if _, err := os.Stat(j.BaseDir); os.IsNotExist(err) {
 		os.Mkdir(j.BaseDir, 0755)
 	}

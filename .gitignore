@@ -23,6 +23,7 @@ netm4ul
 # Remove project folder
 vendor/
 .idea/
+.vscode/
 data/
 *.log
 

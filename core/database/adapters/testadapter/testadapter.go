@@ -33,24 +33,31 @@ func (test *Test) Connect(*config.ConfigToml) error {
 }
 
 func (test *Test) GetUser(username string) (models.User, error) {
-	return models.User{}, errors.New("Not implemented yet")
+	if tests.NormalUser.Name == username {
+		return tests.NormalUser, nil
+	}
+	return models.User{}, errors.New("User not found")
 }
 
 func (test *Test) GetUserByToken(token string) (models.User, error) {
-	return models.User{}, errors.New("Not implemented yet")
+	if tests.NormalUser.Token == token {
+		return tests.NormalUser, nil
+	}
+	return models.User{}, errors.New("User not found")
 }
 
 //User
 func (test *Test) CreateOrUpdateUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	return nil
 }
 
 func (test *Test) GenerateNewToken(user models.User) error {
-	return errors.New("Not implemented yet")
+	tests.NormalUser.Token = "Changed token"
+	return nil
 }
 
 func (test *Test) DeleteUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	return nil
 }
 
 // Project

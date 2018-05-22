@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -23,6 +24,10 @@ type API struct {
 	Session *session.Session
 	Server  *server.Server
 	db      models.Database
+	Prefix  string
+	Router  *mux.Router
+	IPPort  string
+	Version string
 }
 
 //Info provides general purpose information for this API

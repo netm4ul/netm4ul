@@ -1,6 +1,8 @@
 package models
 
 import (
+	"crypto/rand"
+	"fmt"
 	"net"
 
 	"github.com/netm4ul/netm4ul/core/config"
@@ -67,8 +69,15 @@ type User struct {
 	Name      string `json:"name" bson:"Name"`
 	Password  string `json:"password,omitempty"`
 	Token     string `json:"token,omitempty" toml:"token"`
-	CreateAt  int64  `json:"created_at" bson:"CreatedAt,omitempty"`
+	CreatedAt int64  `json:"created_at" bson:"CreatedAt,omitempty"`
 	UpdatedAt int64  `json:"updated_at" bson:"UpdatedAt,omitempty"`
+}
+
+//GenerateNewToken return a new random token string
+func GenerateNewToken() string {
+	b := make([]byte, 20)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }
 
 //Raws is a map, the key is module name (string). Each module write in a map of interface (key : string version of current timestamp)
