@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -48,10 +49,10 @@ func init() {
 	globalApi.Routes()
 }
 
-func rrCheck(t *testing.T, url string, handlerFunc http.HandlerFunc, httpCode int, apiCode api.Code, isLoggedIn bool) api.Result {
+func rrCheck(t *testing.T, method string, url string, handlerFunc http.HandlerFunc, httpCode int, apiCode api.Code, isLoggedIn bool) api.Result {
 	var jsonres api.Result
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +84,7 @@ func rrCheck(t *testing.T, url string, handlerFunc http.HandlerFunc, httpCode in
 
 func TestHTTPIndex(t *testing.T) {
 	url := globalApi.Prefix + "/"
-	jsonres := rrCheck(t, url, globalApi.GetIndex, http.StatusOK, api.CodeOK, false)
+	jsonres := rrCheck(t, "GET", url, globalApi.GetIndex, http.StatusOK, api.CodeOK, false)
 
 	expected := "Documentation available at https://github.com/netm4ul/netm4ul"
 	if jsonres.Message != expected {
@@ -92,26 +93,39 @@ func TestHTTPIndex(t *testing.T) {
 }
 
 func checkAuth(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-	url, err := route.URL()
+	t, err := route.GetPathTemplate()
+	methods, err := route.GetMethods()
+	if err != nil {
+		return err
+	}
+	url := strings.Replace(t, "{name}", "test", -1)
+	log.Debugf("Test auth against : %s %s", methods[0], url)
+
+	//TOFIX
+	// ignore non GET method for now
+	if methods[0] != "GET" {
+		return nil
+	}
+	req, err := http.NewRequest(methods[0], url, nil)
+
 	if err != nil {
 		return err
 	}
 
-	log.Printf("route url : %+v", url)
-	log.Printf("router : %+v", router)
-	log.Printf("ancestors : %+v", ancestors)
+	res := httptest.NewRecorder()
+
+	globalApi.Router.ServeHTTP(res, req)
+
 	return nil
 }
-func TestAPI_Auth(t *testing.T) {
-	url := globalApi.Prefix + "/projects/" + tests.NormalProject.Name
-	rrCheck(t, url, globalApi.GetProjects, http.StatusForbidden, api.CodeForbidden, false)
 
-	// globalApi.Router.Walk(checkAuth)
+func TestAPI_Auth(t *testing.T) {
+	globalApi.Router.Walk(checkAuth)
 }
 
 func TestAPI_GetProjects(t *testing.T) {
 	url := globalApi.Prefix + "/projects"
-	jsonres := rrCheck(t, url, globalApi.GetProjects, http.StatusOK, api.CodeOK, true)
+	jsonres := rrCheck(t, "GET", url, globalApi.GetProjects, http.StatusOK, api.CodeOK, true)
 
 	//Do not continue if failed !
 	if jsonres.Data == nil {
@@ -130,7 +144,7 @@ func TestAPI_GetProjects(t *testing.T) {
 }
 func TestAPI_GetProject(t *testing.T) {
 	url := globalApi.Prefix + "/projects/" + tests.NormalProject.Name
-	jsonres := rrCheck(t, url, globalApi.GetProject, http.StatusOK, api.CodeOK, true)
+	jsonres := rrCheck(t, "GET", url, globalApi.GetProject, http.StatusOK, api.CodeOK, true)
 
 	//Do not continue if failed !
 	if jsonres.Data == nil {
@@ -150,8 +164,7 @@ func TestAPI_GetProject(t *testing.T) {
 
 func TestAPI_GetUser(t *testing.T) {
 	url := globalApi.Prefix + "/users/" + tests.NormalUser.Name
-	log.Printf("url : %s", url)
-	jsonres := rrCheck(t, url, globalApi.GetUser, http.StatusOK, api.CodeOK, true)
+	jsonres := rrCheck(t, "GET", url, globalApi.GetUser, http.StatusOK, api.CodeOK, true)
 
 	//Do not continue if failed !
 	if jsonres.Data == nil {
@@ -181,7 +194,7 @@ func TestAPI_GetUser(t *testing.T) {
 
 func TestAPI_GetAlgorithm(t *testing.T) {
 	url := globalApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
-	jsonres := rrCheck(t, url, globalApi.GetProjects, http.StatusOK, api.CodeOK, true)
+	jsonres := rrCheck(t, "GET", url, globalApi.GetProjects, http.StatusOK, api.CodeOK, true)
 
 	//Do not continue if failed !
 	if jsonres.Data == nil {
