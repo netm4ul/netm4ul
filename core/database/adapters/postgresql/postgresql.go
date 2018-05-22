@@ -3,7 +3,6 @@ package postgresql
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -107,24 +106,113 @@ func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 }
 
 //User
+
+//TODO : refactor this.
 func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
-	return errors.New("Not implemented yet")
+
+	var lastInsertID int
+	u, err := pg.GetUser(user.Name)
+	if err != nil {
+		return err
+	}
+
+	//user exist, update it
+	if u.ID != "" {
+		if user.Password != "" && u.Password != user.Password {
+			err = pg.db.QueryRow(
+				updateUserPasswordByUsername,
+				user.Password,
+				user.Name,
+			).Scan(&lastInsertID)
+			if err != nil {
+				return err
+			}
+		}
+
+		if user.Token != "" && u.Token != user.Token {
+			err = pg.db.QueryRow(
+				updateUserTokenByUsername,
+				user.Token,
+				user.Name,
+			).Scan(&lastInsertID)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	err = pg.db.QueryRow(
+		insertUser,
+		user.Name,
+		user.Password,
+		user.Token,
+	).Scan(&lastInsertID)
+
+	if err != nil {
+		log.Error("Could not insert user in the database : " + err.Error())
+		return err
+	}
+	return nil
 }
 
 func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
-	return models.User{}, errors.New("Not implemented yet")
+
+	user := models.User{}
+
+	err := pg.db.QueryRow(
+		selectUserByName,
+		username,
+	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &user.CreatedAt, &user.UpdatedAt)
+
+	if err != nil {
+		log.Error("Could get user from the database : " + err.Error())
+		return models.User{}, err
+	}
+
+	return user, nil
 }
 
 func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
-	return models.User{}, errors.New("Not implemented yet")
+	user := models.User{}
+
+	err := pg.db.QueryRow(
+		selectUserByName,
+		token,
+	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &user.CreatedAt, &user.UpdatedAt)
+
+	if err != nil {
+		log.Error("Could get user from the database : " + err.Error())
+		return models.User{}, err
+	}
+
+	return user, nil
 }
 
 func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
-	return errors.New("Not implemented yet")
+
+	user.Token = models.GenerateNewToken()
+	err := pg.CreateOrUpdateUser(user)
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pg *PostgreSQL) DeleteUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	var deletedID int64
+	err := pg.db.QueryRow(
+		deleteUserByName,
+		user.Name,
+	).Scan(&deletedID)
+
+	if err != nil {
+		log.Error("Could get user from the database : " + err.Error())
+		return err
+	}
+
+	return nil
 }
 
 // Project
@@ -138,7 +226,7 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 	).Scan(&lastInsertID)
 
 	if err != nil {
-		log.Error("Could not save project in the database :" + err.Error())
+		log.Error("Could not save project in the database : " + err.Error())
 		return err
 	}
 	return nil
