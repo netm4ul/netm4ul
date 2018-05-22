@@ -5,6 +5,7 @@ go:
   - master
 
 before_script:
+  - go get -u github.com/golang/dep/...
   - cp netm4ul.conf.example netm4ul.conf
 
 script:
