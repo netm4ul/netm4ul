@@ -26,6 +26,7 @@ vendor/
 .vscode/
 data/
 *.log
+reports/*
 
 # personnal conf
 netm4ul.conf.my
