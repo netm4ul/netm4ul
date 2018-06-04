@@ -4,12 +4,20 @@ go:
   - 1.9
   - master
 
+
+matrix:
+  # It's ok if our code fails on unstable development versions of Go.
+  allow_failures:
+    - go: master
+  # Don't wait for tip tests to finish. Mark the test run green if the
+  # tests pass on the stable versions of Go.
+fast_finish: true
+
 before_script:
   - go get -u github.com/golang/dep/...
   - cp netm4ul.conf.example netm4ul.conf
 
 script:
-  - make
   - make test
 
 notifications:
