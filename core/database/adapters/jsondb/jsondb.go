@@ -343,6 +343,23 @@ func (f *JsonDB) GetIP(projectName string, ip string) (models.IP, error) {
 	return models.IP{}, errors.New("not found")
 }
 
+// Domain
+func (f *JsonDB) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) CreateOrUpdateDomains(projectName string, domain []models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) GetDomains(projectName string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) GetDomain(projectName string, domain string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
 // Port
 
 //CreateOrUpdatePort create or update one port for a givent project name and ip.

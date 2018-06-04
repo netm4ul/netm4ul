@@ -3,6 +3,7 @@ package postgresql
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -337,6 +338,23 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 	result := models.IP{ID: idstr, Value: value}
 
 	return result, nil
+}
+
+// Domain
+func (pg *PostgreSQL) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domain []models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (pg *PostgreSQL) GetDomains(projectName string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
+func (pg *PostgreSQL) GetDomain(projectName string, domain string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
 }
 
 // Port

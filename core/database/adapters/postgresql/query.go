@@ -1,6 +1,9 @@
 package postgresql
 
 /* ========================================= CREATE DATABASE ====================================== */
+/*
+$1 : database name
+*/
 const createDatabase = `
 CREATE DATABASE $1;
 `
@@ -31,6 +34,21 @@ const createTableIPs = `
 CREATE TABLE IF NOT EXISTS ips(
 	id serial PRIMARY KEY,
 	value varchar(50) NOT NULL,
+	created_at timestamp with time zone DEFAULT current_timestamp,
+	updated_at timestamp with time zone DEFAULT current_timestamp,
+	
+	project_name text references projects(name)
+);
+`
+
+const createTableDomains = `
+CREATE TABLE IF NOT EXISTS domains(
+	id serial PRIMARY KEY,
+	name varchar(50) NOT NULL,
+	created_at timestamp with time zone DEFAULT current_timestamp,
+	updated_at timestamp with time zone DEFAULT current_timestamp,
+
+	sub_id serial references domains(id),
 	project_name text references projects(name)
 );
 `
@@ -50,8 +68,12 @@ CREATE TABLE IF NOT EXISTS ports(
 	protocol varchar(10) NOT NULL,
 	status varchar(10) NOT NULL,
 	banner text,
+	created_at timestamp with time zone DEFAULT current_timestamp,
+	updated_at timestamp with time zone DEFAULT current_timestamp,
+
 	type_id serial references porttypes(id),
 	ip_id serial references ips(id),
+
 	UNIQUE(number, type_id, ip_id)
 );
 `
@@ -61,7 +83,11 @@ CREATE TABLE IF NOT EXISTS uris(
 	id serial PRIMARY KEY,
 	name text NOT NULL,
 	code varchar(100),
+	created_at timestamp with time zone DEFAULT current_timestamp,
+	updated_at timestamp with time zone DEFAULT current_timestamp,
+
 	port_id serial references ports(id),
+
 	UNIQUE(port_id, name)
 );
 `
@@ -70,9 +96,11 @@ const createTableRaws = `
 CREATE TABLE IF NOT EXISTS raws(
 	id serial PRIMARY KEY,
 	module varchar(100) NOT NULL,
-	project_name text references projects(name),
 	data json NOT NULL,
-	created_at timestamp with time zone DEFAULT current_timestamp
+	created_at timestamp with time zone DEFAULT current_timestamp,
+	updated_at timestamp with time zone DEFAULT current_timestamp,
+
+	project_name text references projects(name)
 );
 `
 
@@ -82,18 +110,28 @@ const selectProjects = `
 SELECT id, name, description, updated_at
 FROM projects;
 `
+
+/*
+$1 : project name
+*/
 const selectProjectByName = `
 SELECT id, name, description, updated_at
 FROM projects
 WHERE name = $1;
 `
 
+/*
+$1 : user name
+*/
 const selectUserByName = `
 SELECT id, name, password, token, created_at, updated_at
 FROM users
 WHERE name = $1;
 `
 
+/*
+$1 : user token
+*/
 const selectUserByToken = `
 SELECT id, name, password, token, created_at, updated_at
 FROM users

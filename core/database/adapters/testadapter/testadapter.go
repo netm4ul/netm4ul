@@ -110,6 +110,23 @@ func (test *Test) GetIP(projectName string, ip string) (models.IP, error) {
 	return models.IP{}, errors.New("IP not found")
 }
 
+// Domain
+func (test *Test) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (test *Test) CreateOrUpdateDomains(projectName string, domain []models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (test *Test) GetDomains(projectName string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
+func (test *Test) GetDomain(projectName string, domain string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
 // Port
 func (test *Test) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
 	return nil

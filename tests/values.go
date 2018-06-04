@@ -52,6 +52,22 @@ var NormalProject = models.Project{
 			Ports: []models.Port{}, // empty ports
 		},
 	},
+	Domains: []models.Domain{
+		models.Domain{
+			Name: "domain.tld",
+			SubDomains: []models.Domain{
+				models.Domain{Name: "subdomain"},
+				models.Domain{Name: "subdomain2"},
+			},
+		},
+		models.Domain{
+			Name: "another.tld",
+			SubDomains: []models.Domain{
+				models.Domain{Name: "anothersub"},
+				models.Domain{Name: "anothersub2"},
+			},
+		},
+	},
 }
 
 var EmptyProject = models.Project{}

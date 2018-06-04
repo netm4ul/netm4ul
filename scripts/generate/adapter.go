@@ -93,6 +93,23 @@ func ({{.adapterShortName}} *{{.adapterName}}) GetIP(projectName string, ip stri
 	return models.IP{}, errors.New("Not implemented yet")
 }
 
+// Domain
+func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateDomain(projectName string, domain models.Domain) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateDomains(projectName string, domain []models.Domain) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) GetSubDomains(projectName string) ([]models.Domain, error){
+	return []models.Domain{}, errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) GetDomain(projectName string, domain string) (models.Domain, error){
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
 // Port
 func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdatePort(projectName string, ip string, port models.Port) error{
 	return errors.New("Not implemented yet")

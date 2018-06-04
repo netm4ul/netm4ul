@@ -55,13 +55,22 @@ type IP struct {
 	Ports []Port `json:"ports,omitempty" bson:"Ports,omitempty"`
 }
 
+//Domain defines the Domain address of a target.
+type Domain struct {
+	ID         string   `json:"-" bson:"_id,omitempty"`
+	Name       string   `json:"name,omitempty" bson:"Name"`
+	IPs        []IP     `json:"ips,omitempty" bson:"IPs,omitempty"`
+	SubDomains []Domain `json:"sub_domains,omitempty" bson:"SubDomains,omitempty"`
+}
+
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	ID          string `json:"-" bson:"_id,omitempty"`
-	Name        string `json:"name" bson:"Name"`
-	Description string `json:"description" bson:"Description,omitempty"`
-	UpdatedAt   int64  `json:"updated_at" bson:"UpdatedAt,omitempty"`
-	IPs         []IP   `json:"ips,omitempty" bson:"IPs,omitempty"`
+	ID          string   `json:"-" bson:"_id,omitempty"`
+	Name        string   `json:"name" bson:"Name"`
+	Description string   `json:"description" bson:"Description,omitempty"`
+	UpdatedAt   int64    `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	IPs         []IP     `json:"ips,omitempty" bson:"IPs,omitempty"`
+	Domains     []Domain `json:"domains,omitempty" bson:"Domains,omitempty"`
 }
 
 type User struct {
@@ -110,6 +119,12 @@ type Database interface {
 	CreateOrUpdateIPs(projectName string, ip []IP) error
 	GetIPs(projectName string) ([]IP, error)
 	GetIP(projectName string, ip string) (IP, error)
+
+	// Domain
+	CreateOrUpdateDomain(projectName string, domain Domain) error
+	CreateOrUpdateDomains(projectName string, domain []Domain) error
+	GetDomains(projectName string) (Domain, error)
+	GetDomain(projectName string, domain string) (Domain, error)
 
 	// Port
 	CreateOrUpdatePort(projectName string, ip string, port Port) error

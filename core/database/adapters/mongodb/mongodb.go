@@ -209,6 +209,24 @@ func (mongo *MongoDB) GetIPs(projectName string) ([]models.IP, error) {
 func (mongo *MongoDB) GetIP(projectName string, ip string) (models.IP, error) {
 	return models.IP{}, errors.New("Not implemented yet")
 }
+
+// Domain
+func (mongo *MongoDB) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) CreateOrUpdateDomains(projectName string, domain []models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) GetDomains(projectName string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) GetDomain(projectName string, domain string) (models.Domain, error) {
+	return models.Domain{}, errors.New("Not implemented yet")
+}
+
 func (mongo *MongoDB) GetPorts(projectName string, ip string) ([]models.Port, error) {
 	// var project models.Project
 	var ports []models.Port

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/netm4ul/netm4ul/tests"
+
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -21,6 +23,7 @@ type Text struct {
 	Width    int
 	DB       models.Database
 	cfg      config.ConfigToml
+	funcs    template.FuncMap
 }
 
 //NewReport returns a new initialized report struct
@@ -36,32 +39,7 @@ func NewReport() *Text {
 	t.cfg = config.Config
 	t.DB = database.NewDatabase(&t.cfg)
 
-	return &t
-}
-
-func (t *Text) Name() string {
-	return "Text"
-}
-
-const reportPath = "./reports"
-const templatesPath = "modules/report/text/templates/"
-
-//Generate a new report in text format
-func (t *Text) Generate(name string) error {
-
-	var buff bytes.Buffer
-	var data map[string]interface{}
-
-	templates := []string{
-		templatesPath + "toc.tmpl",
-		templatesPath + "ips.tmpl",
-		templatesPath + "ports.tmpl",
-		templatesPath + "vulns.tmpl",
-		templatesPath + "domains.tmpl",
-		templatesPath + "index.tmpl",
-	}
-
-	funcs := template.FuncMap{
+	t.funcs = template.FuncMap{
 		"Center": func(text string) string {
 			return fmt.Sprintf(fmt.Sprintf("%%%ds", (len(text)+t.Width)/2), text)
 		},
@@ -79,37 +57,71 @@ func (t *Text) Generate(name string) error {
 		},
 	}
 
-	tmpl, err := template.New("Index").Funcs(funcs).ParseFiles(templates...)
+	return &t
+}
+
+func (t *Text) Name() string {
+	return "Text"
+}
+
+const reportPath = "./reports"
+const templatesPath = "modules/report/text/templates/"
+
+//Generate a new report in text format
+func (t *Text) Generate(name string) error {
+
+	var buff bytes.Buffer
+	data, err := t.getData()
+
+	templates := []string{
+		templatesPath + "toc.tmpl",
+		templatesPath + "ips.tmpl",
+		templatesPath + "ports.tmpl",
+		templatesPath + "vulns.tmpl",
+		templatesPath + "domains.tmpl",
+		templatesPath + "index.tmpl",
+	}
+
 	if err != nil {
 		return err
 	}
-	// data := tests.NormalProject
+
+	tmpl, err := template.New("Index").Funcs(t.funcs).ParseFiles(templates...)
+	if err != nil {
+		return err
+	}
+	err = tmpl.ExecuteTemplate(&buff, "index", data)
+	if err != nil {
+		return err
+	}
+
+	return WriteReport(name, buff.Bytes())
+}
+
+func (t *Text) getData() (map[string]interface{}, error) {
+
+	var data map[string]interface{}
 	data = make(map[string]interface{})
 
 	data["Name"] = t.cfg.Project.Name
 	data["Date"] = time.Now()
 	data["Description"] = t.cfg.Project.Description
 	//TOFIX Replace with real value !
-	data["Domain"] = []string{"sub.domain.tld", "sub.sub.domain.tld", "sub2.domain.tld"}
+	data["Domains"] = tests.NormalProject.Domains
 
 	ips, err := t.DB.GetIPs(t.cfg.Project.Name)
 	if err != nil {
-		return errors.New("Couldn't retrieve IPs from the database : " + err.Error())
+		return nil, errors.New("Couldn't retrieve IPs from the database : " + err.Error())
 	}
-	data["IPs"] = ips
 
+	data["IPs"] = ips
 	data["Ports"] = make([]models.Port, 0)
+
 	for _, ip := range ips {
 		data["Ports"] = append(data["Ports"].([]models.Port), ip.Ports...)
 	}
 
-	err = tmpl.ExecuteTemplate(&buff, "index", data)
-
-	if err != nil {
-		return err
-	}
-
-	return WriteReport(name, buff.Bytes())
+	return data, nil
 }
 
 //WriteReport will create a new report file. If the "reports" folder does not exist, it will create it.
