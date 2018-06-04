@@ -4,7 +4,7 @@ GO_LIST=$(shell go list ./... 2>&1 | grep -v /vendor/ | grep -v "permission deni
 all: vet fmt deps build
 	@echo "All done"
 
-test: build
+test: all
 	@go test $(GO_LIST)
 
 build:
