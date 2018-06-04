@@ -37,3 +37,8 @@ type Module interface {
 	ParseConfig() error
 	WriteDb(result Result, db models.Database, projectName string) error
 }
+
+type Report interface {
+	Name() string
+	Generate(name string) error
+}

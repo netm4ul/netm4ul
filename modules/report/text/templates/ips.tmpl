@@ -1,0 +1,5 @@
+{{ define "IPs" }}
+{{range $index, $element := .IPs}}
+    [-{{$index}}-] {{$element.Value}}
+{{- end}}
+{{end}}

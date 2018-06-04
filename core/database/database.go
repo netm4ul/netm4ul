@@ -31,7 +31,7 @@ func NewDatabase(c *config.ConfigToml) models.Database {
 	Register(t)
 
 	db := adapters[strings.ToLower(c.Database.DatabaseType)]
-	log.Infof("Database list %+v, using %s from config file", adapters, c.Database.DatabaseType)
+	log.Debugf("Database list %+v, using %s from config file", adapters, c.Database.DatabaseType)
 	log.Debugf("New Database : %+v", db)
 	return db
 }

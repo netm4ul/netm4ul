@@ -1,0 +1,5 @@
+{{define "Ports"}}
+{{range $index, $element := .Ports}}
+    {{$element.Number}} -=- ({{$element.Protocol}} | {{$element.Status}}) -=- [{{$element.Banner}}]
+{{- end}}
+{{end}}

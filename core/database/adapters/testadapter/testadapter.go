@@ -95,25 +95,16 @@ func (test *Test) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 }
 
 func (test *Test) GetIPs(projectName string) ([]models.IP, error) {
-	ips := []models.IP{}
-	for _, ip := range ips {
-		//remove ports
-		ip.Ports = nil
-		ips = append(ips, ip)
-	}
-	return ips, nil
+	return tests.NormalProject.IPs, nil
 }
 
 func (test *Test) GetIP(projectName string, ip string) (models.IP, error) {
-	for _, p := range tests.NormalProjects {
-		if p.Name == projectName {
-			for _, i := range p.IPs {
-				if i.Value == ip {
-					// remove Ports
-					i.Ports = nil
-					return i, nil
-				}
-			}
+	ips, _ := test.GetIPs(projectName)
+	for _, localIp := range ips {
+		if localIp.Value == ip {
+			// remove Ports
+			localIp.Ports = nil
+			return localIp, nil
 		}
 	}
 	return models.IP{}, errors.New("IP not found")
