@@ -85,18 +85,38 @@ func runModules(targets []modules.Input) {
 
 	jsonInput, err := json.Marshal(targets)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Error : %s", err.Error())
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonInput))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonInput))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Error : %s", err.Error())
 	}
-	res, err := json.Marshal(resp.Body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-Session-Token", CLISession.Config.API.Token)
+
+	var res api.Result
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error : %s", err.Error())
+		return
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&res)
 	if err != nil {
 		fmt.Println("Recieved invalid json !", err)
+		return
 	}
-	fmt.Println(res)
+
+	defer req.Body.Close()
+	if res.Status == "error" {
+		fmt.Printf("Could not execute command : %s", res.Message)
+
+	}
+	fmt.Printf("Command sent ! (%+v)", res)
 }
 
 func runSpecifiedModules(targets []modules.Input, modules []string) {
