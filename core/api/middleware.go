@@ -43,10 +43,11 @@ func (api *API) authMiddleware(next http.Handler) http.Handler {
 		}
 
 		token := r.Header.Get("X-Session-Token")
-		user, err := api.db.GetUserByToken(token)
 		log.Debugf("Token : %s", token)
-
+		user, err := api.db.GetUserByToken(token)
+		log.Debugf("user : %+v", user)
 		if err != nil {
+			log.Errorf("err : %+v", err)
 			sendDefaultValue(w, CodeForbidden)
 			//ensure we don't write anymore to w
 			return

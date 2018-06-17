@@ -1,13 +1,31 @@
 package testadapter
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/tests"
 )
+
+func Clone(a, b interface{}) error {
+	buff := new(bytes.Buffer)
+	enc := gob.NewEncoder(buff)
+	dec := gob.NewDecoder(buff)
+	err := enc.Encode(a)
+	if err != nil {
+		return err
+	}
+	err = dec.Decode(b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 type Test struct {
 	cfg *config.ConfigToml
@@ -66,19 +84,29 @@ func (test *Test) CreateOrUpdateProject(projectName models.Project) error {
 }
 
 func (test *Test) GetProjects() ([]models.Project, error) {
-	projects := []models.Project{}
-	for _, p := range tests.NormalProjects {
+
+	var projects []models.Project
+	projects = append([]models.Project{}, tests.NormalProjects...)
+
+	for _, p := range projects {
 		//removes IPs
 		p.IPs = nil
-		projects = append(projects, p)
 	}
+
 	return projects, nil
 }
 
 func (test *Test) GetProject(projectName string) (models.Project, error) {
-	for _, p := range tests.NormalProjects {
+	ps, err := test.GetProjects()
+	var projects []models.Project
+	projects = append([]models.Project{}, ps...)
+
+	if err != nil {
+		return models.Project{}, errors.New("Could not get projects" + err.Error())
+	}
+
+	for _, p := range projects {
 		if p.Name == projectName {
-			p.IPs = nil
 			return p, nil
 		}
 	}
@@ -95,18 +123,52 @@ func (test *Test) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 }
 
 func (test *Test) GetIPs(projectName string) ([]models.IP, error) {
-	return tests.NormalProject.IPs, nil
+	project, err := test.GetProject(projectName)
+
+	var ips []models.IP
+	if err != nil {
+		return nil, errors.New("Could not get project : " + err.Error())
+	}
+
+	err = Clone(project.IPs, &ips)
+	//remove ports !
+	for i := range ips {
+		if err != nil {
+			return nil, errors.New("Could not clone IPs : " + err.Error())
+		}
+		ips = append(ips, project.IPs[i])
+		ips[i].Ports = nil
+	}
+
+	fmt.Printf("SWDFHGJQSDFHGQSDJFGHQFDSJKGH ips %+v\n", ips)
+
+	return ips, nil
 }
 
 func (test *Test) GetIP(projectName string, ip string) (models.IP, error) {
-	ips, _ := test.GetIPs(projectName)
-	for _, localIp := range ips {
-		if localIp.Value == ip {
-			// remove Ports
-			localIp.Ports = nil
-			return localIp, nil
+
+	ips, err := test.GetIPs(projectName)
+	if err != nil {
+		return models.IP{}, errors.New("Could not get IPs : " + err.Error())
+	}
+
+	var tmpIP models.IP
+	var localIps []models.IP
+	localIps = make([]models.IP, 0)
+
+	for i := range ips {
+		err = Clone(ips[i], &tmpIP)
+		if err != nil {
+			return models.IP{}, errors.New("Could not clone IPs : " + err.Error())
+		}
+		localIps = append(localIps, tmpIP)
+		if localIps[i].Value == ip {
+			// remove ports !
+			localIps[i].Ports = nil
+			return localIps[i], nil
 		}
 	}
+
 	return models.IP{}, errors.New("IP not found")
 }
 
@@ -119,8 +181,8 @@ func (test *Test) CreateOrUpdateDomains(projectName string, domain []models.Doma
 	return errors.New("Not implemented yet")
 }
 
-func (test *Test) GetDomains(projectName string) (models.Domain, error) {
-	return models.Domain{}, errors.New("Not implemented yet")
+func (test *Test) GetDomains(projectName string) ([]models.Domain, error) {
+	return tests.NormalProject.Domains, nil
 }
 
 func (test *Test) GetDomain(projectName string, domain string) (models.Domain, error) {
@@ -137,18 +199,17 @@ func (test *Test) CreateOrUpdatePorts(projectName string, ip string, port []mode
 }
 
 func (test *Test) GetPorts(projectName string, ip string) ([]models.Port, error) {
-	ports := []models.Port{}
-	for _, i := range tests.NormalProject.IPs {
-		if i.Value == ip {
-			//remove uris
-			for _, p := range i.Ports {
-				p.URIs = nil
-				ports = append(ports, p)
-			}
-			return ports, nil
-		}
+	var ports []models.Port
+	localIp, err := test.GetIP(projectName, ip)
+	if err != nil {
+		return nil, errors.New("Could not get ports : " + err.Error())
 	}
-	return nil, errors.New("IP not found")
+	for _, p := range localIp.Ports {
+		p.URIs = nil
+		ports = append(ports, p)
+	}
+	//only one correponding ip !
+	return ports, nil
 }
 
 func (test *Test) GetPort(projectName string, ip string, port string) (models.Port, error) {
@@ -159,7 +220,6 @@ func (test *Test) GetPort(projectName string, ip string, port string) (models.Po
 
 	for _, p := range ports {
 		if strconv.Itoa(int(p.Number)) == port {
-			p.URIs = nil
 			return p, nil
 		}
 	}

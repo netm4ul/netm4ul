@@ -12,8 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/netm4ul/netm4ul/core/server"
+
 	"github.com/netm4ul/netm4ul/modules"
 
+	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/core/session"
 	log "github.com/sirupsen/logrus"
@@ -349,5 +352,5 @@ func hosts(cidr string) ([]net.IP, error) {
 
 //PrintVersion Prints the version of all the components : The server, the Client, and the HTTP API
 func PrintVersion(s *session.Session) {
-	fmt.Printf("Version :\n - Server : %s\n - Client : %s\n - HTTP API : %s\n", s.Config.Versions.Server, s.Config.Versions.Client, s.Config.Versions.Api)
+	fmt.Printf("Version :\n - Server : %s\n - Client : %s\n - HTTP API : %s\n", server.Version, client.Version, api.Version)
 }

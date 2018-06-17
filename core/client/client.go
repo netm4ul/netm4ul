@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	Version  = "0.1"
 	maxRetry = 3
 )
 

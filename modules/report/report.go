@@ -12,7 +12,8 @@ var (
 	Reporter map[string]modules.Report
 )
 
-func init() {
+//LoadReports is the init function
+func LoadReports() {
 	Reporter = make(map[string]modules.Report, 0)
 	t := text.NewReport()
 	Register(t)

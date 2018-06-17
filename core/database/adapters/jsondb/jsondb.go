@@ -352,8 +352,8 @@ func (f *JsonDB) CreateOrUpdateDomains(projectName string, domain []models.Domai
 	return errors.New("Not implemented yet")
 }
 
-func (f *JsonDB) GetDomains(projectName string) (models.Domain, error) {
-	return models.Domain{}, errors.New("Not implemented yet")
+func (f *JsonDB) GetDomains(projectName string) ([]models.Domain, error) {
+	return []models.Domain{}, errors.New("Not implemented yet")
 }
 
 func (f *JsonDB) GetDomain(projectName string, domain string) (models.Domain, error) {

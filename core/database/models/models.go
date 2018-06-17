@@ -123,7 +123,7 @@ type Database interface {
 	// Domain
 	CreateOrUpdateDomain(projectName string, domain Domain) error
 	CreateOrUpdateDomains(projectName string, domain []Domain) error
-	GetDomains(projectName string) (Domain, error)
+	GetDomains(projectName string) ([]Domain, error)
 	GetDomain(projectName string, domain string) (Domain, error)
 
 	// Port

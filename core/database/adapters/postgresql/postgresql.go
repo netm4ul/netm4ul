@@ -12,7 +12,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,6 +26,7 @@ type PostgreSQL struct {
 func InitDatabase(c *config.ConfigToml) *PostgreSQL {
 	pg := PostgreSQL{}
 	pg.cfg = c
+	pg.Connect(c)
 	return &pg
 }
 
@@ -37,6 +38,9 @@ func (pg *PostgreSQL) Name() string {
 
 func (pg *PostgreSQL) createTablesIfNotExist() error {
 
+	if _, err := pg.db.Exec(createTableUsers); err != nil {
+		return err
+	}
 	if _, err := pg.db.Exec(createTableProjects); err != nil {
 		return err
 	}
@@ -88,7 +92,7 @@ func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 	//TODO : create user/password
 	err := pg.createTablesIfNotExist()
 	if err != nil {
-		return err
+		return errors.New("Could not create tables : " + err.Error())
 	}
 
 	return nil
@@ -100,7 +104,7 @@ func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 	log.Debugf("Connection string : %s", connStr)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return err
+		return errors.New("Could not open connection : " + err.Error())
 	}
 	pg.db = db
 	return nil
@@ -113,31 +117,40 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 
 	var lastInsertID int
 	u, err := pg.GetUser(user.Name)
+	if err, ok := err.(*pq.Error); ok {
+		return errors.New("pq error: " + err.Code.Name())
+	}
+
 	if err != nil {
-		return err
+		return errors.New("Error : " + err.Error())
 	}
 
 	//user exist, update it
 	if u.ID != "" {
+		// update password
 		if user.Password != "" && u.Password != user.Password {
+			log.Debug("Updating password for user", user.Name)
 			err = pg.db.QueryRow(
 				updateUserPasswordByUsername,
 				user.Password,
 				user.Name,
 			).Scan(&lastInsertID)
-			if err != nil {
-				return err
+
+			if err, ok := err.(*pq.Error); ok {
+				return errors.New("pq error: " + err.Code.Name())
 			}
 		}
 
 		if user.Token != "" && u.Token != user.Token {
+			log.Debug("Updating token for user", user.Name)
 			err = pg.db.QueryRow(
 				updateUserTokenByUsername,
 				user.Token,
 				user.Name,
 			).Scan(&lastInsertID)
-			if err != nil {
-				return err
+
+			if err, ok := err.(*pq.Error); ok {
+				return errors.New("pq error: " + err.Code.Name())
 			}
 		}
 		return nil
@@ -150,42 +163,51 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 		user.Token,
 	).Scan(&lastInsertID)
 
-	if err != nil {
-		log.Error("Could not insert user in the database : " + err.Error())
-		return err
+	if err, ok := err.(*pq.Error); ok {
+		return errors.New("pq error: " + err.Code.Name())
 	}
+	if err != nil {
+		return errors.New("Could not insert user in the database : " + err.Error())
+	}
+
 	return nil
 }
 
 func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
 
 	user := models.User{}
+	var createdAt time.Time
+	var updatedAt time.Time
 
 	err := pg.db.QueryRow(
 		selectUserByName,
 		username,
-	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &createdAt, &updatedAt)
 
-	if err != nil {
-		log.Error("Could get user from the database : " + err.Error())
-		return models.User{}, err
+	// Accept empty rows !
+	if err != nil && err != sql.ErrNoRows {
+		return models.User{}, errors.New("Could not get user by name : " + err.Error())
 	}
-
+	user.CreatedAt = createdAt.UnixNano()
+	user.UpdatedAt = updatedAt.UnixNano()
 	return user, nil
 }
 
 func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
 	user := models.User{}
-
+	var createdAt time.Time
+	var updatedAt time.Time
 	err := pg.db.QueryRow(
-		selectUserByName,
+		selectUserByToken,
 		token,
-	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &createdAt, &updatedAt)
 
 	if err != nil {
-		log.Error("Could get user from the database : " + err.Error())
-		return models.User{}, err
+		return models.User{}, errors.New("Could not get user by token from the database : " + err.Error())
 	}
+	log.Errorf("User : %+v", user)
+	user.CreatedAt = createdAt.UnixNano()
+	user.UpdatedAt = updatedAt.UnixNano()
 
 	return user, nil
 }
@@ -194,9 +216,8 @@ func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
 
 	user.Token = models.GenerateNewToken()
 	err := pg.CreateOrUpdateUser(user)
-
 	if err != nil {
-		return err
+		return errors.New("Could not generate a new token : " + err.Error())
 	}
 	return nil
 }
@@ -209,8 +230,7 @@ func (pg *PostgreSQL) DeleteUser(user models.User) error {
 	).Scan(&deletedID)
 
 	if err != nil {
-		log.Error("Could get user from the database : " + err.Error())
-		return err
+		return errors.New("Could not delete user from the database : " + err.Error())
 	}
 
 	return nil
@@ -227,8 +247,7 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 	).Scan(&lastInsertID)
 
 	if err != nil {
-		log.Error("Could not save project in the database : " + err.Error())
-		return err
+		return errors.New("Could not save project in the database :" + err.Error())
 	}
 	return nil
 }
@@ -281,8 +300,7 @@ func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	).Scan(&lastInsertID)
 
 	if err != nil {
-		log.Error("Could not save ip in the database :" + err.Error())
-		return err
+		return errors.New("Could not save ip in the database :" + err.Error())
 	}
 	return nil
 }
@@ -291,7 +309,7 @@ func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) err
 	for _, ip := range ips {
 		err := pg.CreateOrUpdateIP(projectName, ip)
 		if err != nil {
-			return err
+			return errors.New("Could not create or update ips : " + err.Error())
 		}
 	}
 	return nil
@@ -349,8 +367,8 @@ func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domain []models.
 	return errors.New("Not implemented yet")
 }
 
-func (pg *PostgreSQL) GetDomains(projectName string) (models.Domain, error) {
-	return models.Domain{}, errors.New("Not implemented yet")
+func (pg *PostgreSQL) GetDomains(projectName string) ([]models.Domain, error) {
+	return []models.Domain{}, errors.New("Not implemented yet")
 }
 
 func (pg *PostgreSQL) GetDomain(projectName string, domain string) (models.Domain, error) {

@@ -94,6 +94,14 @@ func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 		sendDefaultValue(w, CodeServerError)
 		return
 	}
+
+	res = CodeToResult[CodeOK]
+	res.Data = struct{ Token string }{Token: newUser.Token}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		sendDefaultValue(w, CodeServerError)
+		return
+	}
 }
 
 //GetUser will return basic information on the user

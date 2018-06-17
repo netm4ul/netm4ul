@@ -219,8 +219,8 @@ func (mongo *MongoDB) CreateOrUpdateDomains(projectName string, domain []models.
 	return errors.New("Not implemented yet")
 }
 
-func (mongo *MongoDB) GetDomains(projectName string) (models.Domain, error) {
-	return models.Domain{}, errors.New("Not implemented yet")
+func (mongo *MongoDB) GetDomains(projectName string) ([]models.Domain, error) {
+	return []models.Domain{}, errors.New("Not implemented yet")
 }
 
 func (mongo *MongoDB) GetDomain(projectName string, domain string) (models.Domain, error) {

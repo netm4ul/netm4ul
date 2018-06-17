@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/netm4ul/netm4ul/tests"
-
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -106,19 +104,28 @@ func (t *Text) getData() (map[string]interface{}, error) {
 	data["Name"] = t.cfg.Project.Name
 	data["Date"] = time.Now()
 	data["Description"] = t.cfg.Project.Description
-	//TOFIX Replace with real value !
-	data["Domains"] = tests.NormalProject.Domains
+
+	domains, err := t.DB.GetDomains(t.cfg.Project.Name)
+	if err != nil {
+		return nil, errors.New("Couldn't retrieve Domains from the database [" + t.DB.Name() + "] : " + err.Error())
+	}
+	data["Domains"] = domains
 
 	ips, err := t.DB.GetIPs(t.cfg.Project.Name)
 	if err != nil {
-		return nil, errors.New("Couldn't retrieve IPs from the database : " + err.Error())
+		return nil, errors.New("Couldn't retrieve IPs from the database [" + t.DB.Name() + "] : " + err.Error())
 	}
-
 	data["IPs"] = ips
-	data["Ports"] = make([]models.Port, 0)
 
+	data["Ports"] = make([]models.Port, 0)
 	for _, ip := range ips {
-		data["Ports"] = append(data["Ports"].([]models.Port), ip.Ports...)
+		fmt.Printf("ip : %s\n", ip.Value)
+		ports, err := t.DB.GetPorts(t.cfg.Project.Name, ip.Value)
+		fmt.Printf("ports : %+v\n", ports)
+		if err != nil {
+			return nil, errors.New("Couldn't retrieve Ports from the database [" + t.DB.Name() + "] : " + err.Error())
+		}
+		data["Ports"] = append(data["Ports"].([]models.Port), ports...)
 	}
 
 	return data, nil

@@ -13,7 +13,7 @@
 [API]
   port = 8080
   user = "toto"
-  password = "P@ssW0rd!"
+  token = "somerandomgeneratedtoken"
 
 [DNS]
   resolvers = "1.1.1.1,8.8.8.8"

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -19,7 +20,7 @@ import (
 func (api *API) Start() {
 
 	api.IPPort = api.Session.GetAPIIPPort()
-	api.Version = api.Session.Config.Versions.Api
+	api.Version = Version
 	api.Prefix = "/api/" + api.Version
 
 	log.Infof("API Listenning : %s, version : %s", api.IPPort, api.Version)
@@ -33,7 +34,7 @@ func (api *API) Start() {
 //GetIndex returns a link to the documentation on the root path
 func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 
-	info := Info{Port: api.Session.Config.API.Port, Versions: api.Session.Config.Versions}
+	info := Info{Port: api.Session.Config.API.Port, Versions: Version}
 	d := Metadata{Info: info, Nodes: api.Server.Session.Nodes}
 
 	res := CodeToResult[CodeOK]
@@ -365,7 +366,7 @@ RunModule return this template after starting the modules
   }
 */
 func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
-
+	fmt.Printf("RunModule api.db : %+v", api.db)
 	var inputs []modules.Input
 	var res Result
 

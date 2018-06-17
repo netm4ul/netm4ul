@@ -15,9 +15,9 @@ import (
 
 // API : Rest API config
 type API struct {
-	Port     uint16 `toml:"port"`
-	User     string `toml:"user"`
-	Password string `toml:"password"`
+	Port  uint16 `toml:"port"`
+	User  string `toml:"user"`
+	Token string `toml:"token"`
 }
 
 // DNS : Setup DNS resolver IP
@@ -33,7 +33,6 @@ type Keys struct {
 
 // Server : Master node config
 type Server struct {
-	User     string `toml:"user"`
 	Password string `toml:"password"`
 	IP       string `toml:"ip"`
 	Port     uint16 `toml:"port"`
@@ -73,12 +72,12 @@ type Module struct {
 	Enabled bool `toml:"enabled" json:"enabled"`
 }
 
-// Versions : Store the version
-type Versions struct {
-	Api    string `toml:"api" json:"api"`
-	Server string `toml:"server" json:"server"`
-	Client string `toml:"client" json:"client"`
-}
+// // Versions : Store the version
+// type Versions struct {
+// 	Api    string `toml:"api" json:"api"`
+// 	Server string `toml:"server" json:"server"`
+// 	Client string `toml:"client" json:"client"`
+// }
 
 type Project struct {
 	Name        string `toml:"name" json:"name"`
@@ -91,8 +90,8 @@ type Algorithm struct {
 
 // ConfigToml is the global config object
 type ConfigToml struct {
-	Project   Project
-	Versions  Versions
+	Project Project
+	// Versions  Versions
 	Mode      string
 	API       API
 	DNS       DNS

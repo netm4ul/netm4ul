@@ -4,16 +4,18 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/fatih/color"
+	"github.com/netm4ul/netm4ul/core/database/models"
 
 	"github.com/BurntSushi/toml"
+	"github.com/fatih/color"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +26,7 @@ type PromptRes struct {
 
 const (
 	passwordLen        = 20
+	defaultConfigPath  = "netm4ul.conf"
 	defaultDBSetupUser = "postgres"
 	defaultDBname      = "netm4ul"
 	defaultDBIP        = "localhost"
@@ -36,6 +39,7 @@ const (
 	defaultServerPort  = uint16(444)
 	defaultServerUser  = "user"
 	defaultTLS         = "y" // Yes/y No/n (case insensitive)
+	defaultCreateUser  = "y" // Yes/y No/n (case insensitive)
 	defaultAlgorithm   = "random"
 )
 
@@ -70,13 +74,23 @@ var setupCmd = &cobra.Command{
 	Short: "NetM4ul setup",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
+
+		if CLISession.ConfigPath == "" {
+			CLISession.ConfigPath = defaultConfigPath
+		}
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		err := copyExampleConf()
-		if err != nil {
-			log.Fatalf("Could not copy example file to standard config : %s", err.Error())
+		var err error
+
+		// Check if file exist
+		if _, err := os.Stat(CLISession.ConfigPath); err == nil {
+			err := copyExampleConf()
+			if err != nil {
+				log.Fatalf("Could not copy example file to standard config : %s", err.Error())
+			}
 		}
+
 		if !skipDBSetup {
 			err = setupDB()
 			if err != nil {
@@ -132,6 +146,7 @@ func prompt(param string) (answer string) {
 		"dbip":           {Message: "Database IP (default : %s) : ", DefaultValue: defaultDBIP},
 		"dbport":         {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultDBPort))},
 		"dbtype":         {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: defaultDBType},
+		"dbname":         {Message: "Database name (default : %s): ", DefaultValue: defaultDBname},
 		"apiuser":        {Message: "API username (default : %s) : ", DefaultValue: defaultAPIUser},
 		"apipassword":    {Message: "API password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultAPIPassword},
 		"apiport":        {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultAPIPort))},
@@ -140,6 +155,7 @@ func prompt(param string) (answer string) {
 		"serveruser":     {Message: "Server username (default : %s) : ", DefaultValue: defaultServerUser},
 		"serverpassword": {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultServerPassword},
 		"usetls":         {Message: "Use TLS (default : %s) [Y/n]: ", DefaultValue: defaultTLS},
+		"createuser":     {Message: "Create a new user (default : %s) [Y/n]: ", DefaultValue: defaultCreateUser},
 		"algorithm":      {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: defaultAlgorithm},
 	}
 
@@ -167,6 +183,7 @@ func setupDB() error {
 	CLISession.Config.Database.DatabaseType = prompt("dbtype")
 	CLISession.Config.Database.User = prompt("dbuser")
 	CLISession.Config.Database.Password = prompt("dbpassword")
+	CLISession.Config.Database.Database = prompt("dbname")
 
 	db := database.NewDatabase(&CLISession.Config)
 	if db == nil {
@@ -187,13 +204,43 @@ func setupDB() error {
 }
 
 func setupAPI() error {
-	CLISession.Config.API.User = prompt("apiuser")
-	CLISession.Config.API.Password = prompt("apipassword")
+	type user struct {
+		User     string
+		Password string
+	}
 	p, err := strconv.Atoi(prompt("apiport"))
 	if err != nil {
 		return err
 	}
 	CLISession.Config.API.Port = uint16(p)
+
+	wantToCreateUser := prompt("createuser")
+	createBool, err := yesNo(wantToCreateUser)
+
+	if createBool {
+		CLISession.Config.API.User = prompt("apiuser")
+		password := prompt("apipassword")
+		db := database.NewDatabase(&CLISession.Config)
+		now := time.Now().Unix()
+		user := models.User{Name: CLISession.Config.API.User, Password: password, CreatedAt: now, UpdatedAt: now}
+
+		err := db.CreateOrUpdateUser(user)
+		if err != nil {
+			return errors.New("Could not create user : " + err.Error())
+		}
+		log.Debugf("user : %+v", user)
+		err = db.GenerateNewToken(user)
+		if err != nil {
+			return errors.New("Could not generate new token for user : " + err.Error())
+		}
+
+		user, err = db.GetUser(user.Name)
+		if err != nil {
+			return errors.New("Could not get newly created user : " + err.Error())
+		}
+
+		CLISession.Config.API.Token = user.Token
+	}
 
 	return nil
 }
@@ -204,15 +251,18 @@ func setupServer() error {
 	if err != nil {
 		return err
 	}
+
 	CLISession.Config.Server.Port = uint16(p)
-	CLISession.Config.Server.User = prompt("serveruser")
 	CLISession.Config.Server.Password = prompt("serverpassword")
+
+	//loop until answer is 'y' or 'n'
 	tlsString := prompt("usetls")
 	tlsBool, err := yesNo(tlsString)
 	for err != nil {
 		tlsString := prompt("usetls")
 		tlsBool, err = yesNo(tlsString)
 	}
+
 	CLISession.Config.TLSParams.UseTLS = tlsBool
 	return nil
 }
@@ -303,7 +353,6 @@ func init() {
 	setupCmd.PersistentFlags().Uint16Var(&cliDBSetupPort, "database-port", defaultDBPort, "Custom database port number")
 	setupCmd.PersistentFlags().StringVar(&cliDBSetupType, "database-type", defaultDBType, "Custom database type number")
 	//server
-	setupCmd.PersistentFlags().StringVar(&cliServerUser, "server-user", defaultServerUser, "Custom server user")
 	setupCmd.PersistentFlags().StringVar(&cliServerPassword, "server-password", defaultServerPassword, "Custom server password")
 	setupCmd.PersistentFlags().StringVar(&cliServerIP, "server-ip", defaultServerIP, "Custom server ip address")
 	setupCmd.PersistentFlags().Uint16Var(&cliServerPort, "server-port", defaultServerPort, "Custom server port number")

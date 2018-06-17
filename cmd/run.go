@@ -34,7 +34,7 @@ var runCmd = &cobra.Command{
 
 		targets, err := parseTargets(args)
 		if err != nil {
-			log.Errorf("Error while parsing targets : %v", err.Error())
+			log.Errorf("Error while parsing targets : %s\n", err.Error())
 		}
 
 		log.Debugf("targets : %+v", targets)
@@ -62,7 +62,8 @@ var runCmd = &cobra.Command{
 }
 
 func createProject(project string) {
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects"
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+		"/api/v1/projects"
 	jsonInput, err := json.Marshal(project)
 	if err != nil {
 		log.Fatal(err)
@@ -81,18 +82,21 @@ func createProject(project string) {
 }
 
 func runModules(targets []modules.Input) {
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run"
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+		"/api/v1/projects/" +
+		CLISession.Config.Project.Name +
+		"/run"
 
 	jsonInput, err := json.Marshal(targets)
 	if err != nil {
-		fmt.Printf("Error : %s", err.Error())
+		fmt.Printf("Error : %s\n", err.Error())
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonInput))
 	if err != nil {
-		fmt.Printf("Error : %s", err.Error())
+		fmt.Printf("Error : %s\n", err.Error())
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Session-Token", CLISession.Config.API.Token)
 
 	var res api.Result
@@ -100,7 +104,7 @@ func runModules(targets []modules.Input) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("Error : %s", err.Error())
+		fmt.Printf("Error : %s\n", err.Error())
 		return
 	}
 
@@ -110,18 +114,22 @@ func runModules(targets []modules.Input) {
 		fmt.Println("Recieved invalid json !", err)
 		return
 	}
-
 	defer req.Body.Close()
-	if res.Status == "error" {
-		fmt.Printf("Could not execute command : %s", res.Message)
 
+	if res.Status == "error" {
+		fmt.Printf("Could not execute command : %s\n", res.Message)
+		return
 	}
-	fmt.Printf("Command sent ! (%+v)", res)
+
+	fmt.Printf("Command sent ! (%+v)\n", res)
 }
 
 func runSpecifiedModules(targets []modules.Input, modules []string) {
 
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run"
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+		"/api/v1/projects/" +
+		CLISession.Config.Project.Name +
+		"/run"
 
 	jsonInput, err := json.Marshal(targets)
 	if err != nil {

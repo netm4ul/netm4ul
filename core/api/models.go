@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/communication"
-	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
@@ -32,8 +31,8 @@ type API struct {
 
 //Info provides general purpose information for this API
 type Info struct {
-	Port     uint16          `json:"port,omitempty"`
-	Versions config.Versions `json:"versions"`
+	Port     uint16 `json:"port,omitempty"`
+	Versions string `json:"versions"`
 }
 
 //Metadata of the current system (node, api, database)
