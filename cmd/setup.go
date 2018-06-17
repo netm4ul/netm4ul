@@ -25,22 +25,24 @@ type PromptRes struct {
 }
 
 const (
-	passwordLen        = 20
-	defaultConfigPath  = "netm4ul.conf"
-	defaultDBSetupUser = "postgres"
-	defaultDBname      = "netm4ul"
-	defaultDBIP        = "localhost"
-	defaultDBPort      = uint16(5432)
-	defaultDBType      = "postgresql"
-	defaultAPIUser     = "user"
-	defaultAPIIP       = "localhost"
-	defaultAPIPort     = uint16(8080)
-	defaultServerIP    = "localhost"
-	defaultServerPort  = uint16(444)
-	defaultServerUser  = "user"
-	defaultTLS         = "y" // Yes/y No/n (case insensitive)
-	defaultCreateUser  = "y" // Yes/y No/n (case insensitive)
-	defaultAlgorithm   = "random"
+	passwordLen               = 20
+	defaultConfigPath         = "netm4ul.conf"
+	defaultDBSetupUser        = "postgres"
+	defaultDBname             = "netm4ul"
+	defaultDBIP               = "localhost"
+	defaultDBPort             = uint16(5432)
+	defaultDBType             = "postgresql"
+	defaultAPIUser            = "user"
+	defaultAPIIP              = "localhost"
+	defaultAPIPort            = uint16(8080)
+	defaultServerIP           = "localhost"
+	defaultServerPort         = uint16(444)
+	defaultServerUser         = "user"
+	defaultTLS                = "y" // Yes/y No/n (case insensitive)
+	defaultCreateUser         = "y" // Yes/y No/n (case insensitive)
+	defaultAlgorithm          = "random"
+	defaultProjectName        = "first"
+	defaultProjectDescription = "Your first project"
 )
 
 var (
@@ -52,7 +54,6 @@ var (
 	cliDBSetupIP              string
 	cliDBSetupPort            uint16
 	cliDBSetupType            string
-	cliServerUser             string
 	cliServerPassword         string
 	cliServerIP               string
 	cliServerPort             uint16
@@ -66,6 +67,7 @@ var (
 	skipServerSetup           bool
 	skipApiSetup              bool
 	skipAlgorithmSetup        bool
+	skipProjectSetup          bool
 )
 
 // setupCmd represents the setup command
@@ -81,14 +83,23 @@ var setupCmd = &cobra.Command{
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		var err error
 
+		var err error
 		// Check if file exist
 		if _, err := os.Stat(CLISession.ConfigPath); err == nil {
 			err := copyExampleConf()
 			if err != nil {
 				log.Fatalf("Could not copy example file to standard config : %s", err.Error())
 			}
+		}
+
+		if !skipProjectSetup {
+			err = setupProject()
+			if err != nil {
+				log.Fatalf("Could not setup the project : %s", err.Error())
+			}
+		} else {
+			fmt.Println("Skiping Project setup")
 		}
 
 		if !skipDBSetup {
@@ -141,22 +152,23 @@ func prompt(param string) (answer string) {
 
 	// Database parameters
 	promptString := map[string]PromptRes{
-		"dbuser":         {Message: "Database username (default : %s) : ", DefaultValue: defaultDBSetupUser},
-		"dbpassword":     {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultDBSetupPassword},
-		"dbip":           {Message: "Database IP (default : %s) : ", DefaultValue: defaultDBIP},
-		"dbport":         {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultDBPort))},
-		"dbtype":         {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: defaultDBType},
-		"dbname":         {Message: "Database name (default : %s): ", DefaultValue: defaultDBname},
-		"apiuser":        {Message: "API username (default : %s) : ", DefaultValue: defaultAPIUser},
-		"apipassword":    {Message: "API password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultAPIPassword},
-		"apiport":        {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultAPIPort))},
-		"serverip":       {Message: "Server IP (default : %s) : ", DefaultValue: defaultServerIP},
-		"serverport":     {Message: "Server port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultServerPort))},
-		"serveruser":     {Message: "Server username (default : %s) : ", DefaultValue: defaultServerUser},
-		"serverpassword": {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultServerPassword},
-		"usetls":         {Message: "Use TLS (default : %s) [Y/n]: ", DefaultValue: defaultTLS},
-		"createuser":     {Message: "Create a new user (default : %s) [Y/n]: ", DefaultValue: defaultCreateUser},
-		"algorithm":      {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: defaultAlgorithm},
+		"dbuser":             {Message: "Database username (default : %s) : ", DefaultValue: defaultDBSetupUser},
+		"dbpassword":         {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultDBSetupPassword},
+		"dbip":               {Message: "Database IP (default : %s) : ", DefaultValue: defaultDBIP},
+		"dbport":             {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultDBPort))},
+		"dbtype":             {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: defaultDBType},
+		"dbname":             {Message: "Database name (default : %s): ", DefaultValue: defaultDBname},
+		"apiuser":            {Message: "API username (default : %s) : ", DefaultValue: defaultAPIUser},
+		"apipassword":        {Message: "API password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultAPIPassword},
+		"apiport":            {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultAPIPort))},
+		"serverip":           {Message: "Server IP (default : %s) : ", DefaultValue: defaultServerIP},
+		"serverport":         {Message: "Server port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultServerPort))},
+		"serverpassword":     {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultServerPassword},
+		"usetls":             {Message: "Use TLS (default : %s) [Y/n]: ", DefaultValue: defaultTLS},
+		"createuser":         {Message: "Create a new user (default : %s) [Y/n]: ", DefaultValue: defaultCreateUser},
+		"algorithm":          {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: defaultAlgorithm},
+		"projectname":        {Message: "Project name (default : %s) : ", DefaultValue: defaultProjectName},
+		"projectdescription": {Message: "Project description (default : %s) : ", DefaultValue: defaultProjectDescription},
 	}
 
 	fmt.Printf(promptString[param].Message, promptString[param].DefaultValue)
@@ -166,6 +178,12 @@ func prompt(param string) (answer string) {
 	}
 
 	return input
+}
+
+func setupProject() error {
+	CLISession.Config.Project.Name = prompt("projectname")
+	CLISession.Config.Project.Description = prompt("projectdescription")
+	return nil
 }
 
 // setupDB => create user in db for future requests
@@ -208,6 +226,7 @@ func setupAPI() error {
 		User     string
 		Password string
 	}
+
 	p, err := strconv.Atoi(prompt("apiport"))
 	if err != nil {
 		return err
@@ -274,6 +293,7 @@ func setupAlgorithm() error {
 
 	return err
 }
+
 func yesNo(response string) (bool, error) {
 	response = strings.ToLower(strings.TrimSpace(response))
 
@@ -370,4 +390,5 @@ func init() {
 	setupCmd.PersistentFlags().BoolVar(&skipServerSetup, "skip-server", false, "Skip configuration of the server")
 	setupCmd.PersistentFlags().BoolVar(&skipApiSetup, "skip-api", false, "Skip configuration of the Api")
 	setupCmd.PersistentFlags().BoolVar(&skipAlgorithmSetup, "skip-algorithm", false, "Skip configuration of the algorithm")
+	setupCmd.PersistentFlags().BoolVar(&skipProjectSetup, "skip-project", false, "Skip configuration of the project")
 }
