@@ -18,7 +18,7 @@ func TestParseAPI(t *testing.T) {
 	var port uint16
 
 	user := Config.API.User
-	password := Config.API.Password
+	token := Config.API.Token
 
 	port = Config.API.Port
 
@@ -28,21 +28,17 @@ func TestParseAPI(t *testing.T) {
 	if port == 0 {
 		t.Error("Expected port, got 0")
 	}
-	if password == "" {
-		t.Error("Expected password, got empty string")
+	if token == "" {
+		t.Log("Expected token, got empty string")
 	}
 }
 
 func TestParseServer(t *testing.T) {
 
-	user := Config.Server.User
 	password := Config.Server.Password
 	ip := Config.Server.IP
 	port := Config.Server.Port
 
-	if user == "" {
-		t.Error("Expected user, got ", user)
-	}
 	if password == "" {
 		t.Error("Expected password, got ", password)
 	}

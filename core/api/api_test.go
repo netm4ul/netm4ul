@@ -34,9 +34,6 @@ func init() {
 	conf.Project.Name = "Test project"
 	conf.Project.Description = "Test description"
 	conf.API.Port = 1234
-	conf.Versions.Api = "v1"
-	conf.Versions.Server = "vtestServer"
-	conf.Versions.Client = "vtestClient"
 	conf.Database.DatabaseType = "testadapter" // use local db, do not connect to external db (CI tests)
 
 	sess, err := session.NewSession(conf)
