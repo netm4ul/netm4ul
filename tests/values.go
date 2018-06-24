@@ -66,18 +66,16 @@ func init() {
 		},
 		Domains: []models.Domain{
 			models.Domain{
+				ID:   "1",
 				Name: "domain.tld",
-				SubDomains: []models.Domain{
-					models.Domain{Name: "subdomain"},
-					models.Domain{Name: "subdomain2"},
-				},
 			},
 			models.Domain{
+				ID:   "2",
 				Name: "another.tld",
-				SubDomains: []models.Domain{
-					models.Domain{Name: "anothersub"},
-					models.Domain{Name: "anothersub2"},
-				},
+			},
+			models.Domain{
+				ID:   "3",
+				Name: "sub1.another.tld",
 			},
 		},
 	}
