@@ -25,6 +25,7 @@ type JsonDB struct {
 	RawGlob       string
 	ResultPathFmt string
 	ProjectGlob   string
+	UsersPath     string
 }
 
 //InitDatabase check if data dir is created and return the JsonDB struct
@@ -47,7 +48,8 @@ func InitDatabase(c *config.ConfigToml) *JsonDB {
 	j.ResultPathFmt = j.BaseDir + "/project-%s.json"
 	//ProjectGlob defines the glob for project files
 	j.ProjectGlob = j.BaseDir + "/project-*"
-
+	//UserPath defines the path for API user info
+	j.UsersPath = j.BaseDir + "/users.json"
 	j.cfg = c
 
 	//ensure data folder exists
@@ -140,6 +142,39 @@ func (f *JsonDB) writeProject(p models.Project) error {
 	return f.writeProjects(projects)
 }
 
+/*
+{
+	"user1": models.User,
+	"user2": models.User,
+}
+*/
+func (f *JsonDB) writeUser(user models.User) error {
+	users, err := f.GetUsers()
+	if err != nil {
+		return errors.New("Could not write user : " + err.Error())
+	}
+
+	var usersMap map[string]models.User
+	usersMap = make(map[string]models.User, 0)
+	//add or replace user !
+	for _, u := range users {
+		usersMap[u.Name] = u
+	}
+	usersMap[user.Name] = user
+
+	file, err := os.OpenFile(f.UsersPath, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		return errors.New("Could not open file : " + err.Error())
+	}
+
+	err = json.NewEncoder(file).Encode(usersMap)
+	if err != nil {
+		return errors.New("Could not save json : " + err.Error())
+	}
+
+	return nil
+}
+
 func (f *JsonDB) openRawFile(project, module string) (*os.File, error) {
 	file, err := os.OpenFile(f.getRawPath(project, module), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
@@ -174,7 +209,36 @@ func (f *JsonDB) Connect(c *config.ConfigToml) error {
 
 //User
 func (f *JsonDB) CreateOrUpdateUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	err := f.writeUser(user)
+	if err != nil {
+		return errors.New("Could not create or update user : " + err.Error())
+	}
+	return nil
+}
+
+func (f *JsonDB) GetUsers() ([]models.User, error) {
+	var users map[string]models.User
+	var usersArr []models.User
+
+	file, err := os.Open(f.UsersPath)
+	if err != nil {
+		return nil, errors.New("Could not open file : " + err.Error())
+	}
+
+	err = json.NewDecoder(file).Decode(&users)
+	if err == io.EOF {
+		return nil, errors.New("Empty file " + f.UsersPath)
+	}
+
+	if err != nil {
+		return nil, errors.New("Could not decode file : " + f.UsersPath + ", error : " + err.Error())
+	}
+
+	for _, u := range users {
+		usersArr = append(usersArr, u)
+	}
+
+	return usersArr, nil
 }
 
 func (f *JsonDB) GetUser(username string) (models.User, error) {
@@ -186,7 +250,12 @@ func (f *JsonDB) GetUserByToken(token string) (models.User, error) {
 }
 
 func (f *JsonDB) GenerateNewToken(user models.User) error {
-	return errors.New("Not implemented yet")
+	user.Token = models.GenerateNewToken()
+	err := f.CreateOrUpdateUser(user)
+	if err != nil {
+		return errors.New("Could not generate a new token : " + err.Error())
+	}
+	return nil
 }
 
 func (f *JsonDB) DeleteUser(user models.User) error {
