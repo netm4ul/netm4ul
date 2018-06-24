@@ -360,19 +360,61 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 
 // Domain
 func (pg *PostgreSQL) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
-	return errors.New("Not implemented yet")
+	var lastInsertID int
+	err := pg.db.QueryRow(insertDomain, domain.Name, projectName).Scan(lastInsertID)
+
+	if err != nil {
+		return errors.New("Could not save or update domain : " + err.Error())
+	}
+	return nil
 }
 
-func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domain []models.Domain) error {
-	return errors.New("Not implemented yet")
+func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models.Domain) error {
+
+	//TODO bulk insert !
+	for _, domain := range domains {
+		err := pg.CreateOrUpdateDomain(projectName, domain)
+		if err != nil {
+			return errors.New("Could not save or update domains : " + err.Error())
+		}
+	}
+	return nil
 }
 
 func (pg *PostgreSQL) GetDomains(projectName string) ([]models.Domain, error) {
-	return []models.Domain{}, errors.New("Not implemented yet")
+	domains := []models.Domain{}
+	rows, err := pg.db.Query(selectDomains, projectName)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		domain := models.Domain{}
+		err = rows.Scan(&domain.ID, &domain.Name, &domain.CreatedAt, &domain.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		domains = append(domains, domain)
+	}
+
+	return domains, nil
 }
 
-func (pg *PostgreSQL) GetDomain(projectName string, domain string) (models.Domain, error) {
-	return models.Domain{}, errors.New("Not implemented yet")
+func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.Domain, error) {
+	domain := models.Domain{}
+	err := pg.db.QueryRow(selectDomain, domainName, projectName).Scan(
+		&domain.ID,
+		&domain.Name,
+		&domain.CreatedAt,
+		&domain.UpdatedAt,
+	)
+
+	if err != nil {
+		return models.Domain{}, errors.New("Could not get domain : " + err.Error())
+	}
+
+	return domain, nil
 }
 
 // Port

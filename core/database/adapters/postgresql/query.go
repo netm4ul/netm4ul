@@ -43,13 +43,12 @@ CREATE TABLE IF NOT EXISTS ips(
 
 const createTableDomains = `
 CREATE TABLE IF NOT EXISTS domains(
-	id serial PRIMARY KEY,
 	name varchar(50) NOT NULL,
 	created_at timestamp with time zone DEFAULT current_timestamp,
 	updated_at timestamp with time zone DEFAULT current_timestamp,
 
-	sub_id serial references domains(id),
 	project_name text references projects(name)
+	PRIMARY KEY (name, project_name)
 );
 `
 
@@ -121,6 +120,41 @@ WHERE name = $1;
 `
 
 /*
+$1 : domain name
+$2 : project name
+*/
+const selectDomain = `
+SELECT id, name, created_at, updated_at
+FROM domains, projects
+WHERE domains.name = $1
+AND projects.name = $2
+AND domains.project_name = projects.name; 
+`
+
+/*
+$1 : project name
+*/
+const selectDomains = `
+SELECT id, name, created_at, updated_at
+FROM domains, projects
+WHERE projects.name = $1
+AND domains.project_name = projects.name; 
+`
+
+/*
+Will return all subdomains too !
+$1 : domain name
+$2 : project name
+*/
+const selectDomainsAndSubdomain = `
+SELECT id, name, created_at, updated_at
+FROM domains, projects
+WHERE name LIKE ('%.' || $1)
+AND projects.name = $2
+AND domains.project_name = projects.name; 
+`
+
+/*
 $1 : user name
 */
 const selectUserByName = `
@@ -144,8 +178,8 @@ $1 : project name
 const selectIPsByProjectName = `
 SELECT ips.id, ips.value
 FROM ips, projects
-WHERE ips.project_name = project.name
-AND project.name = $1;
+WHERE ips.project_name = projects.name
+AND projects.name = $1;
 `
 
 /*
@@ -155,8 +189,8 @@ $2 : ip value
 const selectIPByProjectName = `
 SELECT ips.id, ips.value
 FROM ips, projects
-WHERE ips.project_name = project.name
-AND project.name = $1
+WHERE ips.project_name = projects.name
+AND projects.name = $1
 AND ips.value = $2;
 `
 
@@ -193,7 +227,7 @@ const selectURIsByProjectNameAndIPAndPort = `
 SELECT uris.id, uris.name, uris.code
 FROM uris, ports, ips, projects
 WHERE ips.project_name = projects.name
-AND project.name = $1
+AND projects.name = $1
 AND ports.ip_id = ips.id
 AND ips.value = $2
 AND uris.port_id = ports.id
@@ -230,6 +264,16 @@ $2 : project description
 */
 const insertProject = `
 INSERT INTO projects (name, description)
+VALUES ($1, $2)
+returning id;
+`
+
+/*
+$1 : name
+$2 : project_name
+*/
+const insertDomain = `
+INSERT INTO domains (name, project_name)
 VALUES ($1, $2)
 returning id;
 `
