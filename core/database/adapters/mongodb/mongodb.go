@@ -78,7 +78,12 @@ func (mongo *MongoDB) GetUserByToken(token string) (models.User, error) {
 }
 
 func (mongo *MongoDB) GenerateNewToken(user models.User) error {
-	return errors.New("Not implemented yet")
+	user.Token = models.GenerateNewToken()
+	err := mongo.CreateOrUpdateUser(user)
+	if err != nil {
+		return errors.New("Could not generate a new token : " + err.Error())
+	}
+	return nil
 }
 
 func (mongo *MongoDB) DeleteUser(user models.User) error {
