@@ -398,6 +398,7 @@ WHERE name = $1;
 /* ========================================== DROP ========================================== */
 const dropTableUsers = `DROP TABLE users;`
 const dropTableProjects = `DROP TABLE projects;`
+const dropTableDomains = `DROP TABLE domains;`
 const dropTableIps = `DROP TABLE ips;`
 const dropTablePorttypes = `DROP TABLE porttypes;`
 const dropTablePorts = `DROP TABLE ports;`

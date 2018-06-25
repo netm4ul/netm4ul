@@ -15,7 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
-	// gonmap "github.com/lair-framework/go-nmap"
+	gonmap "github.com/edznux/go-nmap"
 
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
@@ -24,8 +24,8 @@ import (
 //ConfigToml : configuration model (from the toml file)
 type ConfigToml struct {
 	FastScan   bool   `toml:"fast"`
-	NoPing     bool   `toml:"noping"`
-	Udp        bool   `toml:"udp"`
+	NoPing     bool   `toml:"no_ping"`
+	UDP        bool   `toml:"udp"`
 	PortRange  string `toml:"port_range"`
 	Stealth    bool   `toml:"stealth"`
 	Services   bool   `toml:"services"`
@@ -39,13 +39,13 @@ type ConfigToml struct {
 type Nmap struct {
 	Config  ConfigToml
 	Result  []byte
-	Nmaprun *NmapRun
+	Nmaprun *gonmap.NmapRun
 }
 
 // NewTraceroute generate a new Nmap module (type modules.Module)
 func NewNmap() modules.Module {
 
-	gob.Register(NmapRun{})
+	gob.Register(gonmap.NmapRun{})
 	var t modules.Module
 	t = &Nmap{}
 	return t
@@ -94,14 +94,14 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 	}
 
 	// UDP ports option : -sU
-	if N.Config.Udp {
+	if N.Config.UDP {
 		opt = append(opt, "-sU")
 	}
 
 	// Port range option : -p- for all ports, -p x-y for specific range, nothing for default
 	// TODO : load ports from []inputs.Ports ?
 	log.Infof("PortRange : %+v", N.Config.PortRange)
-	if N.Config.PortRange != "Null" {
+	if N.Config.PortRange != "NULL" {
 		opt = append(opt, "-p"+N.Config.PortRange)
 	} else if N.Config.PortRange == "-" {
 		opt = append(opt, "-p-")
@@ -158,7 +158,7 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 	if err != nil {
 		log.Fatal("Error 2 : ", err)
 	}
-	N.Nmaprun, err = Parse(N.Result)
+	N.Nmaprun, err = gonmap.Parse(N.Result)
 	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
 }
 
@@ -186,7 +186,7 @@ func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName st
 	log.Println("Write raw to the database.")
 
 	// result.Data = result.Data.(NmapRun)
-	data := result.Data.(NmapRun)
+	data := result.Data.(gonmap.NmapRun)
 
 	//save data in projects
 

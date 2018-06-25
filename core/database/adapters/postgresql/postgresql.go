@@ -47,6 +47,9 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 	if _, err := pg.db.Exec(createTableIPs); err != nil {
 		return err
 	}
+	if _, err := pg.db.Exec(createTableDomains); err != nil {
+		return err
+	}
 	if _, err := pg.db.Exec(createTablePortTypes); err != nil {
 		return err
 	}

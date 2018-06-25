@@ -14,6 +14,12 @@
   version = "1.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/edznux/go-nmap"
+  packages = ["."]
+  revision = "33d4dd00c1c123805b8e84b805d3defc0e422df8"
+
+[[projects]]
   name = "github.com/fatih/color"
   packages = ["."]
   revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
@@ -190,6 +196,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "34de23037f3b029249f370a1ef9bd30df83cb31941112bc23664dcc876c96bcc"
+  inputs-digest = "bbe7207f72d678ecd8cde07d99906d894ddc1349e3fbfffadd4dff3703192712"
   solver-name = "gps-cdcl"
   solver-version = 1
