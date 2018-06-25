@@ -5,7 +5,7 @@ package nmap
 import (
 	// "fmt"
 	"encoding/gob"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -75,9 +75,33 @@ func (N *Nmap) DependsOn() []modules.Condition {
 // Run : Main function of the module
 func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 	N.ParseConfig()
-	fmt.Println(&N.Config)
-	var opt []string
 
+	opt, filename, err := N.loadArgs(inputs)
+
+	cmd := exec.Command("/usr/bin/nmap", opt...)
+	execErr := cmd.Run()
+	if execErr != nil {
+		return modules.Result{}, errors.New("Could not execute : " + execErr.Error())
+	}
+
+	N.Result, N.Nmaprun, err = N.getResults(filename)
+	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
+}
+
+func (N *Nmap) getResults(filename string) (raw []byte, parsed *gonmap.NmapRun, err error) {
+	raw, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, nil, errors.New("Could not read file of nmap result : " + err.Error())
+	}
+
+	parsed, err = gonmap.Parse(N.Result)
+	if err != nil {
+		return nil, nil, errors.New("Could not parse nmap result : " + err.Error())
+	}
+	return raw, parsed, err
+}
+
+func (N *Nmap) loadArgs(inputs []modules.Input) (opt []string, filename string, err error) {
 	// Fast scan option : -F
 	if N.Config.FastScan {
 		opt = append(opt, "-F")
@@ -132,9 +156,13 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 		opt = append(opt, "-A")
 	}
 
-	// TODO : change it for per target option ?
-	// filename := opt2[len(opt2)-1] + ".xml"
-	filename := "127.0.0.1.xml"
+	file, err := ioutil.TempFile("", "netm4ul_nmap_")
+	if err != nil {
+		return nil, "", errors.New("Could not create temp file for nmap result : " + err.Error())
+	}
+	defer os.Remove(file.Name())
+
+	filename = file.Name()
 	opt = append(opt, "-oX", filename)
 
 	// TODO : change it for Run argument, will be passed as an option : ./netm4ul 127.0.0.1
@@ -146,20 +174,7 @@ func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
 			opt = append(opt, input.IP.String())
 		}
 	}
-
-	fmt.Println(opt)
-	cmd := exec.Command("/usr/bin/nmap", opt...)
-	execErr := cmd.Run()
-	if execErr != nil {
-		log.Fatalf("Could not execute : %+v ", execErr)
-	}
-	var err error
-	N.Result, err = ioutil.ReadFile(filename)
-	if err != nil {
-		log.Fatal("Error 2 : ", err)
-	}
-	N.Nmaprun, err = gonmap.Parse(N.Result)
-	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
+	return opt, filename, nil
 }
 
 // ParseConfig : Load the config from the config folder
@@ -183,7 +198,7 @@ func (N *Nmap) ParseConfig() error {
 
 // WriteDb : Save data
 func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName string) error {
-	log.Println("Write raw to the database.")
+	log.Info("Write raw results to the database.")
 
 	// result.Data = result.Data.(NmapRun)
 	data := result.Data.(gonmap.NmapRun)
