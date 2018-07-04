@@ -54,7 +54,7 @@ func (api *API) authMiddleware(next http.Handler) http.Handler {
 		}
 
 		if user.ID != "" {
-			log.Debugf("Authenticated user [%s]%s\n", user.ID, user.Name)
+			log.Debugf("Authenticated user [%s]: %s\n", user.ID, user.Name)
 			next.ServeHTTP(w, r)
 		} else {
 			sendDefaultValue(w, CodeForbidden)

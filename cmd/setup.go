@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/netm4ul/netm4ul/core/config"
+
 	"github.com/netm4ul/netm4ul/core/database/models"
 
 	"github.com/BurntSushi/toml"
@@ -40,6 +42,7 @@ const (
 	defaultServerUser         = "user"
 	defaultTLS                = "y" // Yes/y No/n (case insensitive)
 	defaultCreateUser         = "y" // Yes/y No/n (case insensitive)
+	defaultModuleStatus       = "y" // Yes/y No/n (case insensitive)
 	defaultAlgorithm          = "random"
 	defaultProjectName        = "first"
 	defaultProjectDescription = "Your first project"
@@ -66,6 +69,7 @@ var (
 	skipDBSetup               bool
 	skipServerSetup           bool
 	skipApiSetup              bool
+	skipModulesSetup          bool
 	skipAlgorithmSetup        bool
 	skipProjectSetup          bool
 )
@@ -129,6 +133,15 @@ var setupCmd = &cobra.Command{
 			fmt.Println("Skiping Server setup")
 		}
 
+		if !skipModulesSetup {
+			err = setupModules()
+			if err != nil {
+				log.Fatalf("Could not setup modules : %s", err.Error())
+			}
+		} else {
+			fmt.Println("Skiping modules setup")
+		}
+
 		if !skipAlgorithmSetup {
 			err = setupAlgorithm()
 			if err != nil {
@@ -183,6 +196,29 @@ func prompt(param string) (answer string) {
 func setupProject() error {
 	CLISession.Config.Project.Name = prompt("projectname")
 	CLISession.Config.Project.Description = prompt("projectdescription")
+	return nil
+}
+
+func setupModules() error {
+	modules, err := getGlobalModulesList()
+	if err != nil {
+		return errors.New("Could not load modules list : " + err.Error())
+	}
+
+	var input string
+	var isEnabled bool
+
+	for _, m := range modules {
+		fmt.Printf("Enable module '%s' [Y/n]", m)
+		fmt.Scanln(&input)
+		if input == "" {
+			isEnabled, err = yesNo(defaultModuleStatus)
+		} else {
+			isEnabled, err = yesNo(input)
+		}
+		CLISession.Config.Modules[m] = config.Module{Enabled: isEnabled}
+	}
+
 	return nil
 }
 
@@ -390,5 +426,6 @@ func init() {
 	setupCmd.PersistentFlags().BoolVar(&skipServerSetup, "skip-server", false, "Skip configuration of the server")
 	setupCmd.PersistentFlags().BoolVar(&skipApiSetup, "skip-api", false, "Skip configuration of the Api")
 	setupCmd.PersistentFlags().BoolVar(&skipAlgorithmSetup, "skip-algorithm", false, "Skip configuration of the algorithm")
+	setupCmd.PersistentFlags().BoolVar(&skipModulesSetup, "skip-modules", false, "Skip configuration of the modules")
 	setupCmd.PersistentFlags().BoolVar(&skipProjectSetup, "skip-project", false, "Skip configuration of the project")
 }

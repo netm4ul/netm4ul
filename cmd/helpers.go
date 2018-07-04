@@ -354,3 +354,42 @@ func hosts(cidr string) ([]net.IP, error) {
 func PrintVersion(s *session.Session) {
 	fmt.Printf("Version :\n - Server : %s\n - Client : %s\n - HTTP API : %s\n", server.Version, client.Version, api.Version)
 }
+
+func getGlobalModulesList() ([]string, error) {
+	res := []string{}
+
+	exploitsModules, err := getModulesList("exploit")
+	if err != nil {
+		return nil, errors.New("Could not load exploit modules : " + err.Error())
+	}
+
+	reconsModules, err := getModulesList("recon")
+	if err != nil {
+		return nil, errors.New("Could not load recon modules : " + err.Error())
+	}
+
+	reportsModules, err := getModulesList("report")
+	if err != nil {
+		return nil, errors.New("Could not load report modules : " + err.Error())
+	}
+
+	res = append(res, exploitsModules...)
+	res = append(res, reconsModules...)
+	res = append(res, reportsModules...)
+	return res, nil
+}
+
+func getModulesList(modType string) ([]string, error) {
+	files, err := ioutil.ReadDir("./modules/" + modType)
+	if err != nil {
+		return nil, err
+	}
+
+	res := []string{}
+	for _, f := range files {
+		if f.IsDir() {
+			res = append(res, f.Name())
+		}
+	}
+	return res, nil
+}
