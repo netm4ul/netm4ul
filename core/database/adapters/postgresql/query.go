@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS domains(
 	created_at timestamp with time zone DEFAULT current_timestamp,
 	updated_at timestamp with time zone DEFAULT current_timestamp,
 
-	project_name text references projects(name)
+	project_name text references projects(name),
 	PRIMARY KEY (name, project_name)
 );
 `
@@ -135,7 +135,7 @@ AND domains.project_name = projects.name;
 $1 : project name
 */
 const selectDomains = `
-SELECT id, name, created_at, updated_at
+SELECT domains.id, domains.name, domains.created_at, domains.updated_at
 FROM domains, projects
 WHERE projects.name = $1
 AND domains.project_name = projects.name; 

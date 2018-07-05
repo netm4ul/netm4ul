@@ -38,26 +38,21 @@ func (pg *PostgreSQL) Name() string {
 
 func (pg *PostgreSQL) createTablesIfNotExist() error {
 
-	if _, err := pg.db.Exec(createTableUsers); err != nil {
-		return err
+	reqs := []string{
+		createTableUsers,
+		createTableDomains,
+		createTableProjects,
+		createTableIPs,
+		createTablePortTypes,
+		createTablePorts,
+		createTableURIs,
+		createTableRaws,
 	}
-	if _, err := pg.db.Exec(createTableProjects); err != nil {
-		return err
-	}
-	if _, err := pg.db.Exec(createTableIPs); err != nil {
-		return err
-	}
-	if _, err := pg.db.Exec(createTablePortTypes); err != nil {
-		return err
-	}
-	if _, err := pg.db.Exec(createTablePorts); err != nil {
-		return err
-	}
-	if _, err := pg.db.Exec(createTableURIs); err != nil {
-		return err
-	}
-	if _, err := pg.db.Exec(createTableRaws); err != nil {
-		return err
+
+	for _, request := range reqs {
+		if _, err := pg.db.Exec(request); err != nil {
+			return err
+		}
 	}
 	return nil
 }

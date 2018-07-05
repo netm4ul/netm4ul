@@ -21,7 +21,7 @@ var reportCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := report.Reporter["text"].Generate("test")
 		if err != nil {
-			fmt.Printf("Could not generated this report : %s\n", err.Error())
+			fmt.Printf("Could not generate this report : %s\n", err.Error())
 		}
 	},
 }

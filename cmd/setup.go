@@ -73,6 +73,61 @@ var (
 	skipProjectSetup          bool
 )
 
+var setupDatabaseCmd = &cobra.Command{
+	Use:   "database",
+	Short: "NetM4ul setup",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := setupDB()
+		if err != nil {
+			log.Errorln("Could not setup the database : " + err.Error())
+		}
+	},
+}
+
+var setupAPICmd = &cobra.Command{
+	Use:   "api",
+	Short: "NetM4ul setup",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := setupAPI()
+		if err != nil {
+			log.Errorln("Could not setup the API : " + err.Error())
+		}
+	},
+}
+
+var setupServerCmd = &cobra.Command{
+	Use:   "server",
+	Short: "NetM4ul setup",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := setupServer()
+		if err != nil {
+			log.Errorln("Could not setup the Server : " + err.Error())
+		}
+	},
+}
+
+var setupAlgorithmCmd = &cobra.Command{
+	Use:   "algorithm",
+	Short: "NetM4ul setup",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := setupAlgorithm()
+		if err != nil {
+			log.Errorln("Could not setup the Algorithm : " + err.Error())
+		}
+	},
+}
+
+var setupTLSCmd = &cobra.Command{
+	Use:   "tls",
+	Short: "NetM4ul setup",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := setupAlgorithm()
+		if err != nil {
+			log.Errorln("Could not setup the Algorithm : " + err.Error())
+		}
+	},
+}
+
 // setupCmd represents the setup command
 var setupCmd = &cobra.Command{
 	Use:   "setup",
@@ -394,7 +449,14 @@ func GeneratePassword(n int) (string, error) {
 }
 
 func init() {
+
 	rootCmd.AddCommand(setupCmd)
+
+	setupCmd.AddCommand(setupServerCmd)
+	setupCmd.AddCommand(setupDatabaseCmd)
+	setupCmd.AddCommand(setupAPICmd)
+	setupCmd.AddCommand(setupTLSCmd)
+	setupCmd.AddCommand(setupAlgorithmCmd)
 
 	// database
 	setupCmd.PersistentFlags().StringVar(&cliDBSetupUser, "database-user", defaultDBSetupUser, "Custom database user")
@@ -402,19 +464,24 @@ func init() {
 	setupCmd.PersistentFlags().StringVar(&cliDBSetupIP, "database-ip", defaultDBIP, "Custom database ip address")
 	setupCmd.PersistentFlags().Uint16Var(&cliDBSetupPort, "database-port", defaultDBPort, "Custom database port number")
 	setupCmd.PersistentFlags().StringVar(&cliDBSetupType, "database-type", defaultDBType, "Custom database type number")
+
 	//server
 	setupCmd.PersistentFlags().StringVar(&cliServerPassword, "server-password", defaultServerPassword, "Custom server password")
 	setupCmd.PersistentFlags().StringVar(&cliServerIP, "server-ip", defaultServerIP, "Custom server ip address")
 	setupCmd.PersistentFlags().Uint16Var(&cliServerPort, "server-port", defaultServerPort, "Custom server port number")
+
 	//api
 	setupCmd.PersistentFlags().StringVar(&cliApiUser, "api-user", defaultAPIUser, "Custom API user")
 	setupCmd.PersistentFlags().StringVar(&cliApiPassword, "api-password", defaultAPIPassword, "Custom API password")
 	setupCmd.PersistentFlags().StringVar(&cliApiIP, "api-ip", defaultAPIIP, "Custom API ip address")
 	setupCmd.PersistentFlags().Uint16Var(&cliApiPort, "api-port", defaultAPIPort, "Custom API port number")
+
 	//TLS
 	setupCmd.PersistentFlags().BoolVar(&cliDisableTLS, "disable-tls", false, "Disable TLS")
+
 	//Algorithm
 	setupCmd.PersistentFlags().StringVar(&cliAlgorithm, "algorithm ", defaultAlgorithm, "Load balancing algorithm")
+
 	//Skips
 	setupCmd.PersistentFlags().BoolVar(&skipDBSetup, "skip-database", false, "Skip configuration of the database")
 	setupCmd.PersistentFlags().BoolVar(&skipServerSetup, "skip-server", false, "Skip configuration of the server")
