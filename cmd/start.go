@@ -7,7 +7,6 @@ import (
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/communication"
-	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/server"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -51,7 +50,7 @@ var startServerCmd = &cobra.Command{
 		CLISession.Nodes = make([]communication.Node, 0)
 
 		if CLISession.Config.TLSParams.UseTLS {
-			CLISession.Config.TLSParams.TLSConfig, err = config.TLSBuildServerConf()
+			CLISession.Config.TLSParams.TLSConfig, err = CLISession.Config.TLSBuildServerConf()
 
 			if err != nil {
 				log.Error("Unable to load TLS configuration. Shutting down.")
@@ -94,7 +93,7 @@ var startClientCmd = &cobra.Command{
 		CLISession.IsClient = isClient
 
 		if CLISession.Config.TLSParams.UseTLS {
-			config.Config.TLSParams.TLSConfig, err = config.TLSBuildClientConf()
+			CLISession.Config.TLSParams.TLSConfig, err = CLISession.Config.TLSBuildClientConf()
 
 			if err != nil {
 				log.Error("Unable to load TLS configuration. Shutting down.")

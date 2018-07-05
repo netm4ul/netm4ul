@@ -17,47 +17,47 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 )
 
-// DnsResult represent the parsed ouput
-type DnsResult struct {
+// Result represent the parsed ouput
+type Result struct {
 	Types map[string][]string
 }
 
-// ConfigToml : configuration model (from the toml file)
-type ConfigToml struct {
-	RandomDns bool `toml:"randomDNS"`
+// ConfigDNS : configuration model (from the toml file)
+type ConfigDNS struct {
+	RandomDNS bool `toml:"randomDNS"`
 }
 
-// Dns "class"
-type Dns struct {
-	// Config : exported config
-	Config ConfigToml
+// DNS "class"
+type DNS struct {
+	ConfigDNS ConfigDNS
+	Config    config.ConfigToml
 }
 
-//NewDns generate a new Dns module (type modules.Module)
-func NewDns() modules.Module {
-	gob.Register(DnsResult{})
+//NewDNS generate a new Dns module (type modules.Module)
+func NewDNS() modules.Module {
+	gob.Register(Result{})
 	var d modules.Module
-	d = &Dns{}
+	d = &DNS{}
 	return d
 }
 
 // Name : name getter
-func (D *Dns) Name() string {
+func (D *DNS) Name() string {
 	return "Dns"
 }
 
 // Author : Author getter
-func (D *Dns) Author() string {
+func (D *DNS) Author() string {
 	return "Rzbaa"
 }
 
 // Version : Version  getter
-func (D *Dns) Version() string {
+func (D *DNS) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (D *Dns) DependsOn() []modules.Condition {
+func (D *DNS) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
@@ -70,8 +70,7 @@ func (D *Dns) DependsOn() []modules.Condition {
 */
 
 // Run : Main function of the module
-func (D *Dns) Run(inputs []modules.Input) (modules.Result, error) {
-
+func (D *DNS) Run(inputs []modules.Input) (modules.Result, error) {
 	// Banner
 	fmt.Println("DNS world!")
 
@@ -80,6 +79,7 @@ func (D *Dns) Run(inputs []modules.Input) (modules.Result, error) {
 	if err != nil {
 		log.Println(err)
 	}
+
 	// Get fqdn of domain
 	var domain string
 
@@ -93,12 +93,12 @@ func (D *Dns) Run(inputs []modules.Input) (modules.Result, error) {
 	fqdn := dns.Fqdn(domain)
 
 	// instanciate DnsResult
-	result := DnsResult{}
+	result := Result{}
 
 	// Get DNS IP address from our config file
 	resolverConfig := make(map[int]*dns.ClientConfig)
 
-	resolverList := strings.Split(config.Config.DNS.Resolvers, ",")
+	resolverList := strings.Split(D.Config.DNS.Resolvers, ",")
 	for i := 0; i < len(resolverList); i++ {
 		// DNS gog library need resolv.conf entry (nameserver server_ip)
 		dnsEntry := "nameserver " + resolverList[i]
@@ -116,7 +116,7 @@ func (D *Dns) Run(inputs []modules.Input) (modules.Result, error) {
 
 	// For all Type in dns library
 
-	if D.Config.RandomDns {
+	if D.ConfigDNS.RandomDNS {
 		// random DNS resolver
 		for _, dnsType := range dns.TypeToString {
 			config := resolverConfig[rand.Intn(len(resolverConfig))]
@@ -141,7 +141,7 @@ func (D *Dns) Run(inputs []modules.Input) (modules.Result, error) {
 }
 
 // Forge and send DNS request for dnsType type
-func requestRoutine(dnsType string, result DnsResult, fqdn string, config *dns.ClientConfig) {
+func requestRoutine(dnsType string, result Result, fqdn string, config *dns.ClientConfig) {
 	// Set dns client parameters
 	cli := new(dns.Client)
 
@@ -179,7 +179,7 @@ func requestRoutine(dnsType string, result DnsResult, fqdn string, config *dns.C
 }
 
 // ParseConfig : Load the config from the config folder
-func (D *Dns) ParseConfig() error {
+func (D *DNS) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -196,7 +196,7 @@ func (D *Dns) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (D *Dns) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (D *DNS) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Println("Write to the database.")
 	// var data DnsResult
 	// data = result.Data.(DnsResult)
@@ -208,7 +208,7 @@ func (D *Dns) WriteDb(result modules.Result, db models.Database, projectName str
 
 // Shit happens
 // DNS parser
-func dnsParser(answer dns.RR, dnsType string, result DnsResult) {
+func dnsParser(answer dns.RR, dnsType string, result Result) {
 	switch t := answer.(type) {
 	case *dns.A:
 		result.Types[dnsType] = append(result.Types[dnsType], t.A.String())

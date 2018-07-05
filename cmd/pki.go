@@ -65,10 +65,13 @@ var pkiCmd = &cobra.Command{
 	The client nodes don't need a publicly known hostname, but you may assign them a name that suits your use (e.g. your logs may see "client_x successfully connected to API"")`,
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		config.LoadConfig(configPath)
+		cfg, err := config.LoadConfig(configPath)
+		if err != nil {
+			log.Fatalf("Could not load config file : %s", err.Error())
+		}
 
 		if serverID == "" {
-			serverID = config.Config.Server.IP
+			serverID = cfg.Server.IP
 		}
 
 	},

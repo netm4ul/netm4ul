@@ -29,12 +29,12 @@ func NewReport() *Text {
 	t := Text{}
 	t.Width = 80
 
-	err := config.LoadConfig("")
+	cfg, err := config.LoadConfig("")
 	if err != nil {
 		panic("Couldn't load config file !")
 	}
 
-	t.cfg = config.Config
+	t.cfg = cfg
 	t.DB = database.NewDatabase(&t.cfg)
 
 	t.funcs = template.FuncMap{

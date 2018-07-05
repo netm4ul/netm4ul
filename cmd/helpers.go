@@ -393,3 +393,53 @@ func getModulesList(modType string) ([]string, error) {
 	}
 	return res, nil
 }
+
+//TOFIX : must be a better way
+func setDefaultValues(cfg *config.ConfigToml) {
+
+	//Algorithm
+	if cfg.Algorithm.Name == "" {
+		cfg.Algorithm.Name = defaultAlgorithm
+	}
+
+	//API
+	if cfg.API.Port == 0 {
+		cfg.API.Port = defaultAPIPort
+	}
+	if cfg.API.User == "" {
+		cfg.API.User = defaultAPIUser
+	}
+
+	//DATABASE
+	if cfg.Database.Database == "" {
+		cfg.Database.Database = defaultDBname
+	}
+	if cfg.Database.DatabaseType == "" {
+		cfg.Database.DatabaseType = defaultDBType
+	}
+	if cfg.Database.IP == "" {
+		cfg.Database.IP = defaultDBIP
+	}
+	if cfg.Database.User == "" {
+		cfg.Database.User = defaultDBSetupUser
+	}
+	if cfg.Database.Password == "" {
+		cfg.Database.Password = defaultDBSetupPassword
+	}
+	if cfg.Database.Port == 0 {
+		cfg.Database.Port = defaultDBPort
+	}
+
+	//Project
+	if cfg.Project.Name == "" {
+		cfg.Project.Name = defaultProjectName
+	}
+	if cfg.Project.Description == "" {
+		cfg.Project.Description = defaultProjectDescription
+	}
+
+	//Modules
+	if cfg.Modules == nil {
+		cfg.Modules = make(map[string]config.Module, 0)
+	}
+}

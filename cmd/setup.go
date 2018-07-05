@@ -3,7 +3,6 @@ package cmd
 import (
 	"crypto/rand"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -90,8 +89,8 @@ var setupCmd = &cobra.Command{
 
 		var err error
 		// Check if file exist
-		if _, err := os.Stat(CLISession.ConfigPath); err == nil {
-			err := copyExampleConf()
+		if _, err := os.Stat(CLISession.ConfigPath); err != nil {
+			CLISession.Config, err = loadExistingConfig()
 			if err != nil {
 				log.Fatalf("Could not copy example file to standard config : %s", err.Error())
 			}
@@ -165,23 +164,23 @@ func prompt(param string) (answer string) {
 
 	// Database parameters
 	promptString := map[string]PromptRes{
-		"dbuser":             {Message: "Database username (default : %s) : ", DefaultValue: defaultDBSetupUser},
-		"dbpassword":         {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultDBSetupPassword},
-		"dbip":               {Message: "Database IP (default : %s) : ", DefaultValue: defaultDBIP},
-		"dbport":             {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultDBPort))},
-		"dbtype":             {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: defaultDBType},
-		"dbname":             {Message: "Database name (default : %s): ", DefaultValue: defaultDBname},
-		"apiuser":            {Message: "API username (default : %s) : ", DefaultValue: defaultAPIUser},
+		"dbuser":             {Message: "Database username (default : %s) : ", DefaultValue: CLISession.Config.Database.User},
+		"dbpassword":         {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: CLISession.Config.Database.Password},
+		"dbip":               {Message: "Database IP (default : %s) : ", DefaultValue: CLISession.Config.Database.IP},
+		"dbport":             {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(CLISession.Config.Database.Port))},
+		"dbtype":             {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: CLISession.Config.Database.DatabaseType},
+		"dbname":             {Message: "Database name (default : %s): ", DefaultValue: CLISession.Config.Database.Database},
+		"apiuser":            {Message: "API username (default : %s) : ", DefaultValue: CLISession.Config.API.User},
 		"apipassword":        {Message: "API password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultAPIPassword},
-		"apiport":            {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultAPIPort))},
-		"serverip":           {Message: "Server IP (default : %s) : ", DefaultValue: defaultServerIP},
-		"serverport":         {Message: "Server port (default : %s) : ", DefaultValue: strconv.Itoa(int(defaultServerPort))},
-		"serverpassword":     {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultServerPassword},
+		"apiport":            {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(CLISession.Config.API.Port))},
+		"serverip":           {Message: "Server IP (default : %s) : ", DefaultValue: CLISession.Config.Server.IP},
+		"serverport":         {Message: "Server port (default : %s) : ", DefaultValue: strconv.Itoa(int(CLISession.Config.Server.Port))},
+		"serverpassword":     {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: CLISession.Config.Server.Password},
 		"usetls":             {Message: "Use TLS (default : %s) [Y/n]: ", DefaultValue: defaultTLS},
 		"createuser":         {Message: "Create a new user (default : %s) [Y/n]: ", DefaultValue: defaultCreateUser},
-		"algorithm":          {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: defaultAlgorithm},
-		"projectname":        {Message: "Project name (default : %s) : ", DefaultValue: defaultProjectName},
-		"projectdescription": {Message: "Project description (default : %s) : ", DefaultValue: defaultProjectDescription},
+		"algorithm":          {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: CLISession.Config.Algorithm.Name},
+		"projectname":        {Message: "Project name (default : %s) : ", DefaultValue: CLISession.Config.Project.Name},
+		"projectdescription": {Message: "Project description (default : %s) : ", DefaultValue: CLISession.Config.Project.Description},
 	}
 
 	fmt.Printf(promptString[param].Message, promptString[param].DefaultValue)
@@ -209,7 +208,7 @@ func setupModules() error {
 	var isEnabled bool
 
 	for _, m := range modules {
-		fmt.Printf("Enable module '%s' [Y/n]", m)
+		fmt.Printf("Enable module '%s' [Y/n] : ", m)
 		fmt.Scanln(&input)
 		if input == "" {
 			isEnabled, err = yesNo(defaultModuleStatus)
@@ -341,6 +340,17 @@ func yesNo(response string) (bool, error) {
 	return false, errors.New("Invalid input")
 }
 
+func loadExistingConfig() (config.ConfigToml, error) {
+	var data config.ConfigToml
+	_, err := toml.DecodeFile(configPath, &data)
+
+	if err != nil {
+		return config.ConfigToml{}, errors.New("Couldn't decode config files : " + err.Error())
+	}
+
+	return data, nil
+}
+
 // Save the config on disk
 func saveConfigFile() error {
 
@@ -359,22 +369,6 @@ func saveConfigFile() error {
 
 	//Write new config to new config file
 	err = toml.NewEncoder(file).Encode(CLISession.Config)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// modify conf file
-func copyExampleConf() error {
-	cfgpath := CLISession.ConfigPath + ".example"
-	data, err := ioutil.ReadFile(cfgpath)
-	if err != nil {
-		return err
-	}
-
-	err = ioutil.WriteFile(CLISession.ConfigPath, data, 0666)
 	if err != nil {
 		return err
 	}

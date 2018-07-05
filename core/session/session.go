@@ -70,7 +70,7 @@ func (s *Session) Register(m modules.Module) {
 // loadModule func
 func (s *Session) loadModule() {
 	s.Register(traceroute.NewTraceroute())
-	s.Register(dns.NewDns())
+	s.Register(dns.NewDNS())
 	s.Register(nmap.NewNmap())
 	s.Register(masscan.NewMasscan())
 	s.Register(shodan.NewShodan())

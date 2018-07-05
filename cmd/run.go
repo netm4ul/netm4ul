@@ -22,7 +22,7 @@ var runCmd = &cobra.Command{
 	Short: "Run scan on the defined target",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
-		CLISession.Config.Mode = CLImode
+		CLISession.Config.Algorithm.Mode = CLImode
 		if CLIprojectName != "" {
 			createProject(CLIprojectName)
 		}
@@ -41,7 +41,7 @@ var runCmd = &cobra.Command{
 		log.Debugf("CLIModules : %+v", CLImodules)
 		log.Debugf("Modules : %+v", CLISession.Config.Modules)
 		log.Debugf("CLIMode : %+v", CLImode)
-		log.Debugf("Mode : %+v", CLISession.Config.Mode)
+		log.Debugf("Mode : %+v", CLISession.Config.Algorithm.Mode)
 
 		// if len(CLImodules) > 0 {
 		// 	mods, err := parseModules(CLImodules, CLISession)

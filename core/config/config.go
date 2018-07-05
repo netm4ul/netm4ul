@@ -86,13 +86,13 @@ type Project struct {
 
 type Algorithm struct {
 	Name string `toml:"name"`
+	Mode string
 }
 
 // ConfigToml is the global config object
 type ConfigToml struct {
 	Project Project
 	// Versions  Versions
-	Mode      string
 	API       API
 	DNS       DNS
 	Keys      Keys
@@ -103,33 +103,32 @@ type ConfigToml struct {
 	Algorithm Algorithm
 }
 
-// Config : exported config
-var Config ConfigToml
-
 // LoadConfig load the configuration file !
-func LoadConfig(file string) error {
+func LoadConfig(file string) (ConfigToml, error) {
 	var configPath string
+	var config ConfigToml
 
 	if file == "" {
 		dir, err := os.Getwd()
 
 		if err != nil {
-			return err
+			return config, err
 		}
 		configPath = filepath.Join(dir, "netm4ul.conf")
 	} else {
 		configPath = file
 	}
 
-	_, err := toml.DecodeFile(configPath, &Config)
+	_, err := toml.DecodeFile(configPath, &config)
 	if err != nil {
-		return err
+		return config, err
 	}
-	return nil
+
+	return config, nil
 }
 
 // Read CA file and initialise
-func TLSReadCAFile(caCert string) (*x509.CertPool, error) {
+func (c *ConfigToml) TLSReadCAFile(caCert string) (*x509.CertPool, error) {
 
 	caCertBytes, err := ioutil.ReadFile(caCert)
 	if err != nil {
@@ -147,18 +146,18 @@ func TLSReadCAFile(caCert string) (*x509.CertPool, error) {
 }
 
 // Build the TLS configuration for server
-func TLSBuildServerConf() (*tls.Config, error) {
+func (c *ConfigToml) TLSBuildServerConf() (*tls.Config, error) {
 
 	// Get CA file
-	caCertPool, err := TLSReadCAFile(Config.TLSParams.CaCert)
+	caCertPool, err := c.TLSReadCAFile(c.TLSParams.CaCert)
 	if err != nil {
 		return nil, err
 	}
 
 	// Read own KeyPair
-	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ServerCert, Config.TLSParams.ServerPrivateKey)
+	cert, err := tls.LoadX509KeyPair(c.TLSParams.ServerCert, c.TLSParams.ServerPrivateKey)
 	if err != nil {
-		log.Errorf("Unable to read X509KeyPair at %s : %s", Config.TLSParams.ServerCert, err.Error())
+		log.Errorf("Unable to read X509KeyPair at %s : %s", c.TLSParams.ServerCert, err.Error())
 		return nil, err
 	}
 
@@ -183,16 +182,16 @@ func TLSBuildServerConf() (*tls.Config, error) {
 }
 
 // Build the TLS configuration for server
-func TLSBuildClientConf() (*tls.Config, error) {
+func (c *ConfigToml) TLSBuildClientConf() (*tls.Config, error) {
 
 	// Read CA file and initialise
-	caCertPool, err := TLSReadCAFile(Config.TLSParams.CaCert)
+	caCertPool, err := c.TLSReadCAFile(c.TLSParams.CaCert)
 	if err != nil {
 		return nil, err
 	}
 
 	// Read own KeyPair
-	cert, err := tls.LoadX509KeyPair(Config.TLSParams.ClientCert, Config.TLSParams.ClientPrivateKey)
+	cert, err := tls.LoadX509KeyPair(c.TLSParams.ClientCert, c.TLSParams.ClientPrivateKey)
 	if err != nil {
 		log.Errorf("Unable to read Client X509KeyPair : %s", err.Error())
 		return nil, err

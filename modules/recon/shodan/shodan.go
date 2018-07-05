@@ -16,12 +16,12 @@ import (
 	"gopkg.in/ns3777k/go-shodan.v3/shodan"
 )
 
-// ConfigToml : configuration model (from the toml file)
-type ConfigToml struct {
+// ConfigShodan : configuration model (from the toml file)
+type ConfigShodan struct {
 	// API_KEY int `toml:"api_key"`
 }
 
-type ShodanResult struct {
+type Result struct {
 	IP   string
 	Host *shodan.Host
 	// Services *Services
@@ -30,26 +30,27 @@ type ShodanResult struct {
 // Shodan "class"
 type Shodan struct {
 	// Config : exported config
-	Config ConfigToml
+	ConfigShodan ConfigShodan
+	Config       config.ConfigToml
 }
 
 // Name : name getter
-func (S Shodan) Name() string {
+func (S *Shodan) Name() string {
 	return "Shodan"
 }
 
 // Author : Author getter
-func (S Shodan) Author() string {
+func (S *Shodan) Author() string {
 	return "Rzbaa"
 }
 
 // Version : Version  getter
-func (S Shodan) Version() string {
+func (S *Shodan) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (S Shodan) DependsOn() []modules.Condition {
+func (S *Shodan) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
@@ -58,7 +59,7 @@ func (S Shodan) DependsOn() []modules.Condition {
 func NewShodan() modules.Module {
 	gob.Register(map[string]interface{}{})
 	gob.Register([]interface{}{})
-	gob.Register(ShodanResult{})
+	gob.Register(Result{})
 	var s modules.Module
 	s = &Shodan{}
 	return s
@@ -76,24 +77,13 @@ type Services struct {
 }
 */
 
-/*
-	Usefull command
-	curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/shodan
-	check db: Db.projects.find()
-	remove all data: db.projects.remove({})
-*/
-
 // Run : Main function of the module
-func (S Shodan) Run(inputs []modules.Input) (modules.Result, error) {
+func (S *Shodan) Run(inputs []modules.Input) (modules.Result, error) {
 
-	log.Debug("Shodan World!")
-
-	// Instanciate shodanResult
-	shodanResult := ShodanResult{}
-
+	// Instanciate Result
+	Result := Result{}
 	// Create client
-	shodanClient := shodan.NewClient(nil, config.Config.Keys.Shodan)
-
+	shodanClient := shodan.NewClient(nil, S.Config.Keys.Shodan)
 	// Create shodan context
 	shodanContext := context.Background()
 	// Get IP adress
@@ -105,34 +95,31 @@ func (S Shodan) Run(inputs []modules.Input) (modules.Result, error) {
 	}
 	dns, err := shodanClient.GetDNSResolve(shodanContext, domains)
 	if err != nil {
-		log.Panic(err)
+		return modules.Result{}, err
 	}
-	// TODO : change shodanResult slices / array ?
+	// TODO : change Result slices / array ?
 	// Not sure about just one domain output...
-	// shodanResult.IP = *dns["edznux.fr"]
+	// Result.IP = *dns["edznux.fr"]
 	myIP := *dns[domains[0]]
-	shodanResult.IP = myIP.String()
+	Result.IP = myIP.String()
 
 	hostServiceOption := shodan.HostServicesOptions{}
 
-	// Get services of shodanResult.IP
-	// log.Println(shodanResult.IP)
-	host, err := shodanClient.GetServicesForHost(shodanContext, shodanResult.IP, &hostServiceOption)
+	// Get services of Result.IP
+	// log.Println(Result.IP)
+	host, err := shodanClient.GetServicesForHost(shodanContext, Result.IP, &hostServiceOption)
 	if err != nil {
-		log.Panicln(err)
+		return modules.Result{}, err
 	}
 
-	shodanResult.Host = host
+	Result.Host = host
 
 	printHost(*host)
 	for _, servicesData := range host.Data {
 		log.Debug(servicesData)
 	}
 
-	// Exit message
-	log.Debug("Shodan module executed. See u, in hell!!")
-
-	return modules.Result{Data: shodanResult, Timestamp: time.Now(), Module: S.Name()}, err
+	return modules.Result{Data: Result, Timestamp: time.Now(), Module: S.Name()}, err
 }
 
 func printHost(host shodan.Host) {
@@ -150,7 +137,7 @@ func printHost(host shodan.Host) {
 }
 
 // ParseConfig : Load the config from the config folder
-func (S Shodan) ParseConfig() error {
+func (S *Shodan) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -158,17 +145,17 @@ func (S Shodan) ParseConfig() error {
 	exPath := filepath.Dir(ex)
 	configPath := filepath.Join(exPath, "config", "shodan.conf")
 
-	if _, err := toml.DecodeFile(configPath, &S.Config); err != nil {
+	if _, err := toml.DecodeFile(configPath, &S.ConfigShodan); err != nil {
 		log.Error(err)
 		return err
 	}
 	return nil
 }
 
-func (S Shodan) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (S *Shodan) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Debug("Write to the database.")
-	// var data ShodanResult
-	// data = result.Data.(ShodanResult)
+	// var data Result
+	// data = result.Data.(Result)
 
 	// raw := bson.M{projectName + ".results." + result.Module: data}
 	// database.UpsertRawData(mgoSession, projectName, raw)
