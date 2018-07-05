@@ -1,1 +1,1 @@
-{"name":"Test project","description":"Test description","updated_at":0,"ips":[{"value":"1.1.1.1","ports":[{"number":80,"protocol":"tcp","status":"open","banner":"Test banner","type":"web","uris":[{"name":"Test URI","code":"200"}]}]}]}
+{"name":"Test project","description":"Test description","ips":[{"value":"1.1.1.1","ports":[{"number":80,"protocol":"tcp","status":"open","banner":"Test banner","type":"web","uris":[{"name":"Test URI","code":"200","created_at":0,"updated_at":0}],"created_at":0,"updated_at":0}],"created_at":0,"updated_at":0}],"created_at":0,"updated_at":0}
