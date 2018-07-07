@@ -42,6 +42,14 @@ func (test *Test) Name() string {
 	return "TestAdapter"
 }
 
+func (test *Test) SetupDatabase() error {
+	return errors.New("Not implemented yet")
+}
+
+func (test *Test) DeleteDatabase() error {
+	return errors.New("Not implemented yet")
+}
+
 func (test *Test) SetupAuth(username, password, dbname string) error {
 	return nil
 }

@@ -116,6 +116,8 @@ type AllRaws map[string]Raws
 type Database interface {
 	// General purpose functions
 	Name() string
+	SetupDatabase() error
+	DeleteDatabase() error
 	SetupAuth(username, password, dbname string) error
 	Connect(*config.ConfigToml) error
 

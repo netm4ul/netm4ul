@@ -36,12 +36,12 @@ func (pg *PostgreSQL) Name() string {
 	return "PostgreSQL"
 }
 
-func (pg *PostgreSQL) createTablesIfNotExist() error {
+func createTablesIfNotExist(dbConn *sql.DB) error {
 
 	reqs := []string{
 		createTableUsers,
-		createTableDomains,
 		createTableProjects,
+		createTableDomains,
 		createTableIPs,
 		createTablePortTypes,
 		createTablePorts,
@@ -50,45 +50,134 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 	}
 
 	for _, request := range reqs {
-		if _, err := pg.db.Exec(request); err != nil {
+		log.Debugf(request)
+		if _, err := dbConn.Exec(request); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (pg *PostgreSQL) createDb() {
+func createDb(ip, database, user, password string) error {
 	log.Debug("Create database")
+	strConn := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable",
+		user,
+		ip,
+		password,
+	)
+	db, err := sql.Open("postgres", strConn)
+	log.Debugf("StrConn : %s", strConn)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+	// yep, configuration sqli, postgres limitation. cannot prepare this statement
+	_, err = db.Exec(fmt.Sprintf(`create database %s`, strings.ToLower(database)))
+	db.Close()
+
+	strConnWithDatabse := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable dbname=%s",
+		user,
+		ip,
+		password,
+		database,
+	)
+
+	db, err = sql.Open("postgres", strConnWithDatabse)
+	// we ignore if the database already exist
+	if err != nil {
+		log.Error(err)
+	}
+	log.Debugf("Database '%s' created !", strings.ToLower(database))
+
+	err = createTablesIfNotExist(db)
+	if err != nil {
+		return errors.New("Could not create tables : " + err.Error())
+	}
+	return nil
+}
+
+//DeleteDatabase will drop all tables and remove the database from postgres
+func (pg *PostgreSQL) DeleteDatabase() error {
+	log.Debugf("DeleteDatabase postgres")
+	err := pg.db.Ping()
+	if err != nil {
+		return errors.New("Could not connect to the database : " + err.Error())
+	}
+
+	reqs := []string{
+		dropTableUsers,
+		dropTableProjects,
+		dropTableDomains,
+		dropTableIPs,
+		dropTablePortTypes,
+		dropTablePorts,
+		dropTableURIs,
+		dropTableRaws,
+	}
+
+	for _, request := range reqs {
+		log.Debugf(request)
+		if _, err := pg.db.Exec(request); err != nil {
+			log.Debugf("Error while dropping tables : " + err.Error())
+			return err
+		}
+	}
+
+	//must close all connection before deleting it !
+	pg.db.Close()
+
 	strConn := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable",
 		pg.cfg.Database.User,
 		pg.cfg.Database.IP,
 		pg.cfg.Database.Password,
 	)
+
 	db, err := sql.Open("postgres", strConn)
 	log.Debugf("StrConn : %s", strConn)
 	if err != nil {
-		log.Error(err)
+		return err
 	}
-	// yep, configuration sqli, postgres limitation. cannot prepare this statement
-	_, err = db.Exec(fmt.Sprintf(`create database %s`, strings.ToLower(pg.cfg.Database.Database)))
+	defer db.Close()
 
-	// we ignore if the database already exist
+	err = db.Ping()
 	if err != nil {
-		log.Error(err)
+		return err
 	}
-	log.Debug("Database created !")
 
+	// yep, configuration sqli, postgres limitation. cannot prepare this statement
+	log.Infof("Dropping database : %s", fmt.Sprintf(dropDatabase, strings.ToLower(pg.cfg.Database.Database)))
+	_, err = db.Exec(fmt.Sprintf(dropDatabase, strings.ToLower(pg.cfg.Database.Database)))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pg *PostgreSQL) SetupDatabase() error {
+	log.Debugf("SetupDatabase postgres")
+	err := createDb(
+		pg.cfg.Database.IP,
+		pg.cfg.Database.Database,
+		pg.cfg.Database.User,
+		pg.cfg.Database.Password,
+	)
+
+	if err != nil {
+		return errors.New("Could not setup the database : " + err.Error())
+	}
+	return nil
 }
 
 func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 	log.Debugf("SetupAuth postgres")
-	pg.createDb()
-	pg.Connect(pg.cfg)
+
 	//TODO : create user/password
-	err := pg.createTablesIfNotExist()
-	if err != nil {
-		return errors.New("Could not create tables : " + err.Error())
-	}
+	// pg.Connect(pg.cfg)
 
 	return nil
 }
@@ -97,10 +186,17 @@ func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", c.Database.User, c.Database.Password, strings.ToLower(c.Database.Database), c.Database.IP, c.Database.Port)
 	log.Debugf("Connection string : %s", connStr)
+
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return errors.New("Could not open connection : " + err.Error())
 	}
+
+	err = db.Ping()
+	if err != nil {
+		return errors.New("Could not ping the database : " + err.Error())
+	}
+
 	pg.db = db
 	return nil
 }
@@ -385,7 +481,7 @@ func (pg *PostgreSQL) GetDomains(projectName string) ([]models.Domain, error) {
 
 	for rows.Next() {
 		domain := models.Domain{}
-		err = rows.Scan(&domain.ID, &domain.Name, &domain.CreatedAt, &domain.UpdatedAt)
+		err = rows.Scan(&domain.Name, &domain.CreatedAt, &domain.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

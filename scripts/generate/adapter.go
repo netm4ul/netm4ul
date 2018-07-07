@@ -12,6 +12,8 @@ import (
 
 //GenerateAdapter generate boilerplate for adapter
 func GenerateAdapter(adapterName, adapterShortName string) {
+
+	//TODO : add basic description / comments on each exported function !
 	templateAdapter := `
 package {{.adapterName | ToLower }}
 
@@ -36,6 +38,14 @@ func InitDatabase(c *config.ConfigToml) *{{.adapterName}} {
 // General purpose functions
 func ({{.adapterShortName}} *{{.adapterName}}) Name() string{
 	return "{{.adapterName}}"
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) SetupDatabase() error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) DeleteDatabase() error {
+	return errors.New("Not implemented yet")
 }
 
 func ({{.adapterShortName}} *{{.adapterName}}) SetupAuth(username, password, dbname string) error{

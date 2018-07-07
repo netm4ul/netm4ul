@@ -196,6 +196,16 @@ func (f *JsonDB) writeRaws(file *os.File, r map[string]interface{}) error {
 	return json.NewEncoder(file).Encode(r)
 }
 
+func (f *JsonDB) SetupDatabase() error {
+	log.Debugf("SetupDatabase jsondb")
+	//TODO : maybe create folder / files ?
+	return errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) DeleteDatabase() error {
+	return errors.New("Not implemented yet")
+}
+
 //SetupAuth is not used in this adapters. Filesystem permission are used for that
 func (f *JsonDB) SetupAuth(username, password, dbname string) error {
 	// no auth for FS ?

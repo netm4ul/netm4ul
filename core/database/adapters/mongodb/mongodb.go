@@ -27,6 +27,14 @@ func (mongo *MongoDB) Name() string {
 	return "MongoDB"
 }
 
+func (mongo *MongoDB) SetupDatabase() error {
+	return errors.New("Not implemented yet")
+}
+
+func (mongo *MongoDB) DeleteDatabase() error {
+	return errors.New("Not implemented yet")
+}
+
 func (mongo *MongoDB) SetupAuth(username, password, dbname string) error {
 
 	roles := []mgo.Role{mgo.RoleDBAdmin}

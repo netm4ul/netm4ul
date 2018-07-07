@@ -219,6 +219,7 @@ func prompt(param string) (answer string) {
 
 	// Database parameters
 	promptString := map[string]PromptRes{
+		"dbdel":              {Message: color.RedString("[DANGER]") + "Do you want to delete the database (default : %s) [y/N]: ", DefaultValue: "N"},
 		"dbuser":             {Message: "Database username (default : %s) : ", DefaultValue: CLISession.Config.Database.User},
 		"dbpassword":         {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: CLISession.Config.Database.Password},
 		"dbip":               {Message: "Database IP (default : %s) : ", DefaultValue: CLISession.Config.Database.IP},
@@ -298,12 +299,26 @@ func setupDB() error {
 		return errors.New("Could not create the database session")
 	}
 
+	deldb := prompt("dbdel")
+	willDeleteDB, err := yesNo(deldb)
+	if willDeleteDB {
+		err = db.DeleteDatabase()
+		if err != nil {
+			return errors.New("Could not delete the database : " + err.Error())
+		}
+	}
+
 	err = db.SetupAuth(
 		CLISession.Config.Database.User,
 		CLISession.Config.Database.Password,
 		CLISession.Config.Database.Database,
 	)
 
+	if err != nil {
+		return errors.New("Could not setup the auth for the database : " + err.Error())
+	}
+
+	err = db.SetupDatabase()
 	if err != nil {
 		return errors.New("Could not setup the database : " + err.Error())
 	}

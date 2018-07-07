@@ -135,7 +135,7 @@ AND domains.project_name = projects.name;
 $1 : project name
 */
 const selectDomains = `
-SELECT domains.id, domains.name, domains.created_at, domains.updated_at
+SELECT domains.name, domains.created_at, domains.updated_at
 FROM domains, projects
 WHERE projects.name = $1
 AND domains.project_name = projects.name; 
@@ -396,10 +396,14 @@ WHERE name = $1;
 `
 
 /* ========================================== DROP ========================================== */
-const dropTableUsers = `DROP TABLE users;`
-const dropTableProjects = `DROP TABLE projects;`
-const dropTableIps = `DROP TABLE ips;`
-const dropTablePorttypes = `DROP TABLE porttypes;`
-const dropTablePorts = `DROP TABLE ports;`
-const dropTableUris = `DROP TABLE uris;`
-const dropTableRaws = `DROP TABLE raws;`
+const dropTableUsers = `DROP TABLE IF EXISTS users;`
+const dropTableDomains = `DROP TABLE IF EXISTS domains;`
+const dropTableProjects = `DROP TABLE IF EXISTS projects;`
+const dropTableIPs = `DROP TABLE IF EXISTS ips;`
+const dropTablePortTypes = `DROP TABLE IF EXISTS porttypes;`
+const dropTablePorts = `DROP TABLE IF EXISTS ports;`
+const dropTableURIs = `DROP TABLE IF EXISTS uris;`
+const dropTableRaws = `DROP TABLE IF EXISTS raws;`
+
+// ew, careful to SQLI there, the name must be trusted
+const dropDatabase = `DROP DATABASE IF EXISTS %s;`
