@@ -30,6 +30,13 @@ CREATE TABLE IF NOT EXISTS users(
 );
 `
 
+/*
+the "value" field can handle ipv4 & ipv6 : the varchar(50) should be ok for any ipv6 !
+TOFIX :
+(value & project_name) is *probably* a unique combo but not it's not necessary the case :
+	- multiple internal networks with the same IP range
+This is a very special case that I don't even know how to support for now
+*/
 const createTableIPs = `
 CREATE TABLE IF NOT EXISTS ips(
 	id serial PRIMARY KEY,

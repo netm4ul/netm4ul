@@ -2,7 +2,9 @@ package traceroute
 
 import (
 	"encoding/gob"
+	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -10,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
+	"github.com/aeden/traceroute"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
 )
@@ -23,67 +26,83 @@ type TracerouteResult struct {
 	Avg         float32
 }
 
-// ConfigToml : configuration model (from the toml file)
-type ConfigToml struct {
+// Config : configuration model (from the toml file)
+type Config struct {
 	MaxHops int `toml:"max_hops"`
 }
 
 // Traceroute "class"
-type Traceroute struct {
+type TracerouteModule struct {
 	// Config : exported config
-	Config ConfigToml
+	Config Config
+}
+
+type Traceroute struct {
+	Hops   []models.Hop
+	Src    net.IP
+	Dst    net.IP
+	ttl    int
+	maxTTL int
 }
 
 //NewTraceroute generate a new Traceroute module (type modules.Module)
 func NewTraceroute() modules.Module {
-	gob.Register(TracerouteResult{})
+	gob.Register(traceroute.TracerouteResult{})
 	var t modules.Module
-	t = &Traceroute{}
+	t = &TracerouteModule{}
 	return t
 }
 
 // Name : name getter
-func (T *Traceroute) Name() string {
+func (T *TracerouteModule) Name() string {
 	return "Traceroute"
 }
 
 // Author : Author getter
-func (T *Traceroute) Author() string {
-	return "tomalavie"
+func (T *TracerouteModule) Author() string {
+	return "Edznux"
 }
 
 // Version : Version  getter
-func (T *Traceroute) Version() string {
+func (T *TracerouteModule) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (T *Traceroute) DependsOn() []modules.Condition {
+func (T *TracerouteModule) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
 
 // Run : Main function of the module
-func (T *Traceroute) Run(inputs []modules.Input) (modules.Result, error) {
-	fmt.Println("hello world") //Affiche hello world pour le fun
-	// cmd := exec.Command("traceroute", "8.8.8.8") //
-	// var out bytes.Buffer
-	// cmd.Stdout = &out
-	// err := cmd.Run()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf(out.String())
-	return modules.Result{Data: TracerouteResult{Source: "SRC", Destination: "DST", Min: 12.3, Max: 123.4, Avg: 56.78}, Timestamp: time.Now(), Module: T.Name()}, nil
+func (T *TracerouteModule) Run(inputs []modules.Input) (modules.Result, error) {
+
+	ipAddr, err := net.ResolveIPAddr("ip", inputs[0].Domain)
+	if err != nil {
+		return modules.Result{}, errors.New("Could not resolve the IP : " + err.Error())
+	}
+
+	options := traceroute.TracerouteOptions{}
+	options.SetMaxHops(T.Config.MaxHops)
+	options.SetRetries(3)
+
+	traceRes, err := traceroute.Traceroute(ipAddr.String(), &options)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+	}
+
+	log.Debugf("RES : %+v\n", traceRes)
+
+	return modules.Result{Data: traceRes, Timestamp: time.Now(), Module: T.Name()}, nil
 }
 
 // Parse : Parse the result of the execution
-func (T *Traceroute) Parse() (TracerouteResult, error) {
+func (T *TracerouteModule) Parse() (TracerouteResult, error) {
 	return TracerouteResult{}, nil
 }
 
 // ParseConfig : Load the config from the config folder
-func (T *Traceroute) ParseConfig() error {
+func (T *TracerouteModule) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -100,23 +119,26 @@ func (T *Traceroute) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T Traceroute) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (T *TracerouteModule) WriteDb(result modules.Result, db models.Database, projectName string) error {
 	log.Debug("Writing to the database.")
 
-	var data TracerouteResult
-	data = result.Data.(TracerouteResult)
+	var data traceroute.TracerouteResult
+	var err error
 
-	ipSrc := models.IP{Value: data.Source}
-	ipDest := models.IP{Value: data.Destination}
+	data = result.Data.(traceroute.TracerouteResult)
 
-	err := db.CreateOrUpdateIP(projectName, ipSrc)
-	if err != nil {
-		log.Errorf("Could not create or update ip : %+v", err)
-	}
+	for _, hop := range data.Hops {
 
-	err = db.CreateOrUpdateIP(projectName, ipDest)
-	if err != nil {
-		log.Errorf("Could not create or update ip : %+v", err)
+		ipDest := models.IP{
+			Value:     hop.AddressString(),
+			CreatedAt: time.Now().Unix(),
+			UpdatedAt: time.Now().Unix(),
+		}
+
+		err = db.CreateOrUpdateIP(projectName, ipDest)
+		if err != nil {
+			log.Errorf("Could not create or update ip : %+v", err)
+		}
 	}
 
 	err = db.AppendRawData(projectName, T.Name(), data)

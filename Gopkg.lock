@@ -14,6 +14,12 @@
   version = "1.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/aeden/traceroute"
+  packages = ["."]
+  revision = "ae2abf0a43c93d78edae54d460c58cdc80634563"
+
+[[projects]]
   name = "github.com/fatih/color"
   packages = ["."]
   revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
@@ -190,6 +196,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "34de23037f3b029249f370a1ef9bd30df83cb31941112bc23664dcc876c96bcc"
+  inputs-digest = "c3d9a5a46fe6fa5d3d43ac0b3d39dfa71c819635e7330c20c0f02cb0b3a969c5"
   solver-name = "gps-cdcl"
   solver-version = 1
