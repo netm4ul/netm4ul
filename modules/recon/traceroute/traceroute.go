@@ -3,7 +3,6 @@ package traceroute
 import (
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -77,7 +76,8 @@ func (T *TracerouteModule) DependsOn() []modules.Condition {
 // Run : Main function of the module
 func (T *TracerouteModule) Run(inputs []modules.Input) (modules.Result, error) {
 
-	ipAddr, err := net.ResolveIPAddr("ip", inputs[0].Domain)
+	//I don't think the traceroute lib that we use handle ipv6...
+	ipAddr, err := net.ResolveIPAddr("ip4", inputs[0].Domain)
 	if err != nil {
 		return modules.Result{}, errors.New("Could not resolve the IP : " + err.Error())
 	}
@@ -86,9 +86,28 @@ func (T *TracerouteModule) Run(inputs []modules.Input) (modules.Result, error) {
 	options.SetMaxHops(T.Config.MaxHops)
 	options.SetRetries(3)
 
-	traceRes, err := traceroute.Traceroute(ipAddr.String(), &options)
+	var traceRes traceroute.TracerouteResult
+
+	// use channel only to print debug
+	if log.GetLevel() >= log.DebugLevel {
+		c := make(chan traceroute.TracerouteHop, 0)
+		go func() {
+			for {
+				hop, ok := <-c
+				if !ok {
+					log.Debug("Recieved invalid hop (*)")
+					return
+				}
+				log.Debugf("Recieved hop : %+v", hop)
+			}
+		}()
+		traceRes, err = traceroute.Traceroute(ipAddr.String(), &options, c)
+	} else {
+		traceRes, err = traceroute.Traceroute(ipAddr.String(), &options)
+	}
+
 	if err != nil {
-		fmt.Printf("Error: %s", err)
+		log.Errorf("Error: %s", err)
 	}
 
 	log.Debugf("RES : %+v\n", traceRes)
