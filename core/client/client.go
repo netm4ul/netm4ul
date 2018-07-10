@@ -87,12 +87,18 @@ func (client *Client) handleData() {
 			continue
 		}
 
-		// must exist, if it doesn't, this line shouldn't be executed (checks above)
-		module := client.Session.Modules[cmd.Name]
+		// must exist, if it doesn't, the next lines shouldn't be executed
+		module, ok := client.Session.Modules[cmd.Name]
+		if !ok {
+			continue
+		}
 
 		//TODO
 		// send data back to the server
 		data, err := client.Execute(module, cmd)
+		if err != nil {
+			log.Error("Could not execute module : " + err.Error())
+		}
 		client.SendResult(data)
 	}
 }
@@ -105,14 +111,12 @@ func (client *Client) Connect() error {
 
 	if client.Session.Config.TLSParams.UseTLS {
 		client.Session.Connector.TLSConn, err = tls.Dial("tcp", ipport, client.Session.Config.TLSParams.TLSConfig)
-		if err != nil {
-			return errors.Wrap(err, "Dialing "+ipport+" failed")
-		}
 	} else {
 		client.Session.Connector.Conn, err = net.Dial("tcp", ipport)
-		if err != nil {
-			return errors.Wrap(err, "Dialing "+ipport+" failed")
-		}
+	}
+
+	if err != nil {
+		return errors.Wrap(err, "Dialing "+ipport+" failed")
 	}
 
 	return nil
@@ -243,13 +247,13 @@ func (client *Client) SendResult(res modules.Result) error {
 	err := gob.NewEncoder(rw).Encode(res)
 
 	if err != nil {
-		log.Errorf("Error : %+v", err)
+		log.Errorf("Could not encode result : %+v", err)
 		return err
 	}
 
 	err = rw.Flush()
 	if err != nil {
-		log.Errorf("Error : %+v", err)
+		log.Errorf("Could not flush the read/writer : %+v", err)
 		return err
 	}
 
