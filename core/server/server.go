@@ -75,7 +75,7 @@ func (server *Server) Listen() {
 func (server *Server) handleRequest(conn net.Conn) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-
+	log.Debug("Modules : " + server.Session.GetModulesList())
 	server.handleHello(conn, rw)
 
 	stop := false
@@ -202,6 +202,7 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	module, ok := server.Session.Modules[strings.ToLower(data.Module)]
 	if !ok {
 		log.Errorf("Unknown module : %s %+v %+v", data.Module, module, ok)
+		return false
 	}
 
 	ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
