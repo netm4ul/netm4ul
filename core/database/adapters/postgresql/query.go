@@ -32,18 +32,19 @@ CREATE TABLE IF NOT EXISTS users(
 
 /*
 the "value" field can handle ipv4 & ipv6 : the varchar(50) should be ok for any ipv6 !
-TOFIX :
-(value & project_name) is *probably* a unique combo but not it's not necessary the case :
-	- multiple internal networks with the same IP range
-This is a very special case that I don't even know how to support for now
+the "network" value can be an alias for a internal network.
+Only "external" is a reserved, it is the default value.
+The tuple (value, network) must be unique.
 */
 const createTableIPs = `
 CREATE TABLE IF NOT EXISTS ips(
 	id serial PRIMARY KEY,
 	value varchar(50) NOT NULL,
+	network varchar(50) DEFAULT 'external',
 	created_at timestamp with time zone DEFAULT current_timestamp,
 	updated_at timestamp with time zone DEFAULT current_timestamp,
 	
+	UNIQUE(value, network),
 	project_name text references projects(name)
 );
 `
@@ -183,7 +184,7 @@ WHERE token = $1;
 $1 : project name
 */
 const selectIPsByProjectName = `
-SELECT ips.id, ips.value
+SELECT ips.id, ips.value, ips.network, ips.created_at, ips.updated_at
 FROM ips, projects
 WHERE ips.project_name = projects.name
 AND projects.name = $1;
