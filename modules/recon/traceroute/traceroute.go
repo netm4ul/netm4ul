@@ -75,9 +75,20 @@ func (T *TracerouteModule) DependsOn() []modules.Condition {
 
 // Run : Main function of the module
 func (T *TracerouteModule) Run(inputs []modules.Input) (modules.Result, error) {
+	var ipAddr *net.IPAddr
+	var err error
 
-	//I don't think the traceroute lib that we use handle ipv6...
-	ipAddr, err := net.ResolveIPAddr("ip4", inputs[0].Domain)
+	for _, input := range inputs {
+		if input.Domain != "" {
+			//I don't think the traceroute lib that we use handle ipv6...
+			ipAddr, err = net.ResolveIPAddr("ip4", input.Domain)
+		}
+		if input.IP != nil {
+			//I don't think the traceroute lib that we use handle ipv6...
+			ipAddr, err = net.ResolveIPAddr("ip4", input.IP.String())
+		}
+	}
+
 	if err != nil {
 		return modules.Result{}, errors.New("Could not resolve the IP : " + err.Error())
 	}

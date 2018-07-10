@@ -3,6 +3,7 @@ package session
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -84,4 +85,21 @@ func (s *Session) GetServerIPPort() string {
 // GetAPIIPPort fun
 func (s *Session) GetAPIIPPort() string {
 	return s.Config.Server.IP + ":" + strconv.FormatUint(uint64(s.Config.API.Port), 10)
+}
+
+// GetModulesList return a string of all modules (listed and enabled)
+// display them in 2 lines
+func (s *Session) GetModulesList() string {
+	mod := "["
+	for _, m := range s.Modules {
+		mod += " " + m.Name()
+	}
+	mod += " ]"
+
+	modEnabled := "["
+	for _, m := range s.ModulesEnabled {
+		modEnabled += " " + m.Name()
+	}
+	modEnabled += "]"
+	return fmt.Sprintf("Modules : [%s]\n Modules enabled : [%s]", mod, modEnabled)
 }
