@@ -10,7 +10,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/netm4ul/netm4ul/core/server"
 
@@ -227,7 +226,7 @@ func printProjectsInfo(s *session.Session) {
 		if s.Verbose {
 			log.Infof("p : %+v", p)
 		}
-		data = append(data, []string{p.Name, p.Description, strconv.Itoa(len(p.IPs)), time.Unix(p.UpdatedAt, 0).String()})
+		data = append(data, []string{p.Name, p.Description, strconv.Itoa(int(p.UpdatedAt.Unix()))})
 	}
 
 	table.AppendBulk(data)
@@ -235,7 +234,8 @@ func printProjectsInfo(s *session.Session) {
 }
 
 func printProjectInfo(projectName string, s *session.Session) {
-
+	//TODO
+	// everyhting !
 	var p models.Project
 	var err error
 	var data [][]string
@@ -254,13 +254,6 @@ func printProjectInfo(projectName string, s *session.Session) {
 	}
 
 	log.Debugf("Project : %+v", p)
-
-	for _, ip := range p.IPs {
-		log.Debugf("ip : %+v", ip)
-		for _, port := range ip.Ports {
-			data = append(data, []string{ip.Value, strconv.Itoa(int(port.Number))})
-		}
-	}
 
 	table.AppendBulk(data)
 	table.Render()

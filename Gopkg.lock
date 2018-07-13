@@ -89,7 +89,7 @@
     ".",
     "oid"
   ]
-  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -200,18 +200,6 @@
   revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [[projects]]
-  branch = "v2"
-  name = "gopkg.in/mgo.v2"
-  packages = [
-    ".",
-    "bson",
-    "internal/json",
-    "internal/sasl",
-    "internal/scram"
-  ]
-  revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
-
-[[projects]]
   name = "gopkg.in/ns3777k/go-shodan.v3"
   packages = ["shodan"]
   revision = "c1bc298e2b11df7a72949191c4102d5935ede169"
@@ -220,6 +208,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "42b94d3d466760c70c86c03216c68e0a3db3e4de99ebe4da38e3916eddce5243"
+  inputs-digest = "e8b9cbbca940622836a35390162c51e1816c7b41c40b563d922eb98b31b4d2ad"
   solver-name = "gps-cdcl"
   solver-version = 1

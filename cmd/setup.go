@@ -345,7 +345,7 @@ func setupAPI() error {
 		CLISession.Config.API.User = prompt("apiuser")
 		password := prompt("apipassword")
 		db := database.NewDatabase(&CLISession.Config)
-		now := time.Now().Unix()
+		now := time.Now()
 		user := models.User{Name: CLISession.Config.API.User, Password: password, CreatedAt: now, UpdatedAt: now}
 
 		err := db.CreateOrUpdateUser(user)

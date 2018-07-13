@@ -248,7 +248,7 @@ func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName st
 		}
 
 		for _, ip := range host.Addresses {
-			element := models.IP{Value: ip.Addr, CreatedAt: time.Now().Unix(), UpdatedAt: time.Now().Unix()}
+			element := models.IP{Value: ip.Addr, CreatedAt: time.Now(), UpdatedAt: time.Now()}
 			log.Debugf("Saving IP address : %+v", element)
 			db.CreateOrUpdateIP(projectName, element)
 		}

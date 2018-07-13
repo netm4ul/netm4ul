@@ -68,10 +68,6 @@ func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 
 	res = CodeToResult[CodeOK]
 
-	// delete sub field info
-	for i := range projects {
-		projects[i].IPs = nil
-	}
 	res.Data = projects
 
 	json.NewEncoder(w).Encode(res)
@@ -108,11 +104,6 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(CodeToResult[CodeDatabaseError].HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
-	}
-
-	// we don't want all data
-	if p.IPs != nil {
-		p.IPs = nil
 	}
 
 	res = CodeToResult[CodeOK]

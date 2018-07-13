@@ -121,7 +121,6 @@ func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Do not report user private info
-	user.ID = ""
 	user.Password = ""
 	user.Token = ""
 	res = CodeToResult[CodeOK]

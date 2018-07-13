@@ -161,8 +161,8 @@ func (T *TracerouteModule) WriteDb(result modules.Result, db models.Database, pr
 
 		ipDest := models.IP{
 			Value:     hop.AddressString(),
-			CreatedAt: time.Now().Unix(),
-			UpdatedAt: time.Now().Unix(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 
 		err = db.CreateOrUpdateIP(projectName, ipDest)
