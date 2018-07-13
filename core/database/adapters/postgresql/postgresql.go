@@ -12,15 +12,21 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 
-	"github.com/lib/pq"
+	pgdb "github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	log "github.com/sirupsen/logrus"
 )
 
+/*
+* This adapters relies on the "pg" ORM.
+* Models are being extended in this package (file models.go)
+*
+ */
 const DB_NAME = "netm4ul"
 
 type PostgreSQL struct {
 	cfg *config.ConfigToml
-	db  *sql.DB
+	db  *pgdb.DB
 }
 
 func InitDatabase(c *config.ConfigToml) *PostgreSQL {
@@ -36,35 +42,40 @@ func (pg *PostgreSQL) Name() string {
 	return "PostgreSQL"
 }
 
-func createTablesIfNotExist(dbConn *sql.DB) error {
+func (pg *PostgreSQL) createTablesIfNotExist() error {
 
-	reqs := []string{
-		createTableUsers,
-		createTableProjects,
-		createTableDomains,
-		createTableIPs,
-		createTablePortTypes,
-		createTablePorts,
-		createTableURIs,
-		createTableRaws,
+	reqs := []interface{}{
+		&pgUser{},
+		&pgProject{},
+		&pgDomain{},
+		&pgIP{},
+		&pgPortType{},
+		&pgPort{},
+		&pgURI{},
+		// &pgRaw{},
 	}
 
-	for _, request := range reqs {
-		log.Debugf(request)
-		if _, err := dbConn.Exec(request); err != nil {
-			return err
+	for _, model := range reqs {
+		log.Debugf("Creating table : %+v", model)
+		err := pg.db.CreateTable(model, &orm.CreateTableOptions{
+			FKConstraints: true,
+			IfNotExists:   true,
+		})
+		if err != nil {
+			panic(err)
 		}
 	}
 	return nil
 }
 
-func createDb(ip, database, user, password string) error {
+func (pg *PostgreSQL) createDb() error {
 	log.Debug("Create database")
 	strConn := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable",
-		user,
-		ip,
-		password,
+		pg.cfg.Database.User,
+		pg.cfg.Database.IP,
+		pg.cfg.Database.Password,
 	)
+
 	db, err := sql.Open("postgres", strConn)
 	log.Debugf("StrConn : %s", strConn)
 	if err != nil {
@@ -77,24 +88,23 @@ func createDb(ip, database, user, password string) error {
 		return err
 	}
 	// yep, configuration sqli, postgres limitation. cannot prepare this statement
-	_, err = db.Exec(fmt.Sprintf(`create database %s`, strings.ToLower(database)))
+	_, err = db.Exec(fmt.Sprintf(`create database %s`, strings.ToLower(pg.cfg.Database.Database)))
 	db.Close()
 
-	strConnWithDatabse := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable dbname=%s",
-		user,
-		ip,
-		password,
-		database,
-	)
+	pg.db = pgdb.Connect(&pgdb.Options{
+		Addr:     pg.cfg.Database.IP,
+		User:     pg.cfg.Database.User,
+		Password: pg.cfg.Database.Password,
+		Database: pg.cfg.Database.Database,
+	})
 
-	db, err = sql.Open("postgres", strConnWithDatabse)
-	// we ignore if the database already exist
 	if err != nil {
 		log.Error(err)
 	}
-	log.Debugf("Database '%s' created !", strings.ToLower(database))
 
-	err = createTablesIfNotExist(db)
+	log.Debugf("Database '%s' created !", strings.ToLower(pg.cfg.Database.Database))
+
+	err = pg.createTablesIfNotExist()
 	if err != nil {
 		return errors.New("Could not create tables : " + err.Error())
 	}
@@ -104,32 +114,7 @@ func createDb(ip, database, user, password string) error {
 //DeleteDatabase will drop all tables and remove the database from postgres
 func (pg *PostgreSQL) DeleteDatabase() error {
 	log.Debugf("DeleteDatabase postgres")
-	err := pg.db.Ping()
-	if err != nil {
-		return errors.New("Could not connect to the database : " + err.Error())
-	}
-
-	reqs := []string{
-		dropTableUsers,
-		dropTableProjects,
-		dropTableDomains,
-		dropTableIPs,
-		dropTablePortTypes,
-		dropTablePorts,
-		dropTableURIs,
-		dropTableRaws,
-	}
-
-	for _, request := range reqs {
-		log.Debugf(request)
-		if _, err := pg.db.Exec(request); err != nil {
-			log.Debugf("Error while dropping tables : " + err.Error())
-			return err
-		}
-	}
-
-	//must close all connection before deleting it !
-	pg.db.Close()
+	User := new(models.User)
 
 	strConn := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable",
 		pg.cfg.Database.User,
@@ -160,12 +145,7 @@ func (pg *PostgreSQL) DeleteDatabase() error {
 
 func (pg *PostgreSQL) SetupDatabase() error {
 	log.Debugf("SetupDatabase postgres")
-	err := createDb(
-		pg.cfg.Database.IP,
-		pg.cfg.Database.Database,
-		pg.cfg.Database.User,
-		pg.cfg.Database.Password,
-	)
+	err := pg.createDb()
 
 	if err != nil {
 		return errors.New("Could not setup the database : " + err.Error())
@@ -184,79 +164,61 @@ func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 
 func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable", c.Database.User, c.Database.Password, strings.ToLower(c.Database.Database), c.Database.IP, c.Database.Port)
-	log.Debugf("Connection string : %s", connStr)
+	pg.db = pgdb.Connect(&pgdb.Options{
+		User:     c.Database.User,
+		Password: c.Database.Password,
+		Database: strings.ToLower(c.Database.Database),
+		Addr:     c.Database.IP + strconv.Itoa(int(c.Database.Port)),
+	})
 
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return errors.New("Could not open connection : " + err.Error())
+	if pg.db == nil {
+		return errors.New("Could not connect to the database : pg.db is nil")
 	}
 
-	err = db.Ping()
-	if err != nil {
-		return errors.New("Could not ping the database : " + err.Error())
-	}
-
-	pg.db = db
 	return nil
 }
 
 //User
 
 //TODO : refactor this.
-func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
+func (pg *PostgreSQL) CreateOrUpdateUser(user pgUser) error {
 
-	var lastInsertID int
 	u, err := pg.GetUser(user.Name)
-	if err, ok := err.(*pq.Error); ok {
-		return errors.New("pq error: " + err.Code.Name())
-	}
-
 	if err != nil {
 		return errors.New("Error : " + err.Error())
 	}
 
 	//user exist, update it
-	if u.ID != "" {
+	if u.ID != 0 {
 		// update password
 		if user.Password != "" && u.Password != user.Password {
 			log.Debug("Updating password for user", user.Name)
-			err = pg.db.QueryRow(
-				updateUserPasswordByUsername,
-				user.Password,
-				user.Name,
-			).Scan(&lastInsertID)
-
-			if err, ok := err.(*pq.Error); ok {
-				return errors.New("pq error: " + err.Code.Name())
+			_, err = pg.db.Model(user).
+				Set("password = ?password").
+				WherePK().
+				Returning("*").
+				Update()
+			if err != nil {
+				return errors.New("pq error: " + err.Error())
 			}
 		}
-
+		// update token
 		if user.Token != "" && u.Token != user.Token {
 			log.Debug("Updating token for user", user.Name)
-			err = pg.db.QueryRow(
-				updateUserTokenByUsername,
-				user.Token,
-				user.Name,
-			).Scan(&lastInsertID)
+			_, err = pg.db.Model(user).
+				Set("password = ?password").
+				WherePK().
+				Returning("*").
+				Update()
 
-			if err, ok := err.(*pq.Error); ok {
-				return errors.New("pq error: " + err.Code.Name())
+			if err != nil {
+				return errors.New("pq error: " + err.Error())
 			}
 		}
 		return nil
 	}
 
-	err = pg.db.QueryRow(
-		insertUser,
-		user.Name,
-		user.Password,
-		user.Token,
-	).Scan(&lastInsertID)
-
-	if err, ok := err.(*pq.Error); ok {
-		return errors.New("pq error: " + err.Code.Name())
-	}
+	err = pg.db.Insert(user)
 	if err != nil {
 		return errors.New("Could not insert user in the database : " + err.Error())
 	}
@@ -264,45 +226,35 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 	return nil
 }
 
-func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
+func (pg *PostgreSQL) GetUser(username string) (pgUser, error) {
 
-	user := models.User{}
-	var createdAt time.Time
-	var updatedAt time.Time
-
-	err := pg.db.QueryRow(
-		selectUserByName,
-		username,
-	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &createdAt, &updatedAt)
+	user := pgUser{}
+	err := pg.db.Model(user).Where("username = ?username", username).Select()
 
 	// Accept empty rows !
 	if err != nil && err != sql.ErrNoRows {
-		return models.User{}, errors.New("Could not get user by name : " + err.Error())
+		return user, errors.New("Could not get user by name : " + err.Error())
 	}
-	user.CreatedAt = createdAt.UnixNano()
-	user.UpdatedAt = updatedAt.UnixNano()
 	return user, nil
 }
 
-func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
-	user := models.User{}
-	var createdAt time.Time
-	var updatedAt time.Time
-	err := pg.db.QueryRow(
-		selectUserByToken,
-		token,
-	).Scan(&user.ID, &user.Name, &user.Password, &user.Token, &createdAt, &updatedAt)
+func (pg *PostgreSQL) GetUserByToken(token string) (pgUser, error) {
+
+	user := pgUser{}
+	err := pg.db.Model(user).Where("token = ?token", token).Select()
 
 	if err != nil {
-		return models.User{}, errors.New("Could not get user by token from the database : " + err.Error())
+		return user, errors.New("Could not get user by token from the database : " + err.Error())
 	}
 	log.Errorf("User : %+v", user)
-	user.CreatedAt = createdAt.UnixNano()
-	user.UpdatedAt = updatedAt.UnixNano()
 
 	return user, nil
 }
 
+/*
+GenerateNewToken generates a new token and save it in the database.
+It uses the function GenerateNewToken provided by the `models` class
+*/
 func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
 
 	user.Token = models.GenerateNewToken()
@@ -313,30 +265,19 @@ func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
 	return nil
 }
 
+//DeleteUser remove the user from the database (using its ID)
 func (pg *PostgreSQL) DeleteUser(user models.User) error {
-	var deletedID int64
-	err := pg.db.QueryRow(
-		deleteUserByName,
-		user.Name,
-	).Scan(&deletedID)
-
+	err := pg.db.Delete(user)
 	if err != nil {
 		return errors.New("Could not delete user from the database : " + err.Error())
 	}
-
 	return nil
 }
 
 // Project
 func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 
-	var lastInsertID int
-	err := pg.db.QueryRow(
-		insertProject,
-		project.Name,
-		project.Description,
-	).Scan(&lastInsertID)
-
+	_, err := pg.db.Model(project).Returning("*").Update()
 	if err != nil {
 		return errors.New("Could not save project in the database :" + err.Error())
 	}
@@ -344,22 +285,11 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 }
 
 func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
-	rows, err := pg.db.Query(selectProjects)
+	var projects []models.Project
+	err := pg.db.Model(projects).Select()
+
 	if err != nil {
-		return nil, err
-	}
-
-	var id int64
-	var name string
-	var description string
-	var updatedAt time.Time
-	projects := []models.Project{}
-
-	for rows.Next() {
-		rows.Scan(&id, &name, &description, &updatedAt)
-		idstr := string(id)
-		p := models.Project{ID: idstr, Name: name, Description: description, UpdatedAt: updatedAt.Unix()}
-		projects = append(projects, p)
+		return nil, errors.New("Could not select projects : " + err.Error())
 	}
 
 	return projects, nil
@@ -367,28 +297,22 @@ func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
 
 func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 
-	row := pg.db.QueryRow(selectProjectByName, projectName)
+	var project models.Project
+	err := pg.db.Model(project).Where("name = ?", projectName).First()
+	if err != nil {
+		return project, errors.New("Could not select project : " + err.Error())
+	}
 
-	var id int64
-	var name string
-	var description string
-	var updatedAt time.Time
-
-	row.Scan(&id, &name, &description, &updatedAt)
-	idstr := strconv.Itoa(int(id))
-	p := models.Project{ID: idstr, Name: name, Description: description, UpdatedAt: updatedAt.Unix()}
-
-	return p, nil
+	return project, nil
 }
 
 // IP
 func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
-	var lastInsertID int
-	err := pg.db.QueryRow(
-		insertIP,
-		ip.Value,
-		projectName,
-	).Scan(&lastInsertID)
+
+	err := pg.db.Model(ip)
+	// 	ip.Value,
+	// 	projectName,
+	// ).Scan(&lastInsertID)
 
 	if err != nil {
 		return errors.New("Could not save ip in the database :" + err.Error())
