@@ -43,6 +43,7 @@ func (pg *PostgreSQL) Name() string {
 }
 
 func (pg *PostgreSQL) createTablesIfNotExist() error {
+	log.Debug("Creating tables")
 
 	reqs := []interface{}{
 		&pgUser{},
@@ -92,7 +93,7 @@ func (pg *PostgreSQL) createDb() error {
 	db.Close()
 
 	pg.db = pgdb.Connect(&pgdb.Options{
-		Addr:     pg.cfg.Database.IP,
+		Addr:     pg.cfg.Database.IP + ":" + strconv.Itoa(int(pg.cfg.Database.Port)),
 		User:     pg.cfg.Database.User,
 		Password: pg.cfg.Database.Password,
 		Database: pg.cfg.Database.Database,
@@ -167,7 +168,7 @@ func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 		User:     c.Database.User,
 		Password: c.Database.Password,
 		Database: strings.ToLower(c.Database.Database),
-		Addr:     c.Database.IP + strconv.Itoa(int(c.Database.Port)),
+		Addr:     c.Database.IP + ":" + strconv.Itoa(int(c.Database.Port)),
 	})
 
 	if pg.db == nil {
@@ -182,57 +183,63 @@ func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 //TODO : refactor this.
 func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 
-	u, err := pg.GetUser(user.Name)
+	tmpUser, err := pg.GetUser(user.Name)
 	if err != nil {
-		return errors.New("Error : " + err.Error())
+		return errors.New("Could not get user : " + err.Error())
 	}
 
-	//user exist, update it
-	if u.Name != "" {
-		// update password
-		if user.Password != "" && u.Password != user.Password {
-			log.Debug("Updating password for user", user.Name)
-			_, err = pg.db.Model(&user).
-				Set("password = ?password").
-				WherePK().
-				Returning("*").
-				Update()
-			if err != nil {
-				return errors.New("pq error: " + err.Error())
-			}
-		}
-		// update token
-		if user.Token != "" && u.Token != user.Token {
-			log.Debug("Updating token for user", user.Name)
-			_, err = pg.db.Model(&user).
-				Set("password = ?password").
-				WherePK().
-				Returning("*").
-				Update()
+	// transform user into pgUser model !
+	pguser := pgUser{}
+	pguser.FromModel(user)
+	log.Debugf("pguser : %+v", &pguser)
 
-			if err != nil {
-				return errors.New("pq error: " + err.Error())
-			}
+	//user doesn't exist, create it
+	if tmpUser.Name == "" {
+		err = pg.db.Insert(&pguser)
+		if err != nil {
+			return errors.New("Could not insert user in the database : " + err.Error())
 		}
 		return nil
 	}
 
-	err = pg.db.Insert(user)
-	if err != nil {
-		return errors.New("Could not insert user in the database : " + err.Error())
+	// update password
+	if pguser.Password != "" && tmpUser.Password != pguser.Password {
+		log.Debug("Updating password for user : ", pguser.Name)
+		_, err = pg.db.Model(&pguser).
+			Set("password = ?", pguser.Password).
+			Where("name = ?", pguser.Name).
+			Returning("*").
+			Update()
+
+		if err != nil {
+			return errors.New("Couln't update user's password : " + err.Error())
+		}
 	}
 
+	// update token
+	if pguser.Token != "" && tmpUser.Token != pguser.Token {
+		log.Debug("Updating token for user : ", pguser.Name)
+		_, err = pg.db.Model(&pguser).
+			Set("token = ?", pguser.Token).
+			Where("name = ?", pguser.Name).
+			Returning("*").
+			Update()
+
+		if err != nil {
+			return errors.New("Couln't update user's token : " + err.Error())
+		}
+	}
 	return nil
 }
 
 func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
 
 	pguser := pgUser{}
-	err := pg.db.Model(&pguser).Where("username = ?username", username).Select()
+	err := pg.db.Model(&pguser).Where("name = ?", username).Select()
 
 	user := pguser.ToModel()
 	// Accept empty rows !
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && err != pgdb.ErrNoRows {
 		return user, errors.New("Could not get user by name : " + err.Error())
 	}
 	return user, nil
@@ -241,7 +248,7 @@ func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
 func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
 
 	pguser := pgUser{}
-	err := pg.db.Model(&pguser).Where("token = ?token", token).Select()
+	err := pg.db.Model(&pguser).Where("token = ?", token).Select()
 
 	user := pguser.ToModel()
 
