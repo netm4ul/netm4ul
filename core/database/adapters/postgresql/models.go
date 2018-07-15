@@ -261,3 +261,31 @@ func (p *pgUser) FromModel(u models.User) {
 	p.CreatedAt = u.CreatedAt
 	p.UpdatedAt = u.UpdatedAt
 }
+
+/*
+	postgres model for Raw data
+*/
+type pgRaws struct {
+	tableName struct{} `sql:"alias:raws"`
+	models.Raws
+	ID       int
+	Projects []pgProject `pg:"many2many:users_to_projects"`
+}
+
+func (p *pgRaws) ToModel() models.Raws {
+	raws := models.Raws{
+		Content:    p.Content,
+		ModuleName: p.ModuleName,
+		CreatedAt:  p.CreatedAt,
+		UpdatedAt:  p.UpdatedAt,
+	}
+	return raws
+}
+
+func (p *pgRaws) FromModel(r models.Raws) {
+	p.Content = r.Content
+	p.ModuleName = r.ModuleName
+
+	p.CreatedAt = r.CreatedAt
+	p.UpdatedAt = r.UpdatedAt
+}

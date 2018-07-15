@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -318,7 +319,7 @@ func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 // IP
 func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
 
-	err := pg.db.Insert(ip)
+	err := pg.db.Insert(&ip)
 
 	if err != nil {
 		return errors.New("Could not save ip in the database :" + err.Error())
@@ -374,7 +375,7 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 
 // Domain
 func (pg *PostgreSQL) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
-	err := pg.db.Insert(domain)
+	err := pg.db.Insert(&domain)
 
 	if err != nil {
 		return errors.New("Could not save or update domain : " + err.Error())
@@ -423,7 +424,7 @@ func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.D
 // Port
 func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
 	//TOFIX
-	err := pg.db.Insert(port)
+	err := pg.db.Insert(&port)
 	if err != nil {
 		return errors.New("Could not create or update port : " + err.Error())
 	}
@@ -466,7 +467,7 @@ func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (model
 // URI (directory and files)
 func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
 	//TOFIX
-	err := pg.db.Insert(dir)
+	err := pg.db.Insert(&dir)
 	if err != nil {
 		return err
 	}
@@ -522,8 +523,8 @@ func (pg *PostgreSQL) AppendRawData(projectName string, moduleName string, data 
 	if err != nil {
 		return errors.New("Could not marshall data to json : " + err.Error())
 	}
-	//TOFIX
-	err = pg.db.Insert(jsonData)
+	r := models.Raws{Content: string(jsonData[:]), ModuleName: moduleName, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	err = pg.db.Insert(&r)
 
 	if err != nil {
 		return errors.New("Could not insert raw : " + err.Error())

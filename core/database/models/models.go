@@ -90,8 +90,15 @@ type User struct {
 type PortType struct {
 	Type        string
 	Description string
-	CreatedAt   int64 `json:"created_at" bson:"CreatedAt,omitempty" sql:"type:timestamptz,default:now()"`
-	UpdatedAt   int64 `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`
+	CreatedAt   time.Time `json:"created_at" bson:"CreatedAt,omitempty" sql:"type:timestamptz,default:now()"`
+	UpdatedAt   time.Time `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`
+}
+
+type Raws struct {
+	Content    string
+	ModuleName string
+	CreatedAt  time.Time `json:"created_at" bson:"CreatedAt,omitempty" sql:"type:timestamptz,default:now()"`
+	UpdatedAt  time.Time `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`
 }
 
 //GenerateNewToken return a new random token string
@@ -100,12 +107,6 @@ func GenerateNewToken() string {
 	rand.Read(b)
 	return fmt.Sprintf("%x", b)
 }
-
-//Raws is a map, the key is module name (string). Each module write in a map of interface (key : string version of current timestamp)
-type Raws map[string]map[string]interface{}
-
-//AllRaws represents all Raws output, for a project string
-type AllRaws map[string]Raws
 
 //Database is the mandatory interface for all custom database adapter
 type Database interface {
