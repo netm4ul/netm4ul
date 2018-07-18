@@ -1,14 +1,17 @@
 package postgresql
 
 import (
+	"time"
+
+	"github.com/go-pg/pg/orm"
 	"github.com/netm4ul/netm4ul/core/database/models"
 )
 
 /*
-	postgres model for Hop
+postgres model for Hop
 */
 type pgHop struct {
-	tableName struct{} `sql:"alias:hops"`
+	tableName struct{} `sql:"hops"`
 	models.Hop
 	ID int
 }
@@ -31,10 +34,10 @@ func (p *pgHop) FromModel(h models.Hop) {
 }
 
 /*
-	postgres model for Route
+postgres model for Route
 */
 type pgRoute struct {
-	tableName struct{} `sql:"alias:routes"`
+	tableName struct{} `sql:"routes"`
 	models.Route
 	ID int
 }
@@ -58,13 +61,24 @@ func (p *pgRoute) FromModel(r models.Route) {
 	p.UpdatedAt = r.UpdatedAt
 }
 
+func (p *pgRoute) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for URI
 */
 type pgURI struct {
-	tableName struct{} `sql:"alias:uris"`
+	tableName struct{} `sql:"uris"`
 	models.URI
-	ID int
+	ID   int
+	Port *pgPort // 1 to 1 relation
 }
 
 func (p *pgURI) ToModel() models.URI {
@@ -86,13 +100,25 @@ func (p *pgURI) FromModel(uri models.URI) {
 	p.UpdatedAt = uri.UpdatedAt
 }
 
+func (p *pgURI) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for Port
 */
 type pgPort struct {
-	tableName struct{} `sql:"alias:ports"`
+	tableName struct{} `sql:"ports"`
 	models.Port
-	ID int
+	ID       int
+	IP       *pgIP
+	PortType *pgPortType `pg:",many2many:port_to_types"`
 }
 
 func (p *pgPort) ToModel() models.Port {
@@ -120,11 +146,21 @@ func (p *pgPort) FromModel(pt models.Port) {
 	p.UpdatedAt = pt.UpdatedAt
 }
 
+func (p *pgPort) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for Port type
 */
 type pgPortType struct {
-	tableName struct{} `sql:"alias:porttypes"`
+	tableName struct{} `sql:"porttypes"`
 	models.PortType
 	ID int
 }
@@ -148,11 +184,21 @@ func (p *pgPortType) FromModel(pt models.PortType) {
 	p.UpdatedAt = pt.UpdatedAt
 }
 
+func (p *pgPortType) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for IP
 */
 type pgIP struct {
-	tableName struct{} `sql:"alias:ips"`
+	tableName struct{} `sql:"ips"`
 	models.IP
 	ID int
 }
@@ -176,13 +222,62 @@ func (p *pgIP) FromModel(ip models.IP) {
 	p.UpdatedAt = ip.UpdatedAt
 }
 
+func (p *pgIP) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
+/*
+	postgres model for Network
+*/
+type pgNetwork struct {
+	tableName struct{} `sql:"Networks"`
+	models.Network
+	ID int
+}
+
+func (p *pgNetwork) ToModel() models.Network {
+	Network := models.Network{
+		Name:        p.Name,
+		Description: p.Description,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return Network
+}
+
+func (p *pgNetwork) FromModel(Network models.Network) {
+	p.Name = Network.Name
+	p.Description = Network.Description
+
+	p.CreatedAt = Network.CreatedAt
+	p.UpdatedAt = Network.UpdatedAt
+}
+
+func (p *pgNetwork) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for Domain
 */
 type pgDomain struct {
-	tableName struct{} `sql:"alias:domains"`
+	tableName struct{} `sql:"domains"`
 	models.Domain
 	ID int
+	IP []*pgIP `pg:",many2many:domain_to_ips"`
 }
 
 func (p *pgDomain) ToModel() models.Domain {
@@ -202,14 +297,24 @@ func (p *pgDomain) FromModel(d models.Domain) {
 	p.UpdatedAt = d.UpdatedAt
 }
 
+func (p *pgDomain) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for Project
 */
 type pgProject struct {
-	tableName struct{} `sql:"alias:projects"`
+	tableName struct{} `sql:"projects"`
 	models.Project
 	ID  int
-	IPS []pgIP `pg:"many2many:project_to_ips"`
+	IPS []*pgIP
 }
 
 func (p *pgProject) ToModel() models.Project {
@@ -231,14 +336,24 @@ func (p *pgProject) FromModel(proj models.Project) {
 	p.UpdatedAt = proj.UpdatedAt
 }
 
+func (p *pgProject) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for User
 */
 type pgUser struct {
-	tableName struct{} `sql:"alias:users"`
+	tableName struct{} `sql:"users"`
 	models.User
 	ID       int
-	Projects []pgProject `pg:"many2many:users_to_projects"`
+	Projects []*pgProject `pg:"many2many:users_to_projects"`
 }
 
 func (p *pgUser) ToModel() models.User {
@@ -262,14 +377,24 @@ func (p *pgUser) FromModel(u models.User) {
 	p.UpdatedAt = u.UpdatedAt
 }
 
+func (p *pgUser) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
+}
+
 /*
 	postgres model for Raw data
 */
 type pgRaws struct {
-	tableName struct{} `sql:"alias:raws"`
+	tableName struct{} `sql:"raws"`
 	models.Raws
-	ID       int
-	Projects []pgProject `pg:"many2many:users_to_projects"`
+	ID      int
+	Project *pgProject
 }
 
 func (p *pgRaws) ToModel() models.Raws {
@@ -288,4 +413,14 @@ func (p *pgRaws) FromModel(r models.Raws) {
 
 	p.CreatedAt = r.CreatedAt
 	p.UpdatedAt = r.UpdatedAt
+}
+
+func (p *pgRaws) BeforeInsert(db orm.DB) error {
+	if p.CreatedAt.IsZero() {
+		p.CreatedAt = time.Now()
+	}
+	if p.UpdatedAt.IsZero() {
+		p.UpdatedAt = time.Now()
+	}
+	return nil
 }

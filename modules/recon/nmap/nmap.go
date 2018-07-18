@@ -252,11 +252,17 @@ func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName st
 		for _, ip := range host.Addresses {
 			element := models.IP{Value: ip.Addr, CreatedAt: time.Now(), UpdatedAt: time.Now(), Network: "external"}
 			log.Debugf("Saving IP address : %+v", element)
-			db.CreateOrUpdateIP(projectName, element)
+			err := db.CreateOrUpdateIP(projectName, element)
+			if err != nil {
+				return errors.New("Could not save the database : " + err.Error())
+			}
 		}
 
 		log.Debugf("Saving Ports : %+v for address %+v", ports, host.Addresses[0].Addr)
-		db.CreateOrUpdatePorts(projectName, host.Addresses[0].Addr, ports)
+		err := db.CreateOrUpdatePorts(projectName, host.Addresses[0].Addr, ports)
+		if err != nil {
+			return errors.New("Could not save the database : " + err.Error())
+		}
 	}
 
 	//save raw data

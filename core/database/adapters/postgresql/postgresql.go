@@ -54,7 +54,7 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 		&pgPortType{},
 		&pgPort{},
 		&pgURI{},
-		// &pgRaw{},
+		&pgRaws{},
 	}
 
 	for _, model := range reqs {
@@ -318,7 +318,7 @@ func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 
 // IP
 func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
-
+	log.Debugf("Inserting ip : %+v", ip)
 	err := pg.db.Insert(&ip)
 
 	if err != nil {

@@ -61,6 +61,16 @@ type IP struct {
 	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`
 }
 
+//Network represent the network used by one IP.
+//By default, every ip should be in the "external" Network
+type Network struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+
+	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty" sql:"type:timestamptz,default:now()"`
+	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`
+}
+
 //Domain defines the Domain address of a target.
 type Domain struct {
 	Name string `json:"name,omitempty" bson:"Name"`
