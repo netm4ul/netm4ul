@@ -19,12 +19,14 @@ import (
 )
 
 /*
-* This adapters relies on the "pg" ORM.
-* Models are being extended in this package (file models.go)
-*
- */
+* This adapters relies on the "pg" package and ORM.
+* "Models" are being extended in this package (file models.go)
+*/
+
 const DB_NAME = "netm4ul"
 
+
+// PostgreSQL is the structure representing this adapter
 type PostgreSQL struct {
 	cfg *config.ConfigToml
 	db  *pgdb.DB
@@ -64,7 +66,7 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 			IfNotExists:   true,
 		})
 		if err != nil {
-			panic(err)
+			return errors.New("Could not create table : "+err.Error())
 		}
 	}
 	return nil

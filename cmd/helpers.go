@@ -27,6 +27,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+/*
+getURL returns a full URL with all the configured attributes (ip, port, version...)
+It takes a ressource name and a valid session
+*/
 func getURL(ressource string, s *session.Session) string {
 	port := strconv.FormatInt(int64(s.Config.API.Port), 10)
 	url := "http://" + s.Config.Server.IP + ":" + port
@@ -38,6 +42,16 @@ func getURL(ressource string, s *session.Session) string {
 	return strings.TrimRight(url, "/")
 }
 
+/*
+* getData takes care of getting data from the API
+* It handles the creation of the full url, all the json formatting and verify the API return status
+* Args:
+	- the ressource name
+	- the current sessions
+* Return : 
+	- The returned data of the api using api.Result type
+	- any error encountered during the execution
+*/
 func getData(ressource string, s *session.Session) (api.Result, error) {
 
 	var result api.Result
@@ -69,6 +83,17 @@ func getData(ressource string, s *session.Session) (api.Result, error) {
 	return result, nil
 }
 
+/*
+* postData takes care of posting data to the API
+* It sets the correct content type and 
+* Args:
+	- the ressource name
+	- the current sessions
+	- any kind of data that is expected by the api 
+* Return :  
+	- The returned data of the api using api.Result type
+	- any error encountered during the execution
+*/
 func postData(ressource string, s *session.Session, rawdata interface{}) (api.Result, error) {
 	var result api.Result
 
@@ -113,6 +138,9 @@ func createProjectIfNotExist(s *session.Session) {
 
 }
 
+/*
+CreateProject is a wrapper function to create a new project.
+*/
 func CreateProject(p models.Project, s *session.Session) error {
 
 	ressource := "/projects"
@@ -132,6 +160,12 @@ type Projects struct {
 	Projects []models.Project
 }
 
+/*
+GetProjects is an helper function to get a slice of all the projects availables
+Return : 
+	- Slice of models.Projects from any kind of database
+	- error if anything unexpected occured during the execution of the function
+*/
 func GetProjects(s *session.Session) ([]models.Project, error) {
 
 	var data []models.Project
@@ -143,11 +177,13 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 		return data, err
 	}
 
+	// using mapstructure to decode all the json response into the data variable.
 	err = mapstructure.Decode(resjson.Data, &data)
 	if err != nil {
 		return data, err
 	}
 
+	// Check if the api response code say that everything went fine or abort. 
 	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
@@ -155,6 +191,13 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 	return data, nil
 }
 
+
+/*
+GetProject is an helper function to get all the information from a project by its name
+Return : 
+	- a models.Projects from any kind of database
+	- error if anything unexpected occured during the execution of the function
+*/
 func GetProject(name string, s *session.Session) (models.Project, error) {
 	var data models.Project
 	resjson, err := getData("/projects/"+name, s)
@@ -177,6 +220,12 @@ func GetProject(name string, s *session.Session) (models.Project, error) {
 	return data, nil
 }
 
+/*
+parseModules gets all the modules configured for this session.
+Return :
+	- slice of all the modules name (string)
+	- error is anything unexpected happens
+*/
 func parseModules(modules []string, s *session.Session) ([]string, error) {
 
 	if len(modules) == 0 {
