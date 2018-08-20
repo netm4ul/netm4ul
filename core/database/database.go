@@ -5,6 +5,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/adapters/postgresql"
+	"github.com/netm4ul/netm4ul/core/database/adapters/jsondb"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,7 +19,7 @@ func init() {
 // NewDatabase returns the correct database adapter (mongodb, postegres...)
 func NewDatabase(c *config.ConfigToml) models.Database {
 	// m := mongodb.InitDatabase(c)
-	// f := jsondb.InitDatabase(c)
+	f := jsondb.InitDatabase(c)
 	p := postgresql.InitDatabase(c)
 	// t := testadapter.InitDatabase(c)
 
