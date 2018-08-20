@@ -20,10 +20,8 @@ func init() {
 		Description: "Test description",
 		IPs: []models.IP{
 			models.IP{
-				ID:    "1",
 				Value: "1.1.1.1", Ports: []models.Port{
 					models.Port{
-						ID:       "2",
 						Banner:   "Test banner",
 						Number:   80,
 						Protocol: "tcp",
@@ -31,24 +29,20 @@ func init() {
 						Type:     "web",
 						URIs: []models.URI{
 							models.URI{
-								ID:   "3",
 								Code: "200",
 								Name: "Test URI",
 							},
 							models.URI{
-								ID:   "4",
 								Code: "404",
 								Name: "Test not found URI",
 							},
 							models.URI{
-								ID:   "5",
 								Code: "500",
 								Name: "Test server error URI",
 							},
 						},
 					},
 					models.Port{
-						ID:       "6",
 						Banner:   "Test banner 2",
 						Number:   22,
 						Protocol: "tcp",
@@ -59,22 +53,18 @@ func init() {
 				},
 			},
 			models.IP{
-				ID:    "7",
 				Value: "2.2.2.2",
 				Ports: []models.Port{}, // empty ports
 			},
 		},
 		Domains: []models.Domain{
 			models.Domain{
-				ID:   "1",
 				Name: "domain.tld",
 			},
 			models.Domain{
-				ID:   "2",
 				Name: "another.tld",
 			},
 			models.Domain{
-				ID:   "3",
 				Name: "sub1.another.tld",
 			},
 		},
@@ -98,7 +88,6 @@ func init() {
 	}
 
 	NormalUser = models.User{
-		ID:        "1",
 		Name:      "TestUser",
 		Password:  "$2y$10$Fu4hg./ZybmFjiPxIpEOROGwQhF3sfwakddzlWFtV.I3rJu6sfy/2", // Test password
 		Token:     "testtoken",
