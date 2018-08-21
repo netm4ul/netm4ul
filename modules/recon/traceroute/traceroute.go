@@ -170,8 +170,16 @@ func (T *TracerouteModule) WriteDb(result modules.Result, db models.Database, pr
 			log.Errorf("Could not create or update ip : %+v", err)
 		}
 	}
+	now := time.Now()
 
-	err = db.AppendRawData(projectName, T.Name(), data)
+	raw := models.Raw{
+		Content:    data,
+		UpdatedAt:  now,
+		CreatedAt:  now,
+		ModuleName: T.Name(),
+	}
+
+	err = db.AppendRawData(projectName, raw)
 	if err != nil {
 		log.Errorf("Could not append : %+v", err)
 	}
