@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/netm4ul/netm4ul/core/config"
-	"github.com/netm4ul/netm4ul/core/database/adapters/postgresql"
 	"github.com/netm4ul/netm4ul/core/database/adapters/jsondb"
+	"github.com/netm4ul/netm4ul/core/database/adapters/postgresql"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -24,7 +24,7 @@ func NewDatabase(c *config.ConfigToml) models.Database {
 	// t := testadapter.InitDatabase(c)
 
 	// Register(m)
-	// Register(f)
+	Register(f)
 	Register(p)
 	// Register(t)
 

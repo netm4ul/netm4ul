@@ -167,11 +167,11 @@ func (jm *jsonIP) ToModel() models.IP {
 }
 
 func (jm *jsonIP) FromModel(ip models.IP) {
-	jm.Value = ijm.Value
-	jm.Network = ijm.Network
+	jm.Value = ip.Value
+	jm.Network = ip.Network
 
-	jm.CreatedAt = ijm.CreatedAt
-	jm.UpdatedAt = ijm.UpdatedAt
+	jm.CreatedAt = ip.CreatedAt
+	jm.UpdatedAt = ip.UpdatedAt
 }
 
 /*
@@ -233,7 +233,7 @@ func (jm *jsonDomain) FromModel(d models.Domain) {
 type jsonProject struct {
 	models.Project
 	ID  int
-	IPS []jsonIP
+	IPs []jsonIP
 }
 
 func (jm *jsonProject) ToModel() models.Project {
@@ -289,13 +289,13 @@ func (jm *jsonUser) FromModel(u models.User) {
 	JSON model for Raw data
 */
 type jsonRaws struct {
-	models.Raws
+	models.Raw
 	ID      int
 	Project *jsonProject
 }
 
-func (jm *jsonRaws) ToModel() models.Raws {
-	raws := models.Raws{
+func (jm *jsonRaws) ToModel() models.Raw {
+	raws := models.Raw{
 		Content:    jm.Content,
 		ModuleName: jm.ModuleName,
 		CreatedAt:  jm.CreatedAt,
@@ -304,7 +304,7 @@ func (jm *jsonRaws) ToModel() models.Raws {
 	return raws
 }
 
-func (jm *jsonRaws) FromModel(r models.Raws) {
+func (jm *jsonRaws) FromModel(r models.Raw) {
 	jm.Content = r.Content
 	jm.ModuleName = r.ModuleName
 

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -88,42 +87,34 @@ func (f *JsonDB) Name() string {
 //these writes should all have locks
 func (f *JsonDB) writeURIs(projectName string, ip string, port string, uris []jsonURI) error {
 
-	portsFromFile, err := f.GetPorts(projectName, ip)
+	portsFromFile, err := f.getPorts(projectName, ip)
 	if err != nil {
 		return err
 	}
 
-	var convertedPorts []jsonPort
-
-	for i, p := range portsFromFile {
-		converted := jsonPort{}
-		converted.FromModel(p)
-		convertedPorts = append(convertedPorts, converted)
+	for _, p := range portsFromFile {
 
 		if strconv.Itoa(int(p.Number)) == port {
-			convertedPorts[i].URIs = uris
+			p.URIs = uris
 		}
 	}
 
-	return f.writePorts(projectName, ip, convertedPorts)
+	return f.writePorts(projectName, ip, portsFromFile)
 }
 
 func (f *JsonDB) writePorts(projectName string, ip string, ports []jsonPort) error {
-	projectFromFile, err := f.GetProject(projectName)
+	projectFromFile, err := f.getProject(projectName)
 	if err != nil {
 		return err
 	}
 
-	p := jsonProject{}
-	p.FromModel(projectFromFile)
-
-	for i, ipFromFile := range p.IPS {
+	for i, ipFromFile := range projectFromFile.IPs {
 		if ipFromFile.Value == ip {
-			p.IPS[i].Ports = ports
+			projectFromFile.IPs[i].Ports = ports
 		}
 	}
 
-	return f.writeProjects([]jsonProject{p})
+	return f.writeProjects([]jsonProject{projectFromFile})
 }
 
 /*
@@ -131,28 +122,38 @@ writeProjects will write every project in its own project file
 */
 func (f *JsonDB) writeProjects(projects []jsonProject) error {
 	for _, p := range projects {
-		f, err := f.openResultFile(p.Name)
-		if err != nil {
-			return err
-		}
+		f.writeProject(p)
+	}
+	return nil
+}
 
-		err = json.NewEncoder(f).Encode(p)
+/*
 
-		if err != nil {
-			return err
-		}
+ */
+func (f *JsonDB) writeProject(project jsonProject) error {
+
+	file, err := f.openResultFile(project.Name)
+	if err != nil {
+		return err
+	}
+
+	err = json.NewEncoder(file).Encode(project)
+
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (f *JsonDB) writeUser(user jsonUser) error {
-	users, err := f.GetUsers()
+	users, err := f.getUsers()
 	if err != nil {
 		return errors.New("Could not write user : " + err.Error())
 	}
 
 	var usersMap map[string]jsonUser
 	usersMap = make(map[string]jsonUser, 0)
+
 	// add or replace user !
 	for _, u := range users {
 		usersMap[u.Name] = u
@@ -216,16 +217,23 @@ func (f *JsonDB) Connect(c *config.ConfigToml) error {
 
 //User
 func (f *JsonDB) CreateOrUpdateUser(user models.User) error {
-	err := f.writeUser(user)
+	var u jsonUser
+	u.FromModel(user)
+
+	err := f.writeUser(u)
 	if err != nil {
 		return errors.New("Could not create or update user : " + err.Error())
 	}
 	return nil
 }
 
-func (f *JsonDB) GetUsers() ([]models.User, error) {
-	var users map[string]models.User
-	var usersArr []models.User
+/*
+This function is only internaly used to get the jsonUser list.
+The public GetUsers will return the generic model.User
+*/
+func (f *JsonDB) getUsers() ([]jsonUser, error) {
+	var users map[string]jsonUser
+	usersArr := []jsonUser{}
 
 	file, err := os.Open(f.UsersPath)
 	if err != nil {
@@ -248,12 +256,63 @@ func (f *JsonDB) GetUsers() ([]models.User, error) {
 	return usersArr, nil
 }
 
+func (f *JsonDB) GetUsers() ([]models.User, error) {
+
+	usersModel := []models.User{}
+	users, err := f.getUsers()
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		usersModel = append(usersModel, user.ToModel())
+	}
+
+	return usersModel, nil
+
+}
+
+func (f *JsonDB) getUser(username string) (jsonUser, error) {
+
+	users, err := f.getUsers()
+	if err != nil {
+		return jsonUser{}, err
+	}
+
+	for _, user := range users {
+		if user.Name == username {
+			return user, nil
+		}
+	}
+
+	return jsonUser{}, nil
+}
+
+/*
+GetUser is a wrapper to the getUser function. It is only used to convert a jsonUser to models.User
+*/
 func (f *JsonDB) GetUser(username string) (models.User, error) {
-	return models.User{}, errors.New("Not implemented yet")
+	user, err := f.getUser(username)
+	if err != nil {
+		return models.User{}, err
+	}
+	return user.ToModel(), nil
 }
 
 func (f *JsonDB) GetUserByToken(token string) (models.User, error) {
-	return models.User{}, errors.New("Not implemented yet")
+
+	users, err := f.getUsers()
+	if err != nil {
+		return models.User{}, err
+	}
+	for _, user := range users {
+		if user.Token == token {
+			return user.ToModel(), nil
+		}
+	}
+
+	return models.User{}, nil
 }
 
 func (f *JsonDB) GenerateNewToken(user models.User) error {
@@ -273,20 +332,26 @@ func (f *JsonDB) DeleteUser(user models.User) error {
 
 //CreateOrUpdateProject handle project. It will update the project if it does not exist.
 func (f *JsonDB) CreateOrUpdateProject(project models.Project) error {
-	projects, err := f.GetProjects()
+
+	projects := []jsonProject{}
+	projects, err := f.getProjects()
 	if err != nil {
 		return err
 	}
 
 	found := false
+	// copy the found projet into a jsonProject
+	var jp jsonProject
 	for _, p := range projects {
 		if p.Name == project.Name {
 			found = true
+			jp = p
+			break
 		}
 	}
 
 	if !found {
-		projects = append(projects, project)
+		projects = append(projects, jp)
 		return f.writeProjects(projects)
 	}
 
@@ -294,10 +359,10 @@ func (f *JsonDB) CreateOrUpdateProject(project models.Project) error {
 	return nil
 }
 
-//GetProjects will return all projects available. Use GetProject to select only one
-func (f *JsonDB) GetProjects() ([]models.Project, error) {
-	var projects []models.Project
-	var project models.Project
+func (f *JsonDB) getProjects() ([]jsonProject, error) {
+	var project jsonProject
+
+	projects := []jsonProject{}
 
 	files, err := filepath.Glob(f.ProjectGlob)
 	if err != nil {
@@ -328,36 +393,70 @@ func (f *JsonDB) GetProjects() ([]models.Project, error) {
 	return projects, err
 }
 
-//GetProject return only one project by its name. It use GetProjects internally
-func (f *JsonDB) GetProject(projectName string) (models.Project, error) {
-	projects, err := f.GetProjects()
+//GetProjects will return all projects available. Use GetProject to select only one
+func (f *JsonDB) GetProjects() ([]models.Project, error) {
+	projectsModel := []models.Project{}
+	projects, err := f.getProjects()
 
 	if err != nil {
-		return models.Project{}, errors.New("Could not get projects list : " + err.Error())
+		return nil, err
 	}
 
 	for _, p := range projects {
+		projectsModel = append(projectsModel, p.ToModel())
+	}
+	return projectsModel, nil
+}
+
+//GetProject return only one project by its name. It use GetProjects internally
+func (f *JsonDB) getProject(projectName string) (jsonProject, error) {
+	projects, err := f.GetProjects()
+
+	if err != nil {
+		return jsonProject{}, errors.New("Could not get projects list : " + err.Error())
+	}
+
+	var project jsonProject
+
+	for _, p := range projects {
 		if p.Name == projectName {
-			return p, nil
+			project.FromModel(p)
+			return project, nil //exit early
 		}
 	}
-	return models.Project{}, errors.New("not found")
+	return project, nil
+}
+
+//GetProject is a wrapper around getProject.
+func (f *JsonDB) GetProject(projectName string) (models.Project, error) {
+	project, err := f.getProject(projectName)
+	if err != nil {
+		return models.Project{}, err
+	}
+	return project.ToModel(), nil
 }
 
 // IP
 
 //CreateOrUpdateIP add an ip to a project if it doesn't already exist.
 func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
-	project, err := f.GetProject(projectName)
+	project, err := f.getProject(projectName)
 	// Refactor needed
 	if err != nil {
 		if err.Error() == "not found" {
 			// project not found, creating
 			log.Infof("Creating file for project %s", projectName)
 			f.openResultFile(projectName)
-			project = models.Project{Name: projectName, IPs: []models.IP{ip}}
 
-			err = f.writeProject(project)
+			p := jsonProject{}
+			p.Name = projectName
+
+			ipJson := jsonIP{}
+			ipJson.FromModel(ip)
+
+			p.IPs = []jsonIP{ipJson}
+
+			err = f.writeProject(p)
 			if err != nil {
 				return errors.New("Could not save project : " + projectName)
 			}
@@ -368,15 +467,19 @@ func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	}
 
 	found := false
+	ipj := jsonIP{}
+	ipj.FromModel(ip)
+
 	for _, ipFromFile := range project.IPs {
 		if ipFromFile.Value == ip.Value {
-			ipFromFile = ip
+			ipFromFile = ipj
 			found = true
+			break
 		}
 	}
 
 	if !found {
-		project.IPs = append(project.IPs, ip)
+		project.IPs = append(project.IPs, ipj)
 	}
 
 	err = f.writeProject(project)
@@ -393,30 +496,55 @@ func (f *JsonDB) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 	return errors.New("Not implemented yet")
 }
 
-//GetIPs returns all the IP for the provided project
-func (f *JsonDB) GetIPs(projectName string) ([]models.IP, error) {
-	project, err := f.GetProject(projectName)
+func (f *JsonDB) getIPs(projectName string) ([]jsonIP, error) {
+	project, err := f.getProject(projectName)
 	if err != nil {
-		return []models.IP{}, err
+		return nil, err
 	}
 
 	return project.IPs, nil
 }
 
-//GetIP returns the full data for the provided project and ip string
-func (f *JsonDB) GetIP(projectName string, ip string) (models.IP, error) {
-	IPs, err := f.GetIPs(projectName)
+//GetIPs is a wrapper to getIPs. It return all the IP addresses for the provided project name.
+func (f *JsonDB) GetIPs(projectName string) ([]models.IP, error) {
+	ipsModel := []models.IP{}
 
+	ips, err := f.getIPs(projectName)
 	if err != nil {
-		return models.IP{}, err
+		return nil, err
+	}
+	for _, ip := range ips {
+		ipsModel = append(ipsModel, ip.ToModel())
 	}
 
+	return ipsModel, nil
+}
+
+//GetIP returns the full data for the provided project and ip string
+func (f *JsonDB) getIP(projectName string, ip string) (jsonIP, error) {
+	IPs, err := f.getIPs(projectName)
+
+	if err != nil {
+		return jsonIP{}, err
+	}
+
+	// return only the selected ip
 	for _, i := range IPs {
 		if i.Value == ip {
 			return i, nil
 		}
 	}
-	return models.IP{}, errors.New("not found")
+	return jsonIP{}, nil
+}
+
+//GetIP returns the full data for the provided project and ip string
+func (f *JsonDB) GetIP(projectName string, ip string) (models.IP, error) {
+	ipJson, err := f.getIP(projectName, ip)
+	if err != nil {
+		return models.IP{}, err
+	}
+
+	return ipJson.ToModel(), nil
 }
 
 // Domain
@@ -439,23 +567,30 @@ func (f *JsonDB) GetDomain(projectName string, domain string) (models.Domain, er
 // Port
 
 //CreateOrUpdatePort create or update one port for a givent project name and ip.
-func (f *JsonDB) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
-	portsFromFile, err := f.GetPorts(projectName, ip)
+func (f *JsonDB) CreateOrUpdatePort(projectName string, ip string, portModel models.Port) error {
+	portsFromFile, err := f.getPorts(projectName, ip)
 	if err != nil {
 		return err
 	}
 
+	portJson := jsonPort{}
+	portJson.FromModel(portModel)
+
 	found := false
 	for _, p := range portsFromFile {
-		if p.Number == port.Number {
+		if p.Number == portModel.Number {
 			found = true
-			p = port
+
+			// add missings fields if it already exist !
+			portJson.PortType = p.PortType
+			portJson.ID = p.ID
+			p = portJson
 			break
 		}
 	}
 
 	if !found {
-		portsFromFile = append(portsFromFile, port)
+		portsFromFile = append(portsFromFile, portJson)
 	}
 
 	return f.writePorts(projectName, ip, portsFromFile)
@@ -472,9 +607,9 @@ func (f *JsonDB) CreateOrUpdatePorts(projectName string, ip string, ports []mode
 	return nil
 }
 
-//GetPorts return all the port for a given project and ip
-func (f *JsonDB) GetPorts(projectName string, ip string) ([]models.Port, error) {
-	ipFromFile, err := f.GetIP(projectName, ip)
+//getPorts return all the port for a given project and ip
+func (f *JsonDB) getPorts(projectName string, ip string) ([]jsonPort, error) {
+	ipFromFile, err := f.getIP(projectName, ip)
 
 	if err != nil {
 		return nil, err
@@ -483,44 +618,79 @@ func (f *JsonDB) GetPorts(projectName string, ip string) ([]models.Port, error) 
 	return ipFromFile.Ports, nil
 }
 
+//GetPorts is a wrapper for getPorts
+func (f *JsonDB) GetPorts(projectName string, ip string) ([]models.Port, error) {
+	portsModel := []models.Port{}
+	ports, err := f.getPorts(projectName, ip)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range ports {
+		portsModel = append(portsModel, p.ToModel())
+	}
+	return portsModel, nil
+}
+
 //GetPort return only one port by it's number. Use GetPorts internally
-func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Port, error) {
-	ports, err := f.GetPorts(projectName, ip)
+func (f *JsonDB) getPort(projectName string, ip string, port string) (jsonPort, error) {
+	ports, err := f.getPorts(projectName, ip)
 
 	if err != nil {
-		return models.Port{}, err
+		return jsonPort{}, err
 	}
+
 	for _, p := range ports {
 
 		portI, err := strconv.ParseInt(port, 10, 16)
 		if err != nil {
-			return models.Port{}, err
+			return jsonPort{}, err
 		}
 		if p.Number == int16(portI) {
 			return p, nil
 		}
 	}
-	return models.Port{}, errors.New("not found")
+	return jsonPort{}, nil
+}
+
+//GetPort is a wrapper of getPort
+func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Port, error) {
+	p, err := f.getPort(projectName, ip, port)
+
+	if err != nil {
+		return models.Port{}, err
+	}
+
+	return p.ToModel(), nil
 }
 
 // URI (directory and files)
+
+//CreateOrUpdateURI will get all the corresponding uri for a given ip, port and project combo
 func (f *JsonDB) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
-	urisFromFile, err := f.GetURIs(projectName, ip, port)
+	urisFromFile, err := f.getURIs(projectName, ip, port)
 	if err != nil {
 		return err
 	}
+
+	uriJson := jsonURI{}
+	uriJson.FromModel(uri)
 
 	found := false
 	for i, u := range urisFromFile {
 		if uri.Name == u.Name {
 			found = true
-			urisFromFile[i] = uri
+
+			//add missing field
+			uriJson.ID = u.ID
+			uriJson.Port = u.Port
+			urisFromFile[i] = uriJson
 			break
 		}
 	}
 
 	if !found {
-		urisFromFile = append(urisFromFile, uri)
+		urisFromFile = append(urisFromFile, uriJson)
 	}
 	return f.writeURIs(projectName, ip, port, urisFromFile)
 }
@@ -535,16 +705,30 @@ func (f *JsonDB) CreateOrUpdateURIs(projectName string, ip string, port string, 
 	return nil
 }
 
-func (f *JsonDB) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
-	p, err := f.GetPort(projectName, ip, port)
+func (f *JsonDB) getURIs(projectName string, ip string, port string) ([]jsonURI, error) {
+	p, err := f.getPort(projectName, ip, port)
 	if err != nil {
 		return nil, errors.New("Could not get URI : " + err.Error())
 	}
 	return p.URIs, nil
 }
 
+func (f *JsonDB) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
+	uris := []models.URI{}
+	p, err := f.getPort(projectName, ip, port)
+	if err != nil {
+		return nil, errors.New("Could not get URI : " + err.Error())
+	}
+
+	//convert to models.URI
+	for _, uriJson := range p.URIs {
+		uris = append(uris, uriJson.ToModel())
+	}
+	return uris, nil
+}
+
 func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) (models.URI, error) {
-	uris, err := f.GetURIs(projectName, ip, port)
+	uris, err := f.getURIs(projectName, ip, port)
 
 	if err != nil {
 		return models.URI{}, err
@@ -552,10 +736,10 @@ func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) 
 
 	for _, u := range uris {
 		if u.Name == uri {
-			return u, nil
+			return u.ToModel(), nil
 		}
 	}
-	return models.URI{}, errors.New("not found")
+	return models.URI{}, nil
 }
 
 // Raw data
@@ -568,40 +752,22 @@ func (f *JsonDB) AppendRawData(projectName string, moduleName string, data inter
 		return err
 	}
 
-	now := strconv.Itoa(int(time.Now().UnixNano()))
-	raws, err := f.GetRaws(projectName)
+	// now := strconv.Itoa(int(time.Now().UnixNano()))
+	now := time.Now()
 
-	if err != nil {
-		//empty file, cannot parse
-		if err == io.EOF {
-			raws = make(models.Raws)
+	r := jsonRaws{}
+	r.CreatedAt = now
+	r.UpdatedAt = now
+	r.Content = data
 
-			modulesData := make(map[string]interface{})
-			modulesData[now] = data
+	return f.writeRaws(file, r)
 
-			raws[moduleName] = modulesData
-			return f.writeRaws(file, raws[moduleName])
-		}
-
-		return errors.New("Could not get raws for project : " + err.Error())
-	}
-
-	// if the project exist
-	if _, ok := raws[moduleName]; ok {
-		raws[moduleName][now] = data
-	} else {
-		raws[moduleName] = make(map[string]interface{})
-		raws[moduleName][now] = data
-	}
-
-	return f.writeRaws(file, raws[moduleName])
 }
 
 //GetRaws return all the raws input for a project
-func (f *JsonDB) GetRaws(projectName string) (models.Raws, error) {
-	raws := models.Raws{}
-
-	var data map[string]interface{}
+func (f *JsonDB) getRaws(projectName string) ([]jsonRaws, error) {
+	var listOfRaws []jsonRaws       // full list
+	var listOfModuleRaws []jsonRaws // list by module
 
 	files, err := filepath.Glob(f.RawGlob + projectName + "-*.json")
 	if err != nil {
@@ -610,29 +776,52 @@ func (f *JsonDB) GetRaws(projectName string) (models.Raws, error) {
 
 	for _, filePath := range files {
 
+		raws := jsonRaws{}
 		file, err := os.Open(filePath)
-		splitted := strings.Split(filePath, "-")
-		moduleName := strings.Replace(splitted[2], ".json", "", -1)
-		err = json.NewDecoder(file).Decode(&data)
+		// splitted := strings.Split(filePath, "-")
+		// moduleName := strings.Replace(splitted[2], ".json", "", -1)
+		err = json.NewDecoder(file).Decode(&listOfModuleRaws)
+
 		if err != nil {
 			return nil, err
 		}
-		raws[moduleName] = data
+
+		listOfRaws = append(listOfRaws, raws)
 	}
-	return raws, nil
+
+	return listOfRaws, nil
 }
 
-//GetRawModule return the raw data for one project's module
-func (f *JsonDB) GetRawModule(projectName string, moduleName string) (map[string]interface{}, error) {
-	res, err := f.GetRaws(projectName)
+//GetRaws return all the raws input for a project
+func (f *JsonDB) GetRaws(projectName string) ([]models.Raw, error) {
+	listJsonRaws, err := f.getRaws(projectName)
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf("res : %+v", res)
-	raw, ok := res[moduleName]
-	if !ok {
-		return nil, errors.New("not found : " + projectName + ", " + moduleName)
+	listOfRaws := []models.Raw{}
+	for _, raws := range listJsonRaws {
+		listOfRaws = append(listOfRaws, raws.ToModel())
+	}
+	return listOfRaws, nil
+}
+
+/*
+GetRawModule return the raw data for one module of one project
+The result is a map of list of raw. The map key is the name of the module.
+Every Raw is a unique run of a program.
+It also include it's module name, but for the sake of searching through it, we mapped the module name as it's key.
+*/
+func (f *JsonDB) GetRawModule(projectName string, moduleName string) (map[string][]models.Raw, error) {
+	raws, err := f.GetRaws(projectName)
+	if err != nil {
+		return nil, err
+	}
+	var res map[string][]models.Raw
+	res = make(map[string][]models.Raw)
+
+	for _, r := range raws {
+		res[r.ModuleName] = append(res[r.ModuleName], r)
 	}
 
-	return raw, nil
+	return res, nil
 }

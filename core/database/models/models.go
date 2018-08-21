@@ -104,8 +104,8 @@ type PortType struct {
 	UpdatedAt   time.Time `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`
 }
 
-type Raws struct {
-	Content    string
+type Raw struct {
+	Content    interface{}
 	ModuleName string
 	CreatedAt  time.Time `json:"created_at" bson:"CreatedAt,omitempty" sql:"type:timestamptz,default:now()"`
 	UpdatedAt  time.Time `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`
@@ -164,7 +164,7 @@ type Database interface {
 	GetURI(projectName string, ip string, port string, dir string) (URI, error)
 
 	// Raw data
-	AppendRawData(projectName string, moduleName string, data interface{}) error
-	GetRaws(projectName string) (Raws, error)
-	GetRawModule(projectName string, moduleName string) (map[string]interface{}, error)
+	AppendRawData(projectName string, data Raw) error
+	GetRaws(projectName string) ([]Raw, error)
+	GetRawModule(projectName string, moduleName string) (map[string][]Raw, error)
 }
