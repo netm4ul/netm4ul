@@ -390,15 +390,15 @@ func (p *pgUser) BeforeInsert(db orm.DB) error {
 /*
 	postgres model for Raw data
 */
-type pgRaws struct {
+type pgRaw struct {
 	tableName struct{} `sql:"raws"`
-	models.Raws
+	models.Raw
 	ID      int
 	Project *pgProject
 }
 
-func (p *pgRaws) ToModel() models.Raws {
-	raws := models.Raws{
+func (p *pgRaw) ToModel() models.Raw {
+	raws := models.Raw{
 		Content:    p.Content,
 		ModuleName: p.ModuleName,
 		CreatedAt:  p.CreatedAt,
@@ -407,7 +407,7 @@ func (p *pgRaws) ToModel() models.Raws {
 	return raws
 }
 
-func (p *pgRaws) FromModel(r models.Raws) {
+func (p *pgRaw) FromModel(r models.Raw) {
 	p.Content = r.Content
 	p.ModuleName = r.ModuleName
 
@@ -415,7 +415,7 @@ func (p *pgRaws) FromModel(r models.Raws) {
 	p.UpdatedAt = r.UpdatedAt
 }
 
-func (p *pgRaws) BeforeInsert(db orm.DB) error {
+func (p *pgRaw) BeforeInsert(db orm.DB) error {
 	if p.CreatedAt.IsZero() {
 		p.CreatedAt = time.Now()
 	}

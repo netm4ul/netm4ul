@@ -21,10 +21,9 @@ import (
 /*
 * This adapters relies on the "pg" package and ORM.
 * "Models" are being extended in this package (file models.go)
-*/
+ */
 
 const DB_NAME = "netm4ul"
-
 
 // PostgreSQL is the structure representing this adapter
 type PostgreSQL struct {
@@ -56,7 +55,7 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 		&pgPortType{},
 		&pgPort{},
 		&pgURI{},
-		&pgRaws{},
+		&pgRaw{},
 	}
 
 	for _, model := range reqs {
@@ -66,7 +65,7 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 			IfNotExists:   true,
 		})
 		if err != nil {
-			return errors.New("Could not create table : "+err.Error())
+			return errors.New("Could not create table : " + err.Error())
 		}
 	}
 	return nil
@@ -525,7 +524,7 @@ func (pg *PostgreSQL) AppendRawData(projectName string, moduleName string, data 
 	if err != nil {
 		return errors.New("Could not marshall data to json : " + err.Error())
 	}
-	r := models.Raws{Content: string(jsonData[:]), ModuleName: moduleName, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	r := models.Raw{Content: string(jsonData[:]), ModuleName: moduleName, CreatedAt: time.Now(), UpdatedAt: time.Now()}
 	err = pg.db.Insert(&r)
 
 	if err != nil {
@@ -535,8 +534,8 @@ func (pg *PostgreSQL) AppendRawData(projectName string, moduleName string, data 
 	return nil
 }
 
-func (pg *PostgreSQL) GetRaws(projectName string) (models.Raws, error) {
-	raws := models.Raws{}
+func (pg *PostgreSQL) GetRaws(projectName string) (models.Raw, error) {
+	raws := models.Raw{}
 	err := pg.db.Model(raws).Select()
 	if err != nil {
 		return raws, errors.New("Could not get raw : " + err.Error())
@@ -544,13 +543,19 @@ func (pg *PostgreSQL) GetRaws(projectName string) (models.Raws, error) {
 	return raws, nil
 }
 
-func (pg *PostgreSQL) GetRawModule(projectName string, moduleName string) (map[string]interface{}, error) {
-	raws := map[string]interface{}{}
-	err := pg.db.Model(raws).Select()
+func (pg *PostgreSQL) GetRawModule(projectName string, moduleName string) (map[string][]models.Raw, error) {
+	raws := []pgRaw{}
+	err := pg.db.Model(raws).Where("raws.name = ?", projectName).Where("raws.moduleName = ?", moduleName).Select()
 
 	if err != nil {
 		return nil, errors.New("Could not get raw by module : " + err.Error())
 	}
+	var mapOfListOfRaw map[string][]models.Raw
+	mapOfListOfRaw = make(map[string][]models.Raw)
 
-	return raws, nil
+	for _, r := range raws {
+		mapOfListOfRaw[r.ModuleName] = append(mapOfListOfRaw[r.ModuleName], r.ToModel())
+	}
+
+	return mapOfListOfRaw, nil
 }
