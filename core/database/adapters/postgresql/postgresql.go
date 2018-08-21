@@ -2,12 +2,10 @@ package postgresql
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -518,14 +516,13 @@ func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir str
 }
 
 // Raw data
-func (pg *PostgreSQL) AppendRawData(projectName string, moduleName string, data interface{}) error {
+func (pg *PostgreSQL) AppendRawData(projectName string, raw models.Raw) error {
 
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return errors.New("Could not marshall data to json : " + err.Error())
-	}
-	r := models.Raw{Content: string(jsonData[:]), ModuleName: moduleName, CreatedAt: time.Now(), UpdatedAt: time.Now()}
-	err = pg.db.Insert(&r)
+	// jsonData, err := json.Marshal(data)
+	// if err != nil {
+	// 	return errors.New("Could not marshall data to json : " + err.Error())
+	// }
+	err := pg.db.Insert(&raw)
 
 	if err != nil {
 		return errors.New("Could not insert raw : " + err.Error())
@@ -534,8 +531,8 @@ func (pg *PostgreSQL) AppendRawData(projectName string, moduleName string, data 
 	return nil
 }
 
-func (pg *PostgreSQL) GetRaws(projectName string) (models.Raw, error) {
-	raws := models.Raw{}
+func (pg *PostgreSQL) GetRaws(projectName string) ([]models.Raw, error) {
+	raws := []models.Raw{}
 	err := pg.db.Model(raws).Select()
 	if err != nil {
 		return raws, errors.New("Could not get raw : " + err.Error())

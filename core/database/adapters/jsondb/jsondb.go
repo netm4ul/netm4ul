@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -173,8 +172,20 @@ func (f *JsonDB) writeUser(user jsonUser) error {
 	return nil
 }
 
-func (f *JsonDB) writeRaws(file *os.File, r jsonRaws) error {
-	return json.NewEncoder(file).Encode(r)
+// append only
+func (f *JsonDB) writeRaw(file *os.File, r jsonRaws) error {
+	raws, err := f.getRaws(r.Project.Name)
+	if err != nil {
+		return err
+	}
+
+	raws = append(raws, r)
+	err = json.NewEncoder(file).Encode(raws)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (f *JsonDB) openRawFile(project, module string) (*os.File, error) {
@@ -745,22 +756,17 @@ func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) 
 // Raw data
 
 // AppendRawData is append only. Adds data to Raws[projectName][modules] array
-func (f *JsonDB) AppendRawData(projectName string, moduleName string, data interface{}) error {
+func (f *JsonDB) AppendRawData(projectName string, raw models.Raw) error {
 
-	file, err := os.OpenFile(f.getRawPath(projectName, moduleName), os.O_RDWR|os.O_CREATE, 0755)
+	file, err := os.OpenFile(f.getRawPath(projectName, raw.ModuleName), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return err
 	}
 
-	// now := strconv.Itoa(int(time.Now().UnixNano()))
-	now := time.Now()
-
 	r := jsonRaws{}
-	r.CreatedAt = now
-	r.UpdatedAt = now
-	r.Content = data
+	r.FromModel(raw)
 
-	return f.writeRaws(file, r)
+	return f.writeRaw(file, r)
 
 }
 
@@ -816,6 +822,7 @@ func (f *JsonDB) GetRawModule(projectName string, moduleName string) (map[string
 	if err != nil {
 		return nil, err
 	}
+
 	var res map[string][]models.Raw
 	res = make(map[string][]models.Raw)
 
