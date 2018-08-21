@@ -48,7 +48,7 @@ func getURL(ressource string, s *session.Session) string {
 * Args:
 	- the ressource name
 	- the current sessions
-* Return : 
+* Return :
 	- The returned data of the api using api.Result type
 	- any error encountered during the execution
 */
@@ -85,12 +85,12 @@ func getData(ressource string, s *session.Session) (api.Result, error) {
 
 /*
 * postData takes care of posting data to the API
-* It sets the correct content type and 
+* It sets the correct content type and
 * Args:
 	- the ressource name
 	- the current sessions
-	- any kind of data that is expected by the api 
-* Return :  
+	- any kind of data that is expected by the api
+* Return :
 	- The returned data of the api using api.Result type
 	- any error encountered during the execution
 */
@@ -162,7 +162,7 @@ type Projects struct {
 
 /*
 GetProjects is an helper function to get a slice of all the projects availables
-Return : 
+Return :
 	- Slice of models.Projects from any kind of database
 	- error if anything unexpected occured during the execution of the function
 */
@@ -183,7 +183,7 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 		return data, err
 	}
 
-	// Check if the api response code say that everything went fine or abort. 
+	// Check if the api response code say that everything went fine or abort.
 	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
@@ -191,10 +191,9 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 	return data, nil
 }
 
-
 /*
 GetProject is an helper function to get all the information from a project by its name
-Return : 
+Return :
 	- a models.Projects from any kind of database
 	- error if anything unexpected occured during the execution of the function
 */

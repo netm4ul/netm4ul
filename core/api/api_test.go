@@ -175,11 +175,6 @@ func TestAPI_GetUser(t *testing.T) {
 		t.Errorf("Expected description : %s, got %s", tests.NormalUser.Name, user.Name)
 	}
 
-	// check for sensitive information !
-	if user.ID != "" {
-		t.Errorf("User ID available !")
-	}
-
 	if user.Password != "" {
 		t.Errorf("Password available !")
 	}

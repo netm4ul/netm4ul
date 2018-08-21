@@ -1,77 +1,84 @@
 package tests
 
 import (
+	"time"
+
 	"github.com/netm4ul/netm4ul/core/database/models"
 )
 
 var (
 	NormalProject  models.Project
 	EmptyProject   models.Project
-	NormalRaw      models.Raws
+	NormalRaw      models.Raw
 	NormalProjects []models.Project
-	NormalRaws     map[string]models.Raws
+	NormalIPs      []models.IP
+	NormalPorts    []models.Port
+	NormalURIs     []models.URI
+	NormalDomains  []models.Domain
+	NormalRaws     map[string]models.Raw
 	NormalUser     models.User
 )
 
 func init() {
 	NormalProject = models.Project{
-		ID:          "0",
 		Name:        "Test project",
 		Description: "Test description",
-		IPs: []models.IP{
-			models.IP{
-				Value: "1.1.1.1", Ports: []models.Port{
-					models.Port{
-						Banner:   "Test banner",
-						Number:   80,
-						Protocol: "tcp",
-						Status:   "open",
-						Type:     "web",
-						URIs: []models.URI{
-							models.URI{
-								Code: "200",
-								Name: "Test URI",
-							},
-							models.URI{
-								Code: "404",
-								Name: "Test not found URI",
-							},
-							models.URI{
-								Code: "500",
-								Name: "Test server error URI",
-							},
-						},
-					},
-					models.Port{
-						Banner:   "Test banner 2",
-						Number:   22,
-						Protocol: "tcp",
-						Status:   "open",
-						Type:     "ssh",
-						URIs:     []models.URI{}, // empty uri for ssh
-					},
-				},
-			},
-			models.IP{
-				Value: "2.2.2.2",
-				Ports: []models.Port{}, // empty ports
-			},
+	}
+	NormalIPs = []models.IP{
+		models.IP{
+			Value: "1.1.1.1",
 		},
-		Domains: []models.Domain{
-			models.Domain{
-				Name: "domain.tld",
-			},
-			models.Domain{
-				Name: "another.tld",
-			},
-			models.Domain{
-				Name: "sub1.another.tld",
-			},
+		models.IP{
+			Value: "2.2.2.2",
+		},
+	}
+	NormalPorts = []models.Port{
+		models.Port{
+			Banner:   "Test banner",
+			Number:   80,
+			Protocol: "tcp",
+			Status:   "open",
+			Type:     "web",
+		},
+		models.Port{
+			Banner:   "Test banner 2",
+			Number:   22,
+			Protocol: "tcp",
+			Status:   "open",
+			Type:     "ssh",
+		},
+	}
+	NormalURIs = []models.URI{
+		models.URI{
+			Code: "200",
+			Name: "Test URI",
+		},
+		models.URI{
+			Code: "404",
+			Name: "Test not found URI",
+		},
+		models.URI{
+			Code: "500",
+			Name: "Test server error URI",
+		},
+	}
+	NormalDomains = []models.Domain{
+		models.Domain{
+			Name: "domain.tld",
+		},
+		models.Domain{
+			Name: "another.tld",
+		},
+		models.Domain{
+			Name: "sub1.another.tld",
 		},
 	}
 
-	NormalRaw = models.Raws{
-		NormalProject.Name: map[string]interface{}{
+	NormalRaw = models.Raw{
+		ModuleName: "TestModule",
+		CreatedAt:  time.Unix(0, 0),
+		UpdatedAt:  time.Unix(1, 0),
+		Content: map[string]interface{}{
 			"Test module array":   []string{"test value", "test value 2"},
 			"Test module string":  "test value",
 			"Test module integer": 18,
@@ -83,7 +90,7 @@ func init() {
 		EmptyProject,
 	}
 
-	NormalRaws = map[string]models.Raws{
+	NormalRaws = map[string]models.Raw{
 		NormalProject.Name: NormalRaw,
 	}
 
@@ -91,7 +98,7 @@ func init() {
 		Name:      "TestUser",
 		Password:  "$2y$10$Fu4hg./ZybmFjiPxIpEOROGwQhF3sfwakddzlWFtV.I3rJu6sfy/2", // Test password
 		Token:     "testtoken",
-		CreatedAt: 123,
-		UpdatedAt: 456,
+		CreatedAt: time.Unix(0, 0),
+		UpdatedAt: time.Unix(1, 0),
 	}
 }
