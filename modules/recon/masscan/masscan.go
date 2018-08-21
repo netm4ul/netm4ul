@@ -227,8 +227,15 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 	if err != nil {
 		return errors.New("Could not create or update ip : " + err.Error())
 	}
+	now := time.Now()
+	raw := models.Raw{
+		Content:    data,
+		ModuleName: M.Name(),
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
 
-	err = db.AppendRawData(projectName, M.Name(), data)
+	err = db.AppendRawData(projectName, raw)
 	if err != nil {
 		return errors.New("Could not append : " + err.Error())
 	}
