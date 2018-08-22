@@ -163,6 +163,7 @@ func (f *JsonDB) writeUser(user jsonUser) error {
 	if err != nil {
 		return errors.New("Could not open file : " + err.Error())
 	}
+	defer file.Close()
 
 	err = json.NewEncoder(file).Encode(usersMap)
 	if err != nil {
@@ -193,6 +194,7 @@ func (f *JsonDB) openRawFile(project, module string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 	return file, nil
 }
 
@@ -201,6 +203,7 @@ func (f *JsonDB) openResultFile(project string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	return file, nil
 }
@@ -246,14 +249,15 @@ func (f *JsonDB) getUsers() ([]jsonUser, error) {
 	var users map[string]jsonUser
 	usersArr := []jsonUser{}
 
-	file, err := os.Open(f.UsersPath)
+	file, err := os.OpenFile(f.UsersPath, os.O_RDONLY|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, errors.New("Could not open file : " + err.Error())
 	}
+	defer file.Close()
 
 	err = json.NewDecoder(file).Decode(&users)
 	if err == io.EOF {
-		return nil, errors.New("Empty file " + f.UsersPath)
+		return usersArr, nil
 	}
 
 	if err != nil {
@@ -382,12 +386,13 @@ func (f *JsonDB) getProjects() ([]jsonProject, error) {
 	log.Debugf("Read projects files : %+v", files)
 
 	for _, filePath := range files {
-		file, err := os.Open(filePath)
+		file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
 
 		if err != nil {
 			log.Errorf("Could not open file : %s [err : %s]", filePath, err.Error())
 			return nil, errors.New("Could not open file : " + err.Error())
 		}
+		defer file.Close()
 
 		err = json.NewDecoder(file).Decode(&project)
 		if err == io.EOF {
@@ -762,6 +767,7 @@ func (f *JsonDB) AppendRawData(projectName string, raw models.Raw) error {
 	if err != nil {
 		return err
 	}
+	file.Close()
 
 	r := jsonRaws{}
 	r.FromModel(raw)
@@ -783,9 +789,12 @@ func (f *JsonDB) getRaws(projectName string) ([]jsonRaws, error) {
 	for _, filePath := range files {
 
 		raws := jsonRaws{}
-		file, err := os.Open(filePath)
-		// splitted := strings.Split(filePath, "-")
-		// moduleName := strings.Replace(splitted[2], ".json", "", -1)
+		file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
 		err = json.NewDecoder(file).Decode(&listOfModuleRaws)
 
 		if err != nil {
