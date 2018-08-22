@@ -105,7 +105,7 @@ type PortType struct {
 }
 
 type Raw struct {
-	Content    interface{}
+	Content    string
 	ModuleName string
 	CreatedAt  time.Time `json:"created_at" bson:"CreatedAt,omitempty" sql:"type:timestamptz,default:now()"`
 	UpdatedAt  time.Time `json:"updated_at" bson:"UpdatedAt,omitempty" sql:"type:timestamptz"`

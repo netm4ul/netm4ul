@@ -80,7 +80,8 @@ type ConfigToml struct {
 // Masscan "class"
 type Masscan struct {
 	// Config : exported config
-	Config ConfigToml
+	Config   ConfigToml
+	rawsData string
 }
 
 //NewMasscan generate a new Masscan module (type modules.Module)
@@ -178,6 +179,7 @@ func (M *Masscan) Parse(file string) (MasscanResult, error) {
 	if err != nil {
 		return MasscanResult{}, err
 	}
+	M.rawsData = string(data)
 	fileReformatted := string(data)
 
 	// JSON reformatted
@@ -227,9 +229,10 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 	if err != nil {
 		return errors.New("Could not create or update ip : " + err.Error())
 	}
+
 	now := time.Now()
 	raw := models.Raw{
-		Content:    data,
+		Content:    M.rawsData,
 		ModuleName: M.Name(),
 		CreatedAt:  now,
 		UpdatedAt:  now,

@@ -268,7 +268,7 @@ func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName st
 	//save raw data
 	now := time.Now()
 	raw := models.Raw{
-		Content:    data,
+		Content:    string(N.Result),
 		CreatedAt:  now,
 		UpdatedAt:  now,
 		ModuleName: N.Name(),

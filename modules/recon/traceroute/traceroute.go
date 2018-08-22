@@ -2,6 +2,7 @@ package traceroute
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"net"
 	"os"
@@ -172,8 +173,13 @@ func (T *TracerouteModule) WriteDb(result modules.Result, db models.Database, pr
 	}
 	now := time.Now()
 
+	dataRaws, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
 	raw := models.Raw{
-		Content:    data,
+		Content:    string(dataRaws),
 		UpdatedAt:  now,
 		CreatedAt:  now,
 		ModuleName: T.Name(),
