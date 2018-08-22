@@ -33,7 +33,7 @@ type Module interface {
 	Version() string
 	Author() string
 	DependsOn() []Condition
-	Run([]Input) (Result, error)
+	Run(Input) (Result, error)
 	ParseConfig() error
 	WriteDb(result Result, db models.Database, projectName string) error
 }

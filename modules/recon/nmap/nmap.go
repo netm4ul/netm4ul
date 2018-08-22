@@ -77,14 +77,14 @@ func (N *Nmap) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (N *Nmap) Run(inputs []modules.Input) (modules.Result, error) {
+func (N *Nmap) Run(input modules.Input) (modules.Result, error) {
 	N.ParseConfig()
 
 	/*
 	 We save the result in a temporary file (filename)
 	 It's easier to get it parsed, have a backup and save it as raw
 	*/
-	opt, filename, err := N.loadArgs(inputs)
+	opt, filename, err := N.loadArgs(input)
 	cmd := exec.Command("/usr/bin/nmap", opt...)
 	log.Debugf("Executing : %s %s", "/usr/bin/nmap", strings.Join(opt, " "))
 
@@ -118,7 +118,7 @@ func (N *Nmap) getResults(filename string) (raw []byte, parsed *gonmap.NmapRun, 
 	return raw, parsed, err
 }
 
-func (N *Nmap) loadArgs(inputs []modules.Input) (opt []string, filename string, err error) {
+func (N *Nmap) loadArgs(input modules.Input) (opt []string, filename string, err error) {
 	// Fast scan option : -F
 	if N.Config.FastScan {
 		opt = append(opt, "-F")
@@ -196,14 +196,11 @@ func (N *Nmap) loadArgs(inputs []modules.Input) (opt []string, filename string, 
 	log.Debugf("Writing to file '%s'", filename)
 	opt = append(opt, "-oX", filename)
 
-	// TODO : change it for Run argument, will be passed as an option : ./netm4ul 127.0.0.1
-	for _, input := range inputs {
-		if input.Domain != "" {
-			opt = append(opt, input.Domain)
-		}
-		if input.IP != nil {
-			opt = append(opt, input.IP.String())
-		}
+	if input.Domain != "" {
+		opt = append(opt, input.Domain)
+	}
+	if input.IP != nil {
+		opt = append(opt, input.IP.String())
 	}
 	return opt, filename, nil
 }

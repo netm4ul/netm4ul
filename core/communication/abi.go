@@ -10,7 +10,7 @@ import (
 //Command represents the communication protocol between clients and the master node
 type Command struct {
 	Name         string                    `json:"name"`
-	Options      []modules.Input           `json:"options"`
+	Options      modules.Input             `json:"options"`
 	Requirements requirements.Requirements `json:"requirements"`
 }
 

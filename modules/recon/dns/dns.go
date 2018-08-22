@@ -70,7 +70,7 @@ func (D *DNS) DependsOn() []modules.Condition {
 */
 
 // Run : Main function of the module
-func (D *DNS) Run(inputs []modules.Input) (modules.Result, error) {
+func (D *DNS) Run(input modules.Input) (modules.Result, error) {
 	// Banner
 	fmt.Println("DNS world!")
 
@@ -83,13 +83,10 @@ func (D *DNS) Run(inputs []modules.Input) (modules.Result, error) {
 	// Get fqdn of domain
 	var domain string
 
-	for _, input := range inputs {
-		//TODO get each domain name
-		if input.Domain != "" {
-			domain = input.Domain
-			break
-		}
+	if input.Domain != "" {
+		domain = input.Domain
 	}
+
 	fqdn := dns.Fqdn(domain)
 
 	// instanciate DnsResult

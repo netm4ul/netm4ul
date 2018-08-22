@@ -114,8 +114,7 @@ func (M *Masscan) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
-	log.Debug("H3ll-0 M4sscan")
+func (M *Masscan) Run(input modules.Input) (modules.Result, error) {
 
 	outputfile := generateUUID() + ".json"
 
@@ -127,10 +126,9 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	opt = append(opt, "-oJ", outputfile)
 
 	// Get IP
-	for _, i := range inputs {
-		if i.IP != nil {
-			opt = append([]string{i.IP.String()}, opt...)
-		}
+	// IP is the first arguments !
+	if input.IP != nil {
+		opt = append([]string{input.IP.String()}, opt...)
 	}
 
 	// Command execution
@@ -152,7 +150,7 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	if err != nil {
 		log.Error(err)
 	}
-	log.Debug("M4sscan done.")
+	log.Debug("Masscan done.")
 
 	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
 }

@@ -162,14 +162,14 @@ func (f *JsonDB) writeProject(project jsonProject) error {
 
 	file, err := f.openResultFile(project.Name)
 	if err != nil {
-		return err
+		return errors.New("Could not open result files : " + err.Error())
 	}
 
 	err = json.NewEncoder(file).Encode(project)
-
 	if err != nil {
-		return err
+		return errors.New("Could not encode this project : " + err.Error())
 	}
+
 	return nil
 }
 
@@ -550,7 +550,7 @@ func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 
 	err = f.writeProject(project)
 	if err != nil {
-		return errors.New("Could not find this IP for project : " + projectName)
+		return errors.New("Could not write project " + projectName + " : " + err.Error())
 	}
 
 	return nil
@@ -813,8 +813,6 @@ func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) 
 // AppendRawData is append only. Adds data to Raws[projectName][modules] array
 func (f *JsonDB) AppendRawData(projectName string, raw models.Raw) error {
 
-	log.Debugf("Project name : %s", projectName)
-	log.Debugf("raw : %s", raw)
 	file, err := os.OpenFile(f.getRawPath(projectName, raw.ModuleName), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return errors.New("Could not append raw data :" + err.Error())
@@ -838,16 +836,12 @@ func (f *JsonDB) getRaws(projectName string) ([]jsonRaws, error) {
 	listOfRaws := []jsonRaws{}       // full list
 	listOfModuleRaws := []jsonRaws{} // list by module
 
-	// listOfRaws = make([]jsonRaws, 0)
-	// listOfModuleRaws = make([]jsonRaws, 0)
-
 	files, err := filepath.Glob(f.RawGlob + projectName + "-*.json")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, filePath := range files {
-		log.Debugf("path : %s\n", filePath)
 
 		file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
 		if err != nil {
@@ -855,7 +849,6 @@ func (f *JsonDB) getRaws(projectName string) ([]jsonRaws, error) {
 		}
 		defer file.Close()
 
-		log.Debugf("file : %+v\n", file)
 		err = json.NewDecoder(file).Decode(&listOfModuleRaws)
 		if err == io.EOF {
 			continue
@@ -864,11 +857,8 @@ func (f *JsonDB) getRaws(projectName string) ([]jsonRaws, error) {
 			return nil, err
 		}
 
-		log.Debugf("listOfModuleRaws : %+v\n", listOfModuleRaws)
 		listOfRaws = append(listOfRaws, listOfModuleRaws...)
-		log.Debugf("listOfRaws : %+v\n", listOfRaws)
 	}
-	log.Debug("Just before return \n")
 
 	return listOfRaws, nil
 }

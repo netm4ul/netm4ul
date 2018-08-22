@@ -3,6 +3,7 @@ package shodan
 import (
 	"context"
 	"encoding/gob"
+	"errors"
 	"os"
 	"path/filepath"
 	"time"
@@ -78,7 +79,7 @@ type Services struct {
 */
 
 // Run : Main function of the module
-func (S *Shodan) Run(inputs []modules.Input) (modules.Result, error) {
+func (S *Shodan) Run(input modules.Input) (modules.Result, error) {
 
 	// Instanciate Result
 	Result := Result{}
@@ -87,20 +88,17 @@ func (S *Shodan) Run(inputs []modules.Input) (modules.Result, error) {
 	// Create shodan context
 	shodanContext := context.Background()
 	// Get IP adress
-	var domains []string
-	for _, input := range inputs {
-		if input.Domain != "" {
-			domains = append(domains, input.Domain)
-		}
+	var domain string
+
+	if input.Domain == "" {
+		return modules.Result{}, errors.New("Empty domain provided, can't run shodan")
 	}
-	dns, err := shodanClient.GetDNSResolve(shodanContext, domains)
+
+	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{input.Domain})
 	if err != nil {
 		return modules.Result{}, err
 	}
-	// TODO : change Result slices / array ?
-	// Not sure about just one domain output...
-	// Result.IP = *dns["edznux.fr"]
-	myIP := *dns[domains[0]]
+	myIP := *dns[domain]
 	Result.IP = myIP.String()
 
 	hostServiceOption := shodan.HostServicesOptions{}

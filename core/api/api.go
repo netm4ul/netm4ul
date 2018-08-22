@@ -306,19 +306,20 @@ func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+//TODO : use RunModule !
+
 //RunModules runs every enabled modules
 func (api *API) RunModules(w http.ResponseWriter, r *http.Request) {
 	var inputs []modules.Input
 	var res Result
 
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&inputs)
-
+	err := json.NewDecoder(r.Body).Decode(&inputs)
 	if err != nil {
 		log.Debugf("Could not decode provided json : %+v", err)
 		sendDefaultValue(w, CodeCouldNotDecodeJSON)
 		return
 	}
+
 	log.Debugf("JSON input : %+v", inputs)
 	defer r.Body.Close()
 
@@ -332,13 +333,18 @@ func (api *API) RunModules(w http.ResponseWriter, r *http.Request) {
 
 	for _, module := range api.Session.ModulesEnabled {
 		moduleName := strings.ToLower(module.Name())
-		cmd := communication.Command{Name: moduleName, Options: inputs}
-		log.Debugf("RunModule for cmd : %+v", cmd)
+		// send as much command as inputs
+		for _, input := range inputs {
+			cmd := communication.Command{Name: moduleName, Options: input}
+			log.Debugf("RunModule for cmd : %+v", cmd)
 
-		err = api.Server.SendCmd(cmd)
-		if err != nil {
-			sendDefaultValue(w, CodeServerError)
-			return
+			err = api.Server.SendCmd(cmd)
+
+			// exit at first error.
+			if err != nil {
+				sendDefaultValue(w, CodeServerError)
+				return
+			}
 		}
 	}
 
@@ -364,8 +370,7 @@ func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	module := vars["module"]
 
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&inputs)
+	err := json.NewDecoder(r.Body).Decode(&inputs)
 
 	if err != nil {
 		log.Debugf("Could not decode provided json : %+v", err)
@@ -374,17 +379,15 @@ func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	log.Debugf("JSON input : %+v", inputs)
-
-	cmd := communication.Command{Name: module, Options: inputs}
-
-	log.Debugf("RunModule for cmd : %+v", cmd)
-
-	err = api.Server.SendCmd(cmd)
-	if err != nil {
-		//TODO
-		sendDefaultValue(w, CodeNotImplementedYet)
-		return
+	for _, input := range inputs {
+		cmd := communication.Command{Name: module, Options: input}
+		log.Debugf("RunModule for cmd : %+v", cmd)
+		err = api.Server.SendCmd(cmd)
+		if err != nil {
+			//TODO
+			sendDefaultValue(w, CodeNotImplementedYet)
+			return
+		}
 	}
 
 	res = CodeToResult[CodeOK]
