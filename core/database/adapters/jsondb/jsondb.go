@@ -85,32 +85,61 @@ func (f *JsonDB) Name() string {
 //TOFIX
 //these writes should all have locks
 func (f *JsonDB) writeURIs(projectName string, ip string, port string, uris []jsonURI) error {
+	if projectName == "" {
+		return errors.New("empty project name (writeURIs)")
+	}
+	if ip == "" {
+		return errors.New("empty ip (writeURIs)")
+	}
+	if port == "" {
+		return errors.New("empty port (writeURIs)")
+	}
 
 	portsFromFile, err := f.getPorts(projectName, ip)
 	if err != nil {
 		return err
 	}
-
-	for _, p := range portsFromFile {
+	found := 0
+	var i int
+	for i, p := range portsFromFile {
 
 		if strconv.Itoa(int(p.Number)) == port {
+			found = i
 			p.URIs = uris
 		}
+	}
+
+	if found > 0 {
+		portsFromFile[i].URIs = append(portsFromFile[i].URIs, uris...)
 	}
 
 	return f.writePorts(projectName, ip, portsFromFile)
 }
 
 func (f *JsonDB) writePorts(projectName string, ip string, ports []jsonPort) error {
+	if projectName == "" {
+		return errors.New("empty project name (writePorts)")
+	}
+	if ip == "" {
+		return errors.New("empty ip (writePorts)")
+	}
+
 	projectFromFile, err := f.getProject(projectName)
 	if err != nil {
 		return err
 	}
 
+	found := 0
 	for i, ipFromFile := range projectFromFile.IPs {
 		if ipFromFile.Value == ip {
-			projectFromFile.IPs[i].Ports = ports
+			ipFromFile.Ports = ports
+			found = i
 		}
+	}
+
+	// project not found
+	if found == 0 {
+		projectFromFile.IPs[found].Ports = append(projectFromFile.IPs[found].Ports, ports...)
 	}
 
 	return f.writeProjects([]jsonProject{projectFromFile})
@@ -175,9 +204,16 @@ func (f *JsonDB) writeUser(user jsonUser) error {
 
 // append only
 func (f *JsonDB) writeRaw(file *os.File, r jsonRaws) error {
-	raws, err := f.getRaws(r.Project.Name)
+
+	log.Debugf("r : %+v", r)
+
+	if r.ProjectName == "" {
+		return errors.New("empty project (writeRaw)")
+	}
+
+	raws, err := f.getRaws(r.ProjectName)
 	if err != nil {
-		return err
+		return errors.New("Could not getRaws for the project name : " + err.Error())
 	}
 
 	raws = append(raws, r)
@@ -186,19 +222,32 @@ func (f *JsonDB) writeRaw(file *os.File, r jsonRaws) error {
 		return err
 	}
 
+	file.Close()
 	return nil
 }
 
 func (f *JsonDB) openRawFile(project, module string) (*os.File, error) {
+	if project == "" {
+		return nil, errors.New("empty project name (openRawFile)")
+	}
+	if module == "" {
+		return nil, errors.New("empty module name (openRawFile)")
+	}
+
 	file, err := os.OpenFile(f.getRawPath(project, module), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
+
 	return file, nil
 }
 
 func (f *JsonDB) openResultFile(project string) (*os.File, error) {
+	if project == "" {
+		return nil, errors.New("empty project name")
+	}
+
 	file, err := os.OpenFile(f.getResultPath(project), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		return nil, err
@@ -345,33 +394,35 @@ func (f *JsonDB) DeleteUser(user models.User) error {
 
 // Project
 
-//CreateOrUpdateProject handle project. It will update the project if it does not exist.
 func (f *JsonDB) CreateOrUpdateProject(project models.Project) error {
+	log.Debug("Create Project !")
+	jp := jsonProject{}
+	jp.FromModel(project)
+	return f.createOrUpdateProject(jp)
+}
 
-	projects := []jsonProject{}
+//CreateOrUpdateProject handle project. It will update the project if it does not exist.
+func (f *JsonDB) createOrUpdateProject(project jsonProject) error {
+
 	projects, err := f.getProjects()
 	if err != nil {
 		return err
 	}
 
 	found := false
-	// copy the found projet into a jsonProject
-	var jp jsonProject
 	for _, p := range projects {
 		if p.Name == project.Name {
 			found = true
-			jp = p
+			p = project
 			break
 		}
 	}
 
 	if !found {
-		projects = append(projects, jp)
-		return f.writeProjects(projects)
+		projects = append(projects, project)
 	}
 
-	// nothing to do. Already exist
-	return nil
+	return f.writeProjects(projects)
 }
 
 func (f *JsonDB) getProjects() ([]jsonProject, error) {
@@ -386,8 +437,8 @@ func (f *JsonDB) getProjects() ([]jsonProject, error) {
 	log.Debugf("Read projects files : %+v", files)
 
 	for _, filePath := range files {
-		file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
 
+		file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
 		if err != nil {
 			log.Errorf("Could not open file : %s [err : %s]", filePath, err.Error())
 			return nil, errors.New("Could not open file : " + err.Error())
@@ -395,18 +446,20 @@ func (f *JsonDB) getProjects() ([]jsonProject, error) {
 		defer file.Close()
 
 		err = json.NewDecoder(file).Decode(&project)
-		if err == io.EOF {
-			log.Errorf("Empty file %s", filePath)
-			continue
-		}
 
 		if err != nil {
-			log.Errorf("Could not decode file : %s [err : %s]", filePath, err.Error())
-			continue
+			// skip empty file error
+			if err == io.EOF {
+				log.Infof("Empty file %s", filePath)
+				continue
+			}
+			return nil, errors.New("Could not decode file : " + err.Error())
 		}
+
 		projects = append(projects, project)
 	}
-	return projects, err
+
+	return projects, nil
 }
 
 //GetProjects will return all projects available. Use GetProject to select only one
@@ -426,21 +479,18 @@ func (f *JsonDB) GetProjects() ([]models.Project, error) {
 
 //GetProject return only one project by its name. It use GetProjects internally
 func (f *JsonDB) getProject(projectName string) (jsonProject, error) {
-	projects, err := f.GetProjects()
+	projects, err := f.getProjects()
 
 	if err != nil {
 		return jsonProject{}, errors.New("Could not get projects list : " + err.Error())
 	}
 
-	var project jsonProject
-
 	for _, p := range projects {
 		if p.Name == projectName {
-			project.FromModel(p)
-			return project, nil //exit early
+			return p, nil //exit early
 		}
 	}
-	return project, nil
+	return jsonProject{}, nil
 }
 
 //GetProject is a wrapper around getProject.
@@ -763,23 +813,33 @@ func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) 
 // AppendRawData is append only. Adds data to Raws[projectName][modules] array
 func (f *JsonDB) AppendRawData(projectName string, raw models.Raw) error {
 
+	log.Debugf("Project name : %s", projectName)
+	log.Debugf("raw : %s", raw)
 	file, err := os.OpenFile(f.getRawPath(projectName, raw.ModuleName), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		return err
+		return errors.New("Could not append raw data :" + err.Error())
 	}
-	file.Close()
 
 	r := jsonRaws{}
 	r.FromModel(raw)
+	r.ProjectName = projectName
 
-	return f.writeRaw(file, r)
+	err = f.writeRaw(file, r)
+	if err != nil {
+		return errors.New("Could not write raw data : " + err.Error())
+	}
+
+	return nil
 
 }
 
 //GetRaws return all the raws input for a project
 func (f *JsonDB) getRaws(projectName string) ([]jsonRaws, error) {
-	var listOfRaws []jsonRaws       // full list
-	var listOfModuleRaws []jsonRaws // list by module
+	listOfRaws := []jsonRaws{}       // full list
+	listOfModuleRaws := []jsonRaws{} // list by module
+
+	// listOfRaws = make([]jsonRaws, 0)
+	// listOfModuleRaws = make([]jsonRaws, 0)
 
 	files, err := filepath.Glob(f.RawGlob + projectName + "-*.json")
 	if err != nil {
@@ -787,22 +847,28 @@ func (f *JsonDB) getRaws(projectName string) ([]jsonRaws, error) {
 	}
 
 	for _, filePath := range files {
+		log.Debugf("path : %s\n", filePath)
 
-		raws := jsonRaws{}
 		file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0755)
 		if err != nil {
 			return nil, err
 		}
 		defer file.Close()
 
+		log.Debugf("file : %+v\n", file)
 		err = json.NewDecoder(file).Decode(&listOfModuleRaws)
-
+		if err == io.EOF {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
 
-		listOfRaws = append(listOfRaws, raws)
+		log.Debugf("listOfModuleRaws : %+v\n", listOfModuleRaws)
+		listOfRaws = append(listOfRaws, listOfModuleRaws...)
+		log.Debugf("listOfRaws : %+v\n", listOfRaws)
 	}
+	log.Debug("Just before return \n")
 
 	return listOfRaws, nil
 }

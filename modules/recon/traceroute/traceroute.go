@@ -95,7 +95,8 @@ func (T *TracerouteModule) Run(inputs []modules.Input) (modules.Result, error) {
 	}
 
 	options := traceroute.TracerouteOptions{}
-	options.SetMaxHops(T.Config.MaxHops)
+	// options.SetMaxHops(T.Config.MaxHops)
+	options.SetMaxHops(5)
 	options.SetRetries(3)
 
 	var traceRes traceroute.TracerouteResult
@@ -184,10 +185,12 @@ func (T *TracerouteModule) WriteDb(result modules.Result, db models.Database, pr
 		CreatedAt:  now,
 		ModuleName: T.Name(),
 	}
-
+	log.Debugf("raw : %+v", raw)
+	log.Debugf("raw.Content : '%s'", raw.Content)
 	err = db.AppendRawData(projectName, raw)
+
 	if err != nil {
-		log.Errorf("Could not append : %+v", err)
+		return errors.New("Could not append raw data : " + err.Error())
 	}
 	return nil
 }

@@ -240,7 +240,7 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 
 	err = db.AppendRawData(projectName, raw)
 	if err != nil {
-		return errors.New("Could not append : " + err.Error())
+		return errors.New("Could not append raw data : " + err.Error())
 	}
 
 	return nil

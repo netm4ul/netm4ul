@@ -180,6 +180,7 @@ func (server *Server) getNextNodes(cmd communication.Command) ([]communication.N
 }
 
 // handleData decode and route all data after the "hello". It listens forever until connection closed.
+// the boolean is a "stop" boolean. True indicate stop connection
 func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	var data modules.Result
 
@@ -223,13 +224,20 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 
 	server.Db.Connect(&server.Session.Config)
 	//update it every time
-	p := models.Project{Name: server.Session.Nodes[i].Project}
-	server.Db.CreateOrUpdateProject(p)
+	p := models.Project{
+		Name: server.Session.Nodes[i].Project,
+	}
+	err = server.Db.CreateOrUpdateProject(p)
+	if err != nil {
+		log.Errorf("Could not create or update project : %+v", err)
+		return false
+	}
 
 	err = module.WriteDb(data, server.Db, p.Name)
 
 	if err != nil {
 		log.Errorf("Database error : %+v", err)
+		return false
 	}
 	log.Infof("Saved database info, module : %s", data.Module)
 	return false

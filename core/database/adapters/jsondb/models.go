@@ -62,7 +62,7 @@ func (jm *jsonRoute) FromModel(r models.Route) {
 type jsonURI struct {
 	models.URI
 	ID   int
-	Port *jsonPort // 1 to 1 relation
+	Port jsonPort // 1 to 1 relation
 }
 
 func (jm *jsonURI) ToModel() models.URI {
@@ -207,7 +207,7 @@ func (jm *jsonNetwork) FromModel(Network models.Network) {
 type jsonDomain struct {
 	models.Domain
 	ID int
-	IP []*jsonIP
+	IP []jsonIP
 }
 
 func (jm *jsonDomain) ToModel() models.Domain {
@@ -290,8 +290,8 @@ func (jm *jsonUser) FromModel(u models.User) {
 */
 type jsonRaws struct {
 	models.Raw
-	ID      int
-	Project *jsonProject
+	ID          int
+	ProjectName string
 }
 
 func (jm *jsonRaws) ToModel() models.Raw {
