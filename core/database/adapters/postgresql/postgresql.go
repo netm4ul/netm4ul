@@ -283,13 +283,13 @@ func (pg *PostgreSQL) DeleteUser(user models.User) error {
 }
 
 // Project
-func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
-	var p models.Project
+func (pg *PostgreSQL) createOrUpdateProject(project pgProject) error {
+	var p pgProject
 
 	err := pg.db.Model(&p).Where("name = ?", project.Name).Select()
 	// The project doesn't exist yet
 	if err == pgdb.ErrNoRows {
-		_, err := pg.db.Model(&p).Insert(&project)
+		err := pg.db.Insert(&project)
 		if err != nil {
 			return errors.New("Could not insert project : " + err.Error())
 		}
@@ -306,6 +306,19 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 		return errors.New("Could not save project in the database :" + err.Error())
 	}
 
+	return nil
+}
+
+func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
+	log.Debugf("Saving project : %s", project)
+
+	p := pgProject{}
+	p.FromModel(project)
+
+	err := pg.createOrUpdateProject(p)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
