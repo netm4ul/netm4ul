@@ -255,7 +255,6 @@ func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
 	if err != nil {
 		return user, errors.New("Could not get user by token from the database : " + err.Error())
 	}
-	log.Errorf("User : %+v", user)
 
 	return user, nil
 }
@@ -285,18 +284,35 @@ func (pg *PostgreSQL) DeleteUser(user models.User) error {
 
 // Project
 func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
+	var p models.Project
 
-	_, err := pg.db.Model(&project).Returning("*").Update()
+	err := pg.db.Model(&p).Where("name = ?", project.Name).Select()
+	// The project doesn't exist yet
+	if err == pgdb.ErrNoRows {
+		_, err := pg.db.Model(&p).Insert(&project)
+		if err != nil {
+			return errors.New("Could not insert project : " + err.Error())
+		}
+		return nil
+	}
+
+	// handle other errors
+	if err != nil {
+		return errors.New("Could not select project : " + err.Error())
+	}
+	// update if the project was found
+	_, err = pg.db.Model(&project).Where("name = ?", project.Name).Returning("*").Update()
 	if err != nil {
 		return errors.New("Could not save project in the database :" + err.Error())
 	}
+
 	return nil
 }
 
-func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
-	var projects []models.Project
-	err := pg.db.Model(&projects).Select()
+func (pg *PostgreSQL) getProjects() ([]pgProject, error) {
+	var projects []pgProject
 
+	err := pg.db.Model(&projects).Select()
 	if err != nil {
 		return nil, errors.New("Could not select projects : " + err.Error())
 	}
@@ -304,9 +320,24 @@ func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
 	return projects, nil
 }
 
-func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
+func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
+	var projects []models.Project
 
-	var project models.Project
+	ps, err := pg.getProjects()
+	if err != nil {
+		return nil, err
+	}
+
+	// convert to model
+	for _, p := range ps {
+		projects = append(projects, p.ToModel())
+	}
+	return projects, nil
+}
+
+func (pg *PostgreSQL) getProject(projectName string) (pgProject, error) {
+	var project pgProject
+
 	err := pg.db.Model(&project).Where("name = ?", projectName).First()
 	if err != nil {
 		return project, errors.New("Could not select project : " + err.Error())
@@ -315,8 +346,17 @@ func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 	return project, nil
 }
 
+func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
+	p, err := pg.getProject(projectName)
+	if err != nil {
+		return models.Project{}, err
+	}
+
+	return p.ToModel(), nil
+}
+
 // IP
-func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
+func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 	log.Debugf("Inserting ip : %+v", ip)
 	err := pg.db.Insert(&ip)
 
@@ -326,9 +366,23 @@ func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	return nil
 }
 
-func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) error {
+func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
+
+	// convert to pgIP first
+	pip := pgIP{}
+	pip.FromModel(ip)
+
+	err := pg.createOrUpdateIP(projectName, pip)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pg *PostgreSQL) createOrUpdateIPs(projectName string, ips []pgIP) error {
 	for _, ip := range ips {
-		err := pg.CreateOrUpdateIP(projectName, ip)
+		err := pg.createOrUpdateIP(projectName, ip)
 		if err != nil {
 			return errors.New("Could not create or update ips : " + err.Error())
 		}
@@ -336,7 +390,23 @@ func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) err
 	return nil
 }
 
-func (pg *PostgreSQL) GetIPs(projectName string) ([]models.IP, error) {
+func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) error {
+
+	pips := []pgIP{}
+	for _, ip := range ips {
+		// convert ip
+		pip := pgIP{}
+		pip.FromModel(ip)
+	}
+
+	err := pg.createOrUpdateIPs(projectName, pips)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pg *PostgreSQL) getIPs(projectName string) ([]pgIP, error) {
 
 	pgips := []pgIP{}
 	err := pg.db.Model(&pgips).
@@ -344,6 +414,16 @@ func (pg *PostgreSQL) GetIPs(projectName string) ([]models.IP, error) {
 		Select()
 	if err != nil {
 		return nil, errors.New("Could not get IPs : " + err.Error())
+	}
+
+	return pgips, nil
+}
+
+func (pg *PostgreSQL) GetIPs(projectName string) ([]models.IP, error) {
+
+	pgips, err := pg.getIPs(projectName)
+	if err != nil {
+		return nil, err
 	}
 
 	// convert back to the standard model
@@ -355,7 +435,8 @@ func (pg *PostgreSQL) GetIPs(projectName string) ([]models.IP, error) {
 	return ips, nil
 }
 
-func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
+func (pg *PostgreSQL) getIP(projectName string, ip string) (pgIP, error) {
+
 	pgip := pgIP{}
 	err := pg.db.Model(&pgip).
 		Where("projects.name = ?", projectName).
@@ -363,30 +444,51 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 		Select()
 
 	if err == sql.ErrNoRows {
-		return models.IP{}, nil
+		return pgIP{}, nil
 	}
 	if err != nil {
-		return models.IP{}, errors.New("Could not get IP : " + err.Error())
+		return pgIP{}, errors.New("Could not get IP : " + err.Error())
 	}
 
+	return pgip, nil
+}
+
+func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
+
+	pgip, err := pg.getIP(projectName, ip)
+	if err != nil {
+		return models.IP{}, err
+	}
 	return pgip.ToModel(), nil
 }
 
 // Domain
-func (pg *PostgreSQL) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
-	err := pg.db.Insert(&domain)
+func (pg *PostgreSQL) createOrUpdateDomain(projectName string, domain pgDomain) error {
 
+	err := pg.db.Insert(&domain)
 	if err != nil {
 		return errors.New("Could not save or update domain : " + err.Error())
 	}
+
 	return nil
 }
 
-func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models.Domain) error {
+func (pg *PostgreSQL) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
 
-	//TODO bulk insert !
+	d := pgDomain{}
+	d.FromModel(domain)
+
+	err := pg.createOrUpdateDomain(projectName, d)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pg *PostgreSQL) createOrUpdateDomains(projectName string, domains []pgDomain) error {
 	for _, domain := range domains {
-		err := pg.CreateOrUpdateDomain(projectName, domain)
+		err := pg.createOrUpdateDomain(projectName, domain)
 		if err != nil {
 			return errors.New("Could not save or update domains : " + err.Error())
 		}
@@ -394,8 +496,25 @@ func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models
 	return nil
 }
 
-func (pg *PostgreSQL) GetDomains(projectName string) ([]models.Domain, error) {
-	domains := []models.Domain{}
+func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models.Domain) error {
+
+	pgds := []pgDomain{}
+	for _, domain := range domains {
+		pgd := pgDomain{}
+		pgd.FromModel(domain)
+		pgds = append(pgds, pgd)
+	}
+
+	err := pg.createOrUpdateDomains(projectName, pgds)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pg *PostgreSQL) getDomains(projectName string) ([]pgDomain, error) {
+	domains := []pgDomain{}
 	err := pg.db.Model(&domains).
 		Where("projects.name = ?", projectName).
 		Select()
@@ -405,24 +524,47 @@ func (pg *PostgreSQL) GetDomains(projectName string) ([]models.Domain, error) {
 
 	return domains, nil
 }
+func (pg *PostgreSQL) GetDomains(projectName string) ([]models.Domain, error) {
 
-func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.Domain, error) {
-	domain := models.Domain{}
+	domains := []models.Domain{}
+	pgds, err := pg.getDomains(projectName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, d := range pgds {
+		domains = append(domains, d.ToModel())
+	}
+
+	return domains, nil
+}
+
+func (pg *PostgreSQL) getDomain(projectName string, domainName string) (pgDomain, error) {
+	domain := pgDomain{}
 
 	err := pg.db.Model(&domain).
 		Where("projects.name = ?", projectName).
 		Where("domains.name = ?", domainName).
 		Select()
+
 	if err != nil {
-		return models.Domain{}, errors.New("Could not get domain : " + err.Error())
+		return pgDomain{}, errors.New("Could not get domain : " + err.Error())
 	}
 
 	return domain, nil
 }
 
+func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.Domain, error) {
+	d, err := pg.getDomain(projectName, domainName)
+	if err != nil {
+		return models.Domain{}, err
+	}
+
+	return d.ToModel(), nil
+}
+
 // Port
-func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
-	//TOFIX
+func (pg *PostgreSQL) createOrUpdatePort(projectName string, ip string, port pgPort) error {
 	err := pg.db.Insert(&port)
 	if err != nil {
 		return errors.New("Could not create or update port : " + err.Error())
@@ -430,9 +572,21 @@ func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port mod
 	return nil
 }
 
-func (pg *PostgreSQL) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
+func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
+
+	pgp := pgPort{}
+	pgp.FromModel(port)
+	err := pg.createOrUpdatePort(projectName, ip, pgp)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pg *PostgreSQL) createOrUpdatePorts(projectName string, ip string, ports []pgPort) error {
 	for _, port := range ports {
-		err := pg.CreateOrUpdatePort(projectName, ip, port)
+		err := pg.createOrUpdatePort(projectName, ip, port)
 		if err != nil {
 			return err
 		}
@@ -440,8 +594,22 @@ func (pg *PostgreSQL) CreateOrUpdatePorts(projectName string, ip string, ports [
 	return nil
 }
 
-func (pg *PostgreSQL) GetPorts(projectName string, ip string) ([]models.Port, error) {
-	ports := []models.Port{}
+func (pg *PostgreSQL) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
+	for _, port := range ports {
+		pgp := pgPort{}
+		pgp.FromModel(port)
+		err := pg.createOrUpdatePort(projectName, ip, pgp)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (pg *PostgreSQL) getPorts(projectName string, ip string) ([]pgPort, error) {
+
+	ports := []pgPort{}
+
 	err := pg.db.Model(&ports).Where("ips.value = ?", ip).Select()
 	if err != nil {
 		return nil, errors.New("Could not get ports : " + err.Error())
@@ -449,9 +617,23 @@ func (pg *PostgreSQL) GetPorts(projectName string, ip string) ([]models.Port, er
 
 	return ports, nil
 }
+func (pg *PostgreSQL) GetPorts(projectName string, ip string) ([]models.Port, error) {
 
-func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (models.Port, error) {
-	p := models.Port{}
+	ports, err := pg.getPorts(projectName, ip)
+	if err != nil {
+		return nil, err
+	}
+
+	res := []models.Port{}
+	for _, p := range ports {
+		res = append(res, p.ToModel())
+	}
+
+	return res, nil
+}
+
+func (pg *PostgreSQL) getPort(projectName string, ip string, port string) (pgPort, error) {
+	var p pgPort
 	err := pg.db.Model(&p).
 		Where("ips.value = ?", ip).
 		Where("ports.number = ?", port).
@@ -460,13 +642,33 @@ func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (model
 	if err != nil {
 		return p, errors.New("Could not get port : " + err.Error())
 	}
-	return models.Port{}, nil
+
+	return p, nil
+}
+func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (models.Port, error) {
+	pgp, err := pg.getPort(projectName, ip, port)
+	if err != nil {
+		return models.Port{}, nil
+	}
+	return pgp.ToModel(), nil
 }
 
 // URI (directory and files)
-func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port string, dir models.URI) error {
+func (pg *PostgreSQL) createOrUpdateURI(projectName string, ip string, port string, uri pgURI) error {
 	//TOFIX
-	err := pg.db.Insert(&dir)
+	err := pg.db.Insert(&uri)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
+
+	puris := pgURI{}
+	puris.FromModel(uri)
+
+	err := pg.createOrUpdateURI(projectName, ip, port, puris)
 	if err != nil {
 		return err
 	}
@@ -474,84 +676,166 @@ func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port stri
 	return nil
 }
 
-func (pg *PostgreSQL) CreateOrUpdateURIs(projectName string, ip string, port string, dirs []models.URI) error {
+func (pg *PostgreSQL) createOrUpdateURIs(projectName string, ip string, port string, uris []pgURI) error {
 	// TOFIX
 	// bulk insert!
-	for _, dir := range dirs {
-		err := pg.CreateOrUpdateURI(projectName, ip, port, dir)
+	for _, uri := range uris {
+		err := pg.createOrUpdateURI(projectName, ip, port, uri)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
+func (pg *PostgreSQL) CreateOrUpdateURIs(projectName string, ip string, port string, uris []models.URI) error {
+	puris := []pgURI{}
+	for _, uri := range uris {
+		puri := pgURI{}
+		puri.FromModel(uri)
+		puris = append(puris, puri)
+	}
 
-func (pg *PostgreSQL) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
+	err := pg.createOrUpdateURIs(projectName, ip, port, puris)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	uris := []models.URI{}
-	err := pg.db.Model(uris).
+func (pg *PostgreSQL) getURIs(projectName string, ip string, port string) ([]pgURI, error) {
+
+	uris := []pgURI{}
+
+	err := pg.db.Model(&uris).
 		Where("ips.value = ?", ip).
 		Where("ports.number = ?", port).
 		Select()
-
 	if err != nil {
 		return uris, errors.New("Could not get URIs : " + err.Error())
 	}
 
+	return nil, nil
+}
+func (pg *PostgreSQL) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
+
+	uris := []models.URI{}
+
+	puris, err := pg.getURIs(projectName, ip, port)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, puri := range puris {
+		uris = append(uris, puri.ToModel())
+	}
 	return uris, nil
 }
 
-func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
-	uri := models.URI{}
-	err := pg.db.Model(uri).
+func (pg *PostgreSQL) getURI(projectName string, ip string, port string, dir string) (pgURI, error) {
+
+	uri := pgURI{}
+
+	err := pg.db.Model(&uri).
 		Where("ips.value = ?", ip).
 		Where("ports.number = ?", port).
 		Select()
 
 	if err != nil {
-		return uri, errors.New("Could not get URIs : " + err.Error())
+		return pgURI{}, errors.New("Could not get URIs : " + err.Error())
 	}
 
-	return models.URI{}, nil
+	return uri, nil
+}
+
+func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
+
+	uri, err := pg.getURI(projectName, ip, port, dir)
+	if err != nil {
+		return models.URI{}, err
+	}
+
+	return uri.ToModel(), err
 }
 
 // Raw data
-func (pg *PostgreSQL) AppendRawData(projectName string, raw models.Raw) error {
-
-	// jsonData, err := json.Marshal(data)
-	// if err != nil {
-	// 	return errors.New("Could not marshall data to json : " + err.Error())
-	// }
+func (pg *PostgreSQL) appendRawData(projectName string, raw pgRaw) error {
 	err := pg.db.Insert(&raw)
-
 	if err != nil {
 		return errors.New("Could not insert raw : " + err.Error())
 	}
-
 	return nil
 }
 
-func (pg *PostgreSQL) GetRaws(projectName string) ([]models.Raw, error) {
-	raws := []models.Raw{}
-	err := pg.db.Model(raws).Select()
+func (pg *PostgreSQL) AppendRawData(projectName string, raw models.Raw) error {
+	praw := pgRaw{}
+	praw.FromModel(raw)
+	err := pg.appendRawData(projectName, praw)
 	if err != nil {
-		return raws, errors.New("Could not get raw : " + err.Error())
+		return err
+	}
+	return nil
+}
+
+func (pg *PostgreSQL) getRaws(projectName string) ([]pgRaw, error) {
+
+	raws := []pgRaw{}
+
+	err := pg.db.Model(&raws).Select()
+	if err != nil {
+		return nil, errors.New("Could not get raw : " + err.Error())
+	}
+
+	return raws, nil
+}
+
+func (pg *PostgreSQL) GetRaws(projectName string) ([]models.Raw, error) {
+
+	raws := []models.Raw{}
+
+	praws, err := pg.getRaws(projectName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, praw := range praws {
+		raws = append(raws, praw.ToModel())
 	}
 	return raws, nil
 }
 
-func (pg *PostgreSQL) GetRawModule(projectName string, moduleName string) (map[string][]models.Raw, error) {
+func (pg *PostgreSQL) getRawModule(projectName string, moduleName string) (map[string][]pgRaw, error) {
 	raws := []pgRaw{}
 	err := pg.db.Model(raws).Where("raws.name = ?", projectName).Where("raws.moduleName = ?", moduleName).Select()
 
 	if err != nil {
 		return nil, errors.New("Could not get raw by module : " + err.Error())
 	}
+	var mapOfListOfRaw map[string][]pgRaw
+	mapOfListOfRaw = make(map[string][]pgRaw)
+
+	for _, r := range raws {
+		mapOfListOfRaw[r.ModuleName] = append(mapOfListOfRaw[r.ModuleName], r)
+	}
+	return mapOfListOfRaw, nil
+}
+
+func (pg *PostgreSQL) GetRawModule(projectName string, moduleName string) (map[string][]models.Raw, error) {
 	var mapOfListOfRaw map[string][]models.Raw
 	mapOfListOfRaw = make(map[string][]models.Raw)
 
-	for _, r := range raws {
-		mapOfListOfRaw[r.ModuleName] = append(mapOfListOfRaw[r.ModuleName], r.ToModel())
+	rawsmap, err := pg.getRawModule(projectName, moduleName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//translate list of pgRaw to list of models.Raw
+	for i, praws := range rawsmap {
+		raws := []models.Raw{}
+		for _, praw := range praws {
+			raws = append(raws, praw.ToModel())
+		}
+		mapOfListOfRaw[i] = raws
 	}
 
 	return mapOfListOfRaw, nil
