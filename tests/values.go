@@ -15,7 +15,7 @@ var (
 	NormalPorts    []models.Port
 	NormalURIs     []models.URI
 	NormalDomains  []models.Domain
-	NormalRaws     map[string]models.Raw
+	NormalRaws     map[string][]models.Raw
 	NormalUser     models.User
 )
 
@@ -78,11 +78,7 @@ func init() {
 		ModuleName: "TestModule",
 		CreatedAt:  time.Unix(0, 0),
 		UpdatedAt:  time.Unix(1, 0),
-		Content: map[string]interface{}{
-			"Test module array":   []string{"test value", "test value 2"},
-			"Test module string":  "test value",
-			"Test module integer": 18,
-		},
+		Content:    "Test content woa {][@&~#{[[|[`]@^ùm!::!,:;,n=))1234567\nabcder 1231<x§:;>é&",
 	}
 
 	NormalProjects = []models.Project{
@@ -90,8 +86,11 @@ func init() {
 		EmptyProject,
 	}
 
-	NormalRaws = map[string]models.Raw{
-		NormalProject.Name: NormalRaw,
+	NormalRaws = map[string][]models.Raw{
+		"Test": []models.Raw{
+			NormalRaw,
+			NormalRaw,
+		},
 	}
 
 	NormalUser = models.User{
