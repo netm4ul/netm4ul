@@ -54,6 +54,9 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 		&pgPort{},
 		&pgURI{},
 		&pgRaw{},
+		&userToProject{},
+		&portToType{},
+		&domainToIps{},
 	}
 
 	for _, model := range reqs {

@@ -13,7 +13,8 @@ postgres model for Hop
 type pgHop struct {
 	tableName struct{} `sql:"hops"`
 	models.Hop
-	ID int
+	Id   int
+	IPId int
 }
 
 func (p *pgHop) ToModel() models.Hop {
@@ -39,7 +40,8 @@ postgres model for Route
 type pgRoute struct {
 	tableName struct{} `sql:"routes"`
 	models.Route
-	ID int
+	Id        int
+	ProjectId int
 }
 
 func (p *pgRoute) ToModel() models.Route {
@@ -77,7 +79,7 @@ func (p *pgRoute) BeforeInsert(db orm.DB) error {
 type pgURI struct {
 	tableName struct{} `sql:"uris"`
 	models.URI
-	ID   int
+	Id   int
 	Port *pgPort // 1 to 1 relation
 }
 
@@ -110,14 +112,20 @@ func (p *pgURI) BeforeInsert(db orm.DB) error {
 	return nil
 }
 
+type portToType struct {
+	PortId     int
+	PorttypeId int
+}
+
 /*
 	postgres model for Port
 */
 type pgPort struct {
 	tableName struct{} `sql:"ports"`
 	models.Port
-	ID       int
+	Id       int
 	IP       *pgIP
+	IPId     int
 	PortType *pgPortType `pg:",many2many:port_to_types"`
 }
 
@@ -162,7 +170,7 @@ func (p *pgPort) BeforeInsert(db orm.DB) error {
 type pgPortType struct {
 	tableName struct{} `sql:"porttypes"`
 	models.PortType
-	ID int
+	Id int
 }
 
 func (p *pgPortType) ToModel() models.PortType {
@@ -200,7 +208,9 @@ func (p *pgPortType) BeforeInsert(db orm.DB) error {
 type pgIP struct {
 	tableName struct{} `sql:"ips"`
 	models.IP
-	ID int
+	Id        int
+	ProjectId int
+	DomainId  int
 }
 
 func (p *pgIP) ToModel() models.IP {
@@ -238,7 +248,7 @@ func (p *pgIP) BeforeInsert(db orm.DB) error {
 type pgNetwork struct {
 	tableName struct{} `sql:"Networks"`
 	models.Network
-	ID int
+	Id int
 }
 
 func (p *pgNetwork) ToModel() models.Network {
@@ -270,13 +280,18 @@ func (p *pgNetwork) BeforeInsert(db orm.DB) error {
 	return nil
 }
 
+type domainToIps struct {
+	DomainId int
+	IPId     int
+}
+
 /*
 	postgres model for Domain
 */
 type pgDomain struct {
 	tableName struct{} `sql:"domains"`
 	models.Domain
-	ID int
+	Id int
 	IP []*pgIP `pg:",many2many:domain_to_ips"`
 }
 
@@ -313,7 +328,7 @@ func (p *pgDomain) BeforeInsert(db orm.DB) error {
 type pgProject struct {
 	tableName struct{} `sql:"projects"`
 	models.Project
-	ID  int
+	Id  int
 	IPS []*pgIP
 }
 
@@ -346,14 +361,19 @@ func (p *pgProject) BeforeInsert(db orm.DB) error {
 	return nil
 }
 
+type userToProject struct {
+	UserId    int
+	ProjectId int
+}
+
 /*
 	postgres model for User
 */
 type pgUser struct {
 	tableName struct{} `sql:"users"`
 	models.User
-	ID       int
-	Projects []*pgProject `pg:"many2many:users_to_projects"`
+	Id       int
+	Projects []*pgProject `pg:"many2many:user_to_projects"`
 }
 
 func (p *pgUser) ToModel() models.User {
@@ -393,7 +413,7 @@ func (p *pgUser) BeforeInsert(db orm.DB) error {
 type pgRaw struct {
 	tableName struct{} `sql:"raws"`
 	models.Raw
-	ID      int
+	Id      int
 	Project *pgProject
 }
 
