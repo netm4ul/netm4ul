@@ -201,7 +201,7 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 
 	//user doesn't exist, create it
 	if tmpUser.Name == "" {
-		res := pg.db.Create(&pguser)
+		res := pg.db.Where("name = ?", tmpUser.Name).FirstOrCreate(&pguser)
 		if res.Error != nil {
 			return errors.New("Could not insert user in the database : " + res.Error.Error())
 		}
@@ -393,7 +393,12 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 
 	ip.ProjectID = proj.ID
 
-	res := pg.db.Create(&ip)
+	res := pg.db.
+		Where("project_id = ?", proj.ID).
+		Where("value = ?", ip.Value).
+		Where("network = ?", ip.Network).
+		FirstOrCreate(&ip)
+
 	if res.Error != nil {
 		return errors.New("Could not save ip in the database :" + res.Error.Error())
 	}
@@ -498,8 +503,12 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 
 // Domain
 func (pg *PostgreSQL) createOrUpdateDomain(projectName string, domain pgDomain) error {
-
-	res := pg.db.Create(&domain)
+	project := pgProject{}
+	res := pg.db.Where("name = ?", projectName).First(&project)
+	if res.Error != nil {
+		return errors.New("Could not find assiociated projet : " + res.Error.Error())
+	}
+	res = pg.db.Where("project_id", project.ID).Where("name = ?", domain.Name).FirstOrInit(&domain)
 	if res.Error != nil {
 		return errors.New("Could not save or update domain : " + res.Error.Error())
 	}
@@ -613,7 +622,7 @@ func (pg *PostgreSQL) createOrUpdatePort(projectName string, ip string, port pgP
 	}
 
 	port.IPId = pip.ID
-	res = pg.db.Create(&port)
+	res = pg.db.Where("ip_id = ?", pip.ID).FirstOrCreate(&port)
 	if res.Error != nil {
 		return errors.New("Could not create or update port : " + res.Error.Error())
 	}
@@ -709,23 +718,23 @@ func (pg *PostgreSQL) createOrUpdateURI(projectName string, ip string, port stri
 	proj := pgProject{}
 	res := pg.db.Where("name = ?", projectName).First(&proj)
 	if res.Error != nil {
-		return errors.New("Could not corresponding project for port : " + res.Error.Error())
+		return errors.New("Could not match corresponding project for port : " + res.Error.Error())
 	}
 
 	pip := pgIP{}
 	res = pg.db.Where("value = ?", ip).Where("project_id = ?", proj.ID).First(&pip)
 	if res.Error != nil {
-		return errors.New("Could not corresponding ip for port : " + res.Error.Error())
+		return errors.New("Could not match corresponding ip for port : " + res.Error.Error())
 	}
 
 	pport := pgPort{}
 	res = pg.db.Where("ip_id = ?", pip.ID).First(&pport)
 	if res.Error != nil {
-		return errors.New("Could not corresponding ip for port : " + res.Error.Error())
+		return errors.New("Could not match corresponding ip for port : " + res.Error.Error())
 	}
 
 	uri.PortID = pport.ID
-	res = pg.db.Create(&uri)
+	res = pg.db.Where("port_id = ?", pport.ID).FirstOrCreate(&uri)
 	if res.Error != nil {
 		return res.Error
 	}
