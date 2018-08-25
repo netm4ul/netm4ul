@@ -81,6 +81,11 @@ var setupDatabaseCmd = &cobra.Command{
 		if err != nil {
 			log.Errorln("Could not setup the database : " + err.Error())
 		}
+
+		err = saveConfigFile()
+		if err != nil {
+			log.Fatal("Could not save the file : " + err.Error())
+		}
 	},
 }
 
@@ -91,6 +96,11 @@ var setupAPICmd = &cobra.Command{
 		err := setupAPI()
 		if err != nil {
 			log.Errorln("Could not setup the API : " + err.Error())
+		}
+
+		err = saveConfigFile()
+		if err != nil {
+			log.Fatal("Could not save the file : " + err.Error())
 		}
 	},
 }
@@ -103,6 +113,11 @@ var setupServerCmd = &cobra.Command{
 		if err != nil {
 			log.Errorln("Could not setup the Server : " + err.Error())
 		}
+
+		err = saveConfigFile()
+		if err != nil {
+			log.Fatal("Could not save the file : " + err.Error())
+		}
 	},
 }
 
@@ -114,6 +129,11 @@ var setupAlgorithmCmd = &cobra.Command{
 		if err != nil {
 			log.Errorln("Could not setup the Algorithm : " + err.Error())
 		}
+
+		err = saveConfigFile()
+		if err != nil {
+			log.Fatal("Could not save the file : " + err.Error())
+		}
 	},
 }
 
@@ -124,6 +144,11 @@ var setupTLSCmd = &cobra.Command{
 		err := setupAlgorithm()
 		if err != nil {
 			log.Errorln("Could not setup the Algorithm : " + err.Error())
+		}
+
+		err = saveConfigFile()
+		if err != nil {
+			log.Fatal("Could not save the file : " + err.Error())
 		}
 	},
 }

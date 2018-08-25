@@ -10,18 +10,15 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 
-	// pgdb "github.com/go-pg/pg"
-	// "github.com/go-pg/pg/orm"
-	// _ "github.com/lib/pq"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
 )
 
 /*
-* This adapters relies on the "pg" package and ORM.
-* "Models" are being extended in this package (file models.go)
- */
+ This adapters relies on the "pg" package and ORM.
+ "Models" are being extended in this package (file models.go)
+*/
 
 const DB_NAME = "netm4ul"
 
