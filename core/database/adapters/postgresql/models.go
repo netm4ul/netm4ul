@@ -1,9 +1,11 @@
 package postgresql
 
 import (
+	"net"
 	"time"
 
 	"github.com/go-pg/pg/orm"
+	"github.com/jinzhu/gorm"
 	"github.com/netm4ul/netm4ul/core/database/models"
 )
 
@@ -11,10 +13,16 @@ import (
 postgres model for Hop
 */
 type pgHop struct {
-	tableName struct{} `sql:"hops"`
-	models.Hop
-	Id   int
-	IPId int
+	gorm.Model
+	IP   net.IP
+	Max  float32
+	Min  float32
+	Avg  float32
+	IPId uint
+}
+
+func (pgHop) TableName() string {
+	return "hops"
 }
 
 func (p *pgHop) ToModel() models.Hop {
@@ -38,10 +46,14 @@ func (p *pgHop) FromModel(h models.Hop) {
 postgres model for Route
 */
 type pgRoute struct {
-	tableName struct{} `sql:"routes"`
-	models.Route
-	Id        int
-	ProjectId int
+	gorm.Model
+	Source      string
+	Destination string
+	ProjectID   uint
+}
+
+func (pgRoute) TableName() string {
+	return "routes"
 }
 
 func (p *pgRoute) ToModel() models.Route {
@@ -77,10 +89,16 @@ func (p *pgRoute) BeforeInsert(db orm.DB) error {
 	postgres model for URI
 */
 type pgURI struct {
-	tableName struct{} `sql:"uris"`
-	models.URI
-	Id   int
-	Port *pgPort // 1 to 1 relation
+	gorm.Model
+	Name string `gorm:"unique_index:idx_name_portid"`
+	Code string
+
+	PortID uint    `gorm:"unique_index:idx_name_portid"`
+	Port   *pgPort // 1 to 1 relation
+}
+
+func (pgURI) TableName() string {
+	return "uris"
 }
 
 func (p *pgURI) ToModel() models.URI {
@@ -113,20 +131,29 @@ func (p *pgURI) BeforeInsert(db orm.DB) error {
 }
 
 type portToType struct {
-	PortId     int
-	PorttypeId int
+	PortID     int
+	PorttypeID int
 }
 
 /*
 	postgres model for Port
 */
 type pgPort struct {
-	tableName struct{} `sql:"ports"`
-	models.Port
-	Id       int
-	IP       *pgIP
-	IPId     int
-	PortType *pgPortType `pg:",many2many:port_to_types"`
+	gorm.Model
+	// not using "inclusion" to simlify the models.Ports struct. But this fields MUST match.
+	Number   int16 `gorm:"unique_index:idx_number_ipid"`
+	Protocol string
+	Status   string
+	Banner   string
+	Type     string
+
+	IP       pgIP
+	IPId     uint         `gorm:"unique_index:idx_number_ipid"`
+	PortType []pgPortType `gorm:"many2many:port_to_types;"` // a single port can have multiple can have multiple type.
+}
+
+func (pgPort) TableName() string {
+	return "ports"
 }
 
 func (p *pgPort) ToModel() models.Port {
@@ -168,9 +195,13 @@ func (p *pgPort) BeforeInsert(db orm.DB) error {
 	postgres model for Port type
 */
 type pgPortType struct {
-	tableName struct{} `sql:"porttypes"`
-	models.PortType
-	Id int
+	gorm.Model
+	Type        string
+	Description string
+}
+
+func (pgPortType) TableName() string {
+	return "port_types"
 }
 
 func (p *pgPortType) ToModel() models.PortType {
@@ -206,11 +237,14 @@ func (p *pgPortType) BeforeInsert(db orm.DB) error {
 	postgres model for IP
 */
 type pgIP struct {
-	tableName struct{} `sql:"ips"`
-	models.IP
-	Id        int
-	ProjectId int
-	DomainId  int
+	gorm.Model
+	Value     string `gorm:"unique_index:idx_value_network_project"`
+	Network   string `sql:"default:'external'" gorm:"unique_index:idx_value_network_project"` // arbitrary value, default should be "external".
+	ProjectID uint   `gorm:"unique_index:idx_value_network_project"`
+}
+
+func (pgIP) TableName() string {
+	return "ips"
 }
 
 func (p *pgIP) ToModel() models.IP {
@@ -246,9 +280,13 @@ func (p *pgIP) BeforeInsert(db orm.DB) error {
 	postgres model for Network
 */
 type pgNetwork struct {
-	tableName struct{} `sql:"Networks"`
-	models.Network
-	Id int
+	gorm.Model
+	Name        string
+	Description string
+}
+
+func (pgNetwork) TableName() string {
+	return "networks"
 }
 
 func (p *pgNetwork) ToModel() models.Network {
@@ -281,7 +319,7 @@ func (p *pgNetwork) BeforeInsert(db orm.DB) error {
 }
 
 type domainToIps struct {
-	DomainId int
+	DomainID int
 	IPId     int
 }
 
@@ -289,10 +327,13 @@ type domainToIps struct {
 	postgres model for Domain
 */
 type pgDomain struct {
-	tableName struct{} `sql:"domains"`
-	models.Domain
-	Id int
-	IP []*pgIP `pg:",many2many:domain_to_ips"`
+	gorm.Model
+	Name string
+	IP   []pgIP `gorm:"many2many:domain_to_ips;"`
+}
+
+func (pgDomain) TableName() string {
+	return "domains"
 }
 
 func (p *pgDomain) ToModel() models.Domain {
@@ -326,10 +367,14 @@ func (p *pgDomain) BeforeInsert(db orm.DB) error {
 	postgres model for Project
 */
 type pgProject struct {
-	tableName struct{} `sql:"projects"`
-	models.Project
-	Id  int
-	IPS []*pgIP
+	gorm.Model
+	Name        string `gorm:"unique_index:idx_name"`
+	Description string
+	IPS         []*pgIP
+}
+
+func (pgProject) TableName() string {
+	return "projects"
 }
 
 func (p *pgProject) ToModel() models.Project {
@@ -362,18 +407,23 @@ func (p *pgProject) BeforeInsert(db orm.DB) error {
 }
 
 type userToProject struct {
-	UserId    int
-	ProjectId int
+	UserID    int
+	ProjectID int
 }
 
 /*
 	postgres model for User
 */
 type pgUser struct {
-	tableName struct{} `sql:"users"`
-	models.User
-	Id       int
-	Projects []*pgProject `pg:"many2many:user_to_projects"`
+	gorm.Model
+	Name     string `gorm:"unique_index:idx_name"`
+	Password string
+	Token    string
+	Projects []*pgProject `gorm:"many2many:user_to_projects;"`
+}
+
+func (pgUser) TableName() string {
+	return "users"
 }
 
 func (p *pgUser) ToModel() models.User {
@@ -411,10 +461,16 @@ func (p *pgUser) BeforeInsert(db orm.DB) error {
 	postgres model for Raw data
 */
 type pgRaw struct {
-	tableName struct{} `sql:"raws"`
-	models.Raw
-	Id      int
-	Project *pgProject
+	gorm.Model
+	Content    string
+	ModuleName string
+
+	ProjectID uint
+	Project   *pgProject
+}
+
+func (pgRaw) TableName() string {
+	return "raws"
 }
 
 func (p *pgRaw) ToModel() models.Raw {

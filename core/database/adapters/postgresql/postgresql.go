@@ -4,15 +4,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
+	"github.com/go-pg/pg/orm"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 
-	pgdb "github.com/go-pg/pg"
-	"github.com/go-pg/pg/orm"
-	_ "github.com/lib/pq"
+	// pgdb "github.com/go-pg/pg"
+	// "github.com/go-pg/pg/orm"
+	// _ "github.com/lib/pq"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,13 +28,14 @@ const DB_NAME = "netm4ul"
 // PostgreSQL is the structure representing this adapter
 type PostgreSQL struct {
 	cfg *config.ConfigToml
-	db  *pgdb.DB
+	db  *gorm.DB
 }
 
 func InitDatabase(c *config.ConfigToml) *PostgreSQL {
 	pg := PostgreSQL{}
 	pg.cfg = c
 	pg.Connect(c)
+	// pg.db.LogMode(true)
 	return &pg
 }
 
@@ -61,18 +64,18 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 
 	for _, model := range reqs {
 		log.Debugf("Creating table : %+v", model)
-		err := pg.db.CreateTable(model, &orm.CreateTableOptions{
+		pg.db.CreateTable(model, &orm.CreateTableOptions{
 			FKConstraints: true,
 			IfNotExists:   true,
 		})
-		if err != nil {
-			return errors.New("Could not create table : " + err.Error())
-		}
 	}
 	return nil
 }
 
 func (pg *PostgreSQL) createDb() error {
+
+	// uses default sql driver.
+	// It's easier to create the database that way.
 	log.Debug("Create database")
 	strConn := fmt.Sprintf("user=%s host=%s password=%s sslmode=disable",
 		pg.cfg.Database.User,
@@ -85,25 +88,21 @@ func (pg *PostgreSQL) createDb() error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
 		return err
 	}
+
 	// yep, configuration sqli, postgres limitation. cannot prepare this statement
 	_, err = db.Exec(fmt.Sprintf(`create database %s`, strings.ToLower(pg.cfg.Database.Database)))
 	db.Close()
 
-	pg.db = pgdb.Connect(&pgdb.Options{
-		Addr:     pg.cfg.Database.IP + ":" + strconv.Itoa(int(pg.cfg.Database.Port)),
-		User:     pg.cfg.Database.User,
-		Password: pg.cfg.Database.Password,
-		Database: pg.cfg.Database.Database,
-	})
-
+	// close before reconnection ?
+	pg.db.Close()
+	err = pg.Connect(pg.cfg)
 	if err != nil {
-		log.Error(err)
+		return errors.New("Could not connect to the newly created database : " + err.Error())
 	}
 
 	log.Debugf("Database '%s' created !", strings.ToLower(pg.cfg.Database.Database))
@@ -124,6 +123,8 @@ func (pg *PostgreSQL) DeleteDatabase() error {
 		pg.cfg.Database.IP,
 		pg.cfg.Database.Password,
 	)
+	// Ensure all connections are closed before dropping the table
+	pg.db.Close()
 
 	db, err := sql.Open("postgres", strConn)
 	log.Debugf("StrConn : %s", strConn)
@@ -166,17 +167,21 @@ func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 }
 
 func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
+	var err error
+	log.Debugf("Connecting  to the database")
+	strcon := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
+		c.Database.IP,
+		c.Database.Port,
+		c.Database.User,
+		strings.ToLower(c.Database.Database),
+		c.Database.Password,
+	)
+	pg.db, err = gorm.Open("postgres", strcon)
 
-	pg.db = pgdb.Connect(&pgdb.Options{
-		User:     c.Database.User,
-		Password: c.Database.Password,
-		Database: strings.ToLower(c.Database.Database),
-		Addr:     c.Database.IP + ":" + strconv.Itoa(int(c.Database.Port)),
-	})
-
-	if pg.db == nil {
-		return errors.New("Could not connect to the database : pg.db is nil")
+	if err != nil {
+		return errors.New("Could not connect to the database : " + err.Error())
 	}
+	log.Debugf("Connected to the database")
 
 	return nil
 }
@@ -186,7 +191,7 @@ func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 //TODO : refactor this.
 func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 
-	tmpUser, err := pg.GetUser(user.Name)
+	tmpUser, err := pg.getUser(user.Name)
 	if err != nil {
 		return errors.New("Could not get user : " + err.Error())
 	}
@@ -195,12 +200,13 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 	pguser := pgUser{}
 	pguser.FromModel(user)
 	log.Debugf("pguser : %+v", &pguser)
+	log.Debugf("user : %+v", &user)
 
 	//user doesn't exist, create it
 	if tmpUser.Name == "" {
-		err = pg.db.Insert(&pguser)
-		if err != nil {
-			return errors.New("Could not insert user in the database : " + err.Error())
+		res := pg.db.Create(&pguser)
+		if res.Error != nil {
+			return errors.New("Could not insert user in the database : " + res.Error.Error())
 		}
 		return nil
 	}
@@ -208,58 +214,65 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 	// update password
 	if pguser.Password != "" && tmpUser.Password != pguser.Password {
 		log.Debug("Updating password for user : ", pguser.Name)
-		_, err = pg.db.Model(&pguser).
-			Set("password = ?", pguser.Password).
-			Where("name = ?", pguser.Name).
-			Returning("*").
-			Update()
-
-		if err != nil {
-			return errors.New("Couln't update user's password : " + err.Error())
-		}
+		tmpUser.Password = pguser.Password
 	}
 
-	// update token
+	//if the in-database user doesn't have a token, create one : it might be a security issues without one.
+	if tmpUser.Token == "" {
+		tmpUser.Token = models.GenerateNewToken()
+	}
+
 	if pguser.Token != "" && tmpUser.Token != pguser.Token {
 		log.Debug("Updating token for user : ", pguser.Name)
-		_, err = pg.db.Model(&pguser).
-			Set("token = ?", pguser.Token).
-			Where("name = ?", pguser.Name).
-			Returning("*").
-			Update()
+		tmpUser.Token = pguser.Token
+	}
 
-		if err != nil {
-			return errors.New("Couln't update user's token : " + err.Error())
-		}
+	log.Debugf("Writing tmp user : %+v", tmpUser)
+	res := pg.db.Model(&tmpUser).Update(&tmpUser)
+
+	if res.Error != nil {
+		return errors.New("Could not update user : " + res.Error.Error())
 	}
 	return nil
 }
 
-func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
+func (pg *PostgreSQL) getUser(username string) (pgUser, error) {
 
 	pguser := pgUser{}
-	err := pg.db.Model(&pguser).Where("name = ?", username).Select()
+	res := pg.db.Where("name = ?", username).First(&pguser)
 
-	user := pguser.ToModel()
 	// Accept empty rows !
-	if err != nil && err != pgdb.ErrNoRows {
-		return user, errors.New("Could not get user by name : " + err.Error())
+	if res.Error != nil && !gorm.IsRecordNotFoundError(res.Error) {
+		return pgUser{}, errors.New("Could not get user by name : " + res.Error.Error())
 	}
-	return user, nil
+	return pguser, nil
+}
+
+func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
+	pguser, err := pg.getUser(username)
+	if err != nil {
+		return models.User{}, err
+	}
+	return pguser.ToModel(), err
+}
+
+func (pg *PostgreSQL) getUserByToken(token string) (pgUser, error) {
+
+	pguser := pgUser{}
+	res := pg.db.Where("token = ?", token).First(&pguser)
+	// Accept empty rows !
+	if res.Error != nil && !gorm.IsRecordNotFoundError(res.Error) {
+		return pgUser{}, errors.New("Could not get user by token : " + res.Error.Error())
+	}
+	return pguser, nil
 }
 
 func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
-
-	pguser := pgUser{}
-	err := pg.db.Model(&pguser).Where("token = ?", token).Select()
-
-	user := pguser.ToModel()
-
+	pguser, err := pg.getUserByToken(token)
 	if err != nil {
-		return user, errors.New("Could not get user by token from the database : " + err.Error())
+		return models.User{}, err
 	}
-
-	return user, nil
+	return pguser.ToModel(), err
 }
 
 /*
@@ -278,9 +291,9 @@ func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
 
 //DeleteUser remove the user from the database (using its ID)
 func (pg *PostgreSQL) DeleteUser(user models.User) error {
-	err := pg.db.Delete(user)
-	if err != nil {
-		return errors.New("Could not delete user from the database : " + err.Error())
+	res := pg.db.Delete(user)
+	if res.Error != nil {
+		return errors.New("Could not delete user from the database : " + res.Error.Error())
 	}
 	return nil
 }
@@ -289,24 +302,26 @@ func (pg *PostgreSQL) DeleteUser(user models.User) error {
 func (pg *PostgreSQL) createOrUpdateProject(project pgProject) error {
 	var p pgProject
 
-	err := pg.db.Model(&p).Where("name = ?", project.Name).Select()
+	res := pg.db.Where("name = ?", project.Name).Find(&p)
+
 	// The project doesn't exist yet
-	if err == pgdb.ErrNoRows {
-		err := pg.db.Insert(&project)
-		if err != nil {
-			return errors.New("Could not insert project : " + err.Error())
+	if gorm.IsRecordNotFoundError(res.Error) {
+		res := pg.db.Create(&project)
+		if res.Error != nil {
+			return errors.New("Could not insert project : " + res.Error.Error())
 		}
 		return nil
 	}
 
 	// handle other errors
-	if err != nil {
-		return errors.New("Could not select project : " + err.Error())
+	if res.Error != nil {
+		return errors.New("Could not select project : " + res.Error.Error())
 	}
+
 	// update if the project was found
-	_, err = pg.db.Model(&project).Where("name = ?", project.Name).Returning("*").Update()
-	if err != nil {
-		return errors.New("Could not save project in the database :" + err.Error())
+	res = pg.db.Model(&project).Where("name = ?", project.Name).Update(project)
+	if res.Error != nil {
+		return errors.New("Could not save project in the database :" + res.Error.Error())
 	}
 
 	return nil
@@ -327,10 +342,9 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 
 func (pg *PostgreSQL) getProjects() ([]pgProject, error) {
 	var projects []pgProject
-
-	err := pg.db.Model(&projects).Select()
-	if err != nil {
-		return nil, errors.New("Could not select projects : " + err.Error())
+	res := pg.db.Find(&projects)
+	if res.Error != nil {
+		return nil, errors.New("Could not select projects : " + res.Error.Error())
 	}
 
 	return projects, nil
@@ -354,9 +368,9 @@ func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
 func (pg *PostgreSQL) getProject(projectName string) (pgProject, error) {
 	var project pgProject
 
-	err := pg.db.Model(&project).Where("name = ?", projectName).First()
-	if err != nil {
-		return project, errors.New("Could not select project : " + err.Error())
+	res := pg.db.Where("name = ?", projectName).Find(&project)
+	if res.Error != nil {
+		return project, errors.New("Could not select project : " + res.Error.Error())
 	}
 
 	return project, nil
@@ -374,10 +388,17 @@ func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 // IP
 func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 	log.Debugf("Inserting ip : %+v", ip)
-	err := pg.db.Insert(&ip)
 
+	proj, err := pg.getProject(projectName)
 	if err != nil {
-		return errors.New("Could not save ip in the database :" + err.Error())
+		return errors.New("Could not find corresponding project for ip :" + err.Error())
+	}
+
+	ip.ProjectID = proj.ID
+
+	res := pg.db.Create(&ip)
+	if res.Error != nil {
+		return errors.New("Could not save ip in the database :" + res.Error.Error())
 	}
 	return nil
 }
@@ -425,11 +446,11 @@ func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) err
 func (pg *PostgreSQL) getIPs(projectName string) ([]pgIP, error) {
 
 	pgips := []pgIP{}
-	err := pg.db.Model(&pgips).
+	res := pg.db.
 		Where("projects.name = ?", projectName).
-		Select()
-	if err != nil {
-		return nil, errors.New("Could not get IPs : " + err.Error())
+		Find(&pgips)
+	if res.Error != nil {
+		return nil, errors.New("Could not get IPs : " + res.Error.Error())
 	}
 
 	return pgips, nil
@@ -454,16 +475,16 @@ func (pg *PostgreSQL) GetIPs(projectName string) ([]models.IP, error) {
 func (pg *PostgreSQL) getIP(projectName string, ip string) (pgIP, error) {
 
 	pgip := pgIP{}
-	err := pg.db.Model(&pgip).
+	res := pg.db.
 		Where("projects.name = ?", projectName).
 		Where("ips.value = ?", ip).
-		Select()
+		Find(&pgip)
 
-	if err == sql.ErrNoRows {
+	if gorm.IsRecordNotFoundError(res.Error) {
 		return pgIP{}, nil
 	}
-	if err != nil {
-		return pgIP{}, errors.New("Could not get IP : " + err.Error())
+	if res.Error != nil {
+		return pgIP{}, errors.New("Could not get IP : " + res.Error.Error())
 	}
 
 	return pgip, nil
@@ -481,9 +502,9 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 // Domain
 func (pg *PostgreSQL) createOrUpdateDomain(projectName string, domain pgDomain) error {
 
-	err := pg.db.Insert(&domain)
-	if err != nil {
-		return errors.New("Could not save or update domain : " + err.Error())
+	res := pg.db.Create(&domain)
+	if res.Error != nil {
+		return errors.New("Could not save or update domain : " + res.Error.Error())
 	}
 
 	return nil
@@ -531,11 +552,11 @@ func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models
 
 func (pg *PostgreSQL) getDomains(projectName string) ([]pgDomain, error) {
 	domains := []pgDomain{}
-	err := pg.db.Model(&domains).
+	res := pg.db.
 		Where("projects.name = ?", projectName).
-		Select()
-	if err != nil {
-		return nil, errors.New("Could not get domains : " + err.Error())
+		Find(&domains)
+	if res.Error != nil {
+		return nil, errors.New("Could not get domains : " + res.Error.Error())
 	}
 
 	return domains, nil
@@ -558,13 +579,12 @@ func (pg *PostgreSQL) GetDomains(projectName string) ([]models.Domain, error) {
 func (pg *PostgreSQL) getDomain(projectName string, domainName string) (pgDomain, error) {
 	domain := pgDomain{}
 
-	err := pg.db.Model(&domain).
+	res := pg.db.
 		Where("projects.name = ?", projectName).
 		Where("domains.name = ?", domainName).
-		Select()
-
-	if err != nil {
-		return pgDomain{}, errors.New("Could not get domain : " + err.Error())
+		Find(&domain)
+	if res.Error != nil {
+		return pgDomain{}, errors.New("Could not get domain : " + res.Error.Error())
 	}
 
 	return domain, nil
@@ -580,10 +600,25 @@ func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.D
 }
 
 // Port
+
+// TOFIX : doing an actual join/relation insert instead of 3 f requests
 func (pg *PostgreSQL) createOrUpdatePort(projectName string, ip string, port pgPort) error {
-	err := pg.db.Insert(&port)
-	if err != nil {
-		return errors.New("Could not create or update port : " + err.Error())
+	proj := pgProject{}
+	res := pg.db.Where("name = ?", projectName).First(&proj)
+	if res.Error != nil {
+		return errors.New("Could not corresponding project for port : " + res.Error.Error())
+	}
+
+	pip := pgIP{}
+	res = pg.db.Where("value = ?", ip).Where("project_id = ?", proj.ID).First(&pip)
+	if res.Error != nil {
+		return errors.New("Could not corresponding ip for port : " + res.Error.Error())
+	}
+
+	port.IPId = pip.ID
+	res = pg.db.Create(&port)
+	if res.Error != nil {
+		return errors.New("Could not create or update port : " + res.Error.Error())
 	}
 	return nil
 }
@@ -626,9 +661,11 @@ func (pg *PostgreSQL) getPorts(projectName string, ip string) ([]pgPort, error) 
 
 	ports := []pgPort{}
 
-	err := pg.db.Model(&ports).Where("ips.value = ?", ip).Select()
-	if err != nil {
-		return nil, errors.New("Could not get ports : " + err.Error())
+	res := pg.db.
+		Where("ips.value = ?", ip).
+		Find(&ports)
+	if res.Error != nil {
+		return nil, errors.New("Could not get ports : " + res.Error.Error())
 	}
 
 	return ports, nil
@@ -650,13 +687,13 @@ func (pg *PostgreSQL) GetPorts(projectName string, ip string) ([]models.Port, er
 
 func (pg *PostgreSQL) getPort(projectName string, ip string, port string) (pgPort, error) {
 	var p pgPort
-	err := pg.db.Model(&p).
+	res := pg.db.
 		Where("ips.value = ?", ip).
 		Where("ports.number = ?", port).
-		Select()
+		Find(&p)
 
-	if err != nil {
-		return p, errors.New("Could not get port : " + err.Error())
+	if res.Error != nil {
+		return p, errors.New("Could not get port : " + res.Error.Error())
 	}
 
 	return p, nil
@@ -671,10 +708,29 @@ func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (model
 
 // URI (directory and files)
 func (pg *PostgreSQL) createOrUpdateURI(projectName string, ip string, port string, uri pgURI) error {
-	//TOFIX
-	err := pg.db.Insert(&uri)
-	if err != nil {
-		return err
+	//TOFIX : do real join / relation / whatever. Stop doing 4 request.
+	proj := pgProject{}
+	res := pg.db.Where("name = ?", projectName).First(&proj)
+	if res.Error != nil {
+		return errors.New("Could not corresponding project for port : " + res.Error.Error())
+	}
+
+	pip := pgIP{}
+	res = pg.db.Where("value = ?", ip).Where("project_id = ?", proj.ID).First(&pip)
+	if res.Error != nil {
+		return errors.New("Could not corresponding ip for port : " + res.Error.Error())
+	}
+
+	pport := pgPort{}
+	res = pg.db.Where("ip_id = ?", pip.ID).First(&pport)
+	if res.Error != nil {
+		return errors.New("Could not corresponding ip for port : " + res.Error.Error())
+	}
+
+	uri.PortID = pport.ID
+	res = pg.db.Create(&uri)
+	if res.Error != nil {
+		return res.Error
 	}
 	return nil
 }
@@ -722,12 +778,12 @@ func (pg *PostgreSQL) getURIs(projectName string, ip string, port string) ([]pgU
 
 	uris := []pgURI{}
 
-	err := pg.db.Model(&uris).
+	res := pg.db.
 		Where("ips.value = ?", ip).
 		Where("ports.number = ?", port).
-		Select()
-	if err != nil {
-		return uris, errors.New("Could not get URIs : " + err.Error())
+		Find(&uris)
+	if res.Error != nil {
+		return uris, errors.New("Could not get URIs : " + res.Error.Error())
 	}
 
 	return nil, nil
@@ -751,13 +807,13 @@ func (pg *PostgreSQL) getURI(projectName string, ip string, port string, dir str
 
 	uri := pgURI{}
 
-	err := pg.db.Model(&uri).
+	res := pg.db.
 		Where("ips.value = ?", ip).
 		Where("ports.number = ?", port).
-		Select()
+		First(&uri)
 
-	if err != nil {
-		return pgURI{}, errors.New("Could not get URIs : " + err.Error())
+	if res.Error != nil {
+		return pgURI{}, errors.New("Could not get URIs : " + res.Error.Error())
 	}
 
 	return uri, nil
@@ -775,9 +831,9 @@ func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir str
 
 // Raw data
 func (pg *PostgreSQL) appendRawData(projectName string, raw pgRaw) error {
-	err := pg.db.Insert(&raw)
-	if err != nil {
-		return errors.New("Could not insert raw : " + err.Error())
+	res := pg.db.Create(&raw)
+	if res.Error != nil {
+		return errors.New("Could not insert raw : " + res.Error.Error())
 	}
 	return nil
 }
@@ -796,9 +852,9 @@ func (pg *PostgreSQL) getRaws(projectName string) ([]pgRaw, error) {
 
 	raws := []pgRaw{}
 
-	err := pg.db.Model(&raws).Select()
-	if err != nil {
-		return nil, errors.New("Could not get raw : " + err.Error())
+	res := pg.db.Find(raws)
+	if res.Error != nil {
+		return nil, errors.New("Could not get raws : " + res.Error.Error())
 	}
 
 	return raws, nil
@@ -821,10 +877,13 @@ func (pg *PostgreSQL) GetRaws(projectName string) ([]models.Raw, error) {
 
 func (pg *PostgreSQL) getRawModule(projectName string, moduleName string) (map[string][]pgRaw, error) {
 	raws := []pgRaw{}
-	err := pg.db.Model(raws).Where("raws.name = ?", projectName).Where("raws.moduleName = ?", moduleName).Select()
+	res := pg.db.
+		Where("raws.name = ?", projectName).
+		Where("raws.moduleName = ?", moduleName).
+		Find(&raws)
 
-	if err != nil {
-		return nil, errors.New("Could not get raw by module : " + err.Error())
+	if res.Error != nil {
+		return nil, errors.New("Could not get raw by module : " + res.Error.Error())
 	}
 	var mapOfListOfRaw map[string][]pgRaw
 	mapOfListOfRaw = make(map[string][]pgRaw)
