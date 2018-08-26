@@ -24,7 +24,7 @@ You will need docker-compose to simplify the launch of all parts of the applicat
 ```
 git clone https://github.com/netm4ul/netm4ul
 cd netm4ul
-vim netm4ul.conf # change the credentials (db, api, etc...
+vim netm4ul.conf # change the credentials (db, api, etc...)
 docker-compose up --build # you can add the "-d" option to detach your terminal, but you will need to "docker log" to see dev traces
 ```
 
@@ -51,7 +51,7 @@ Optionnal database:
 - [PostgreSQL database](https://www.postgresql.org/)
 
 ```
-# ensure the database is running if you plan to use one.
+# !!! ensure the database is running if you plan to use one. !!!
 
 ./netm4ul setup # It will help setup all the things.
 
@@ -62,7 +62,6 @@ Optionnal database:
 
 ./netm4ul run <somedomain,ip,ip range(CIDR)>
 ```
-
 
 ### CLI
 
@@ -104,9 +103,12 @@ Use "netm4ul [command] --help" for more information about a command.
 
 ```
 
-You can use -h on every subcommands.
+You can use `-h` or `--help` on every subcommands.
 
 ## Structure
+
+The general architecture of Netm4ul looks like this :
+![general architecture schema](documentations/schema/general.png?raw=true)
 
 ### Core
 
@@ -151,15 +153,14 @@ You can enable/disable each modules directly in the config file.
 
 We currently support `nmap`, `masscan`, `traceroute` recon modules. `dns`, `shodan` are WIP and should soon be added.
 
-#### Report 
+#### Report
 
-One report mode is available. More a to come. We aime to provides :
+One report mode is available. More a to come. We aim to provides :
 
 - [ ] Textual reports
 - [ ] PDF
 - [ ] Docs
 - [ ] HTML
-
 
 ### Database
 
@@ -174,7 +175,6 @@ We currently support : `PostgreSQL`, storing to JSON file (`JsonDB` adapter) and
 The support for `MongoDB` is wanted but will need help to support it.
 
 You can create a new adapters using the `netm4ul create adapter` command. It will generate all the boiler plate and place all the code in the good place. For more information see Developers.
-
 
 #### PostgreSQL
 
@@ -200,6 +200,9 @@ You can run tests by running `make test`.
 
 If you want to write a new module (Recon, Report, Exploit) or a new database adapter, you should use the command `netm4ul create`.
 It will generate all the boilerplate needed to efficiently write new code.
+
+For more information, follow the [CONTRIBUTING.md](https://github.com/netm4ul/netm4ul/blob/develop/CONTRIBUTING.md)
+
 
 ## Contributting
 
