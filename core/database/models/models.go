@@ -24,41 +24,41 @@ type Hop struct {
 
 // Route defines the route from the host (netm4ul client) to the target
 type Route struct {
-	Source      string `json:"source,omitempty" bson:"Source"`
-	Destination string `json:"destination,omitempty" bson:"Destination"`
+	Source      string `json:"source,omitempty"`
+	Destination string `json:"destination,omitempty"`
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // URI defines one ressource from a remote target (webserver), either files or directory
 type URI struct {
-	Name string `json:"name" bson:"Name"`
-	Code string `json:"code,omitempty" bson:"Code,omitempty"`
+	Name string `json:"name"`
+	Code string `json:"code,omitempty"`
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Port defines the basic structure for each port scanned on the target
 type Port struct {
-	Number   int16  `json:"number,omitempty" bson:"Number"`
-	Protocol string `json:"protocol,omitempty" bson:"Protocol"`
-	Status   string `json:"status,omitempty" bson:"Status"` // open, filtered, closed
-	Banner   string `json:"banner,omitempty" bson:"Banner,omitempty"`
-	Type     string `json:"type,omitempty" bson:"Type,omitempty"`
+	Number   int16  `json:"number,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+	Status   string `json:"status,omitempty"` // open, filtered, closed
+	Banner   string `json:"banner,omitempty"`
+	Type     string `json:"type,omitempty"`
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 //IP defines the IP address of a target.
 type IP struct {
-	Value   string `json:"value,omitempty" bson:"Value" gorm:"primary_key"` // should be net.IP, but can't enforce that in the db...
-	Network string `sql:"default:'external'" gorm:"primary_key"`            // arbitrary value, default should be "external".
+	Value   string `json:"value,omitempty" gorm:"primary_key"`   // should be net.IP, but can't enforce that in the db...
+	Network string `sql:"default:'external'" gorm:"primary_key"` // arbitrary value, default should be "external".
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 //Network represent the network used by one IP.
@@ -67,48 +67,48 @@ type Network struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 //Domain defines the Domain address of a target.
 type Domain struct {
-	Name string `json:"name,omitempty" bson:"Name"`
+	Name string `json:"name,omitempty"`
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	Name        string `json:"name" bson:"Name" sql:",unique"`
-	Description string `json:"description" bson:"Description,omitempty"`
+	Name        string `json:"name" sql:",unique"`
+	Description string `json:"description"`
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type User struct {
-	Name     string `json:"name" bson:"Name" sql:",unique"`
+	Name     string `json:"name" sql:",unique"`
 	Password string `json:"password,omitempty"`
 	Token    string `json:"token,omitempty" toml:"token"`
 
-	CreatedAt time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PortType struct {
 	Type        string
 	Description string
-	CreatedAt   time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt   time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type Raw struct {
 	Content    string
 	ModuleName string
-	CreatedAt  time.Time `json:"created_at" bson:"CreatedAt,omitempty"`
-	UpdatedAt  time.Time `json:"updated_at" bson:"UpdatedAt,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 //GenerateNewToken return a new random token string
