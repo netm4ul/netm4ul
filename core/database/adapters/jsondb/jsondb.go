@@ -502,6 +502,10 @@ func (f *JsonDB) GetProject(projectName string) (models.Project, error) {
 	return project.ToModel(), nil
 }
 
+func (f *JsonDB) DeleteProject(project models.Project) error {
+	return errors.New("Not implemented yet")
+}
+
 // IP
 
 //CreateOrUpdateIP add an ip to a project if it doesn't already exist.
@@ -613,6 +617,10 @@ func (f *JsonDB) GetIP(projectName string, ip string) (models.IP, error) {
 	return ipJson.ToModel(), nil
 }
 
+func (f *JsonDB) DeleteIP(ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
 // Domain
 func (f *JsonDB) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
 	return errors.New("Not implemented yet")
@@ -628,6 +636,10 @@ func (f *JsonDB) GetDomains(projectName string) ([]models.Domain, error) {
 
 func (f *JsonDB) GetDomain(projectName string, domain string) (models.Domain, error) {
 	return models.Domain{}, errors.New("Not implemented yet")
+}
+
+func (f *JsonDB) DeleteDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
 }
 
 // Port
@@ -730,6 +742,10 @@ func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Por
 	return p.ToModel(), nil
 }
 
+func (f *JsonDB) DeletePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
+}
+
 // URI (directory and files)
 
 //CreateOrUpdateURI will get all the corresponding uri for a given ip, port and project combo
@@ -806,6 +822,10 @@ func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) 
 		}
 	}
 	return models.URI{}, nil
+}
+
+func (f *JsonDB) DeleteURI(projectName string, ip string, port string, dir models.URI) error {
+	return errors.New("Not implemented yet")
 }
 
 // Raw data

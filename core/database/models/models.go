@@ -138,30 +138,35 @@ type Database interface {
 	CreateOrUpdateProject(Project) error
 	GetProjects() ([]Project, error)
 	GetProject(projectName string) (Project, error)
+	DeleteProject(project Project) error
 
 	// IP
 	CreateOrUpdateIP(projectName string, ip IP) error
 	CreateOrUpdateIPs(projectName string, ip []IP) error
 	GetIPs(projectName string) ([]IP, error)
 	GetIP(projectName string, ip string) (IP, error)
+	DeleteIP(ip IP) error
 
 	// Domain
 	CreateOrUpdateDomain(projectName string, domain Domain) error
 	CreateOrUpdateDomains(projectName string, domain []Domain) error
 	GetDomains(projectName string) ([]Domain, error)
 	GetDomain(projectName string, domain string) (Domain, error)
+	DeleteDomain(projectName string, domain Domain) error
 
 	// Port
 	CreateOrUpdatePort(projectName string, ip string, port Port) error
 	CreateOrUpdatePorts(projectName string, ip string, port []Port) error
 	GetPorts(projectName string, ip string) ([]Port, error)
 	GetPort(projectName string, ip string, port string) (Port, error)
+	DeletePort(projectName string, ip string, port Port) error
 
 	// URI (directory and files)
 	CreateOrUpdateURI(projectName string, ip string, port string, dir URI) error
 	CreateOrUpdateURIs(projectName string, ip string, port string, dir []URI) error
 	GetURIs(projectName string, ip string, port string) ([]URI, error)
 	GetURI(projectName string, ip string, port string, dir string) (URI, error)
+	DeleteURI(projectName string, ip string, port string, dir URI) error
 
 	// Raw data
 	AppendRawData(projectName string, data Raw) error

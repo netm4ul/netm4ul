@@ -382,6 +382,10 @@ func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 	return p.ToModel(), nil
 }
 
+func (pg *PostgreSQL) DeleteProject(project models.Project) error {
+	return errors.New("Not implemented yet")
+}
+
 // IP
 func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 	log.Debugf("Inserting ip : %+v", ip)
@@ -505,6 +509,10 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 	return pgip.ToModel(), nil
 }
 
+func (pg *PostgreSQL) DeleteIP(ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
 // Domain
 func (pg *PostgreSQL) createOrUpdateDomain(projectName string, domain pgDomain) error {
 	project := pgProject{}
@@ -614,6 +622,10 @@ func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.D
 	}
 
 	return d.ToModel(), nil
+}
+
+func (pg *PostgreSQL) DeleteDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
 }
 
 // Port
@@ -740,6 +752,10 @@ func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (model
 	return pgp.ToModel(), nil
 }
 
+func (pg *PostgreSQL) DeletePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
+}
+
 // URI (directory and files)
 func (pg *PostgreSQL) createOrUpdateURI(projectName string, ip string, port string, uri pgURI) error {
 	//TOFIX : do real join / relation / whatever. Stop doing 4 request.
@@ -861,6 +877,10 @@ func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir str
 	}
 
 	return uri.ToModel(), err
+}
+
+func (pg *PostgreSQL) DeleteURI(projectName string, ip string, port string, dir models.URI) error {
+	return errors.New("Not implemented yet")
 }
 
 // Raw data

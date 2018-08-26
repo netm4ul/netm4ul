@@ -111,6 +111,10 @@ func (test *Test) GetProject(projectName string) (models.Project, error) {
 	return models.Project{}, errors.New("Could not get project " + projectName)
 }
 
+func (test *Test) DeleteProject(project models.Project) error {
+	return errors.New("Not implemented yet")
+}
+
 // IP
 func (test *Test) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	return nil
@@ -128,6 +132,10 @@ func (test *Test) GetIP(projectName string, ip string) (models.IP, error) {
 	return tests.NormalIPs[0], nil
 }
 
+func (test *Test) DeleteIP(ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
 // Domain
 func (test *Test) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
 	return errors.New("Not implemented yet")
@@ -143,6 +151,10 @@ func (test *Test) GetDomains(projectName string) ([]models.Domain, error) {
 
 func (test *Test) GetDomain(projectName string, domain string) (models.Domain, error) {
 	return models.Domain{}, errors.New("Not implemented yet")
+}
+
+func (test *Test) DeleteDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
 }
 
 // Port
@@ -172,6 +184,10 @@ func (test *Test) GetPort(projectName string, ip string, port string) (models.Po
 	return models.Port{}, errors.New("Port not found")
 }
 
+func (test *Test) DeletePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
+}
+
 // URI (directory and files)
 func (test *Test) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
 	return nil
@@ -197,6 +213,10 @@ func (test *Test) GetURI(projectName string, ip string, port string, uri string)
 		}
 	}
 	return models.URI{}, errors.New("Uri not found")
+}
+
+func (test *Test) DeleteURI(projectName string, ip string, port string, dir models.URI) error {
+	return errors.New("Not implemented yet")
 }
 
 // Raw data
