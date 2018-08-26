@@ -319,9 +319,9 @@ func setupDB() error {
 	CLISession.Config.Database.Password = prompt("dbpassword")
 	CLISession.Config.Database.Database = prompt("dbname")
 
-	db := database.NewDatabase(&CLISession.Config)
-	if db == nil {
-		return errors.New("Could not create the database session")
+	db, err := database.NewDatabase(&CLISession.Config)
+	if err != nil || db == nil {
+		return errors.New("Could not create the database session : " + err.Error())
 	}
 
 	deldb := prompt("dbdel")
@@ -369,11 +369,14 @@ func setupAPI() error {
 	if createBool {
 		CLISession.Config.API.User = prompt("apiuser")
 		password := prompt("apipassword")
-		db := database.NewDatabase(&CLISession.Config)
+		db, err := database.NewDatabase(&CLISession.Config)
+		if err != nil || db == nil {
+			return errors.New("Could not create the database session : " + err.Error())
+		}
 		now := time.Now()
 		user := models.User{Name: CLISession.Config.API.User, Password: password, CreatedAt: now, UpdatedAt: now}
 
-		err := db.CreateOrUpdateUser(user)
+		err = db.CreateOrUpdateUser(user)
 		if err != nil {
 			return errors.New("Could not create user : " + err.Error())
 		}

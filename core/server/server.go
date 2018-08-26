@@ -30,7 +30,11 @@ type Server struct {
 // CreateServer : Initialise the infinite server loop on the master node
 func CreateServer(s *session.Session) *Server {
 	server := Server{Session: s}
-	server.Db = database.NewDatabase(&server.Session.Config)
+	db, err := database.NewDatabase(&server.Session.Config)
+	if err != nil || db == nil {
+		panic(err)
+	}
+	server.Db = db
 
 	server.Session.Nodes = make([]communication.Node, 0)
 	server.Session.Config.Modules = make(map[string]config.Module)

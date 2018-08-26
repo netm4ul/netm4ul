@@ -12,6 +12,7 @@ func (pg *PostgreSQL) createOrUpdateDomain(projectName string, domain pgDomain) 
 	if res.Error != nil {
 		return errors.New("Could not find assiociated projet : " + res.Error.Error())
 	}
+
 	res = pg.db.Where("project_id", project.ID).Where("name = ?", domain.Name).FirstOrInit(&domain)
 	if res.Error != nil {
 		return errors.New("Could not save or update domain : " + res.Error.Error())

@@ -35,7 +35,10 @@ func NewReport() *Text {
 	}
 
 	t.cfg = cfg
-	t.DB = database.NewDatabase(&t.cfg)
+	t.DB, err = database.NewDatabase(&t.cfg)
+	if err != nil || t.DB == nil {
+		panic(err)
+	}
 
 	t.funcs = template.FuncMap{
 		"Center": func(text string) string {
