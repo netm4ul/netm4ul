@@ -448,9 +448,13 @@ func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) err
 func (pg *PostgreSQL) getIPs(projectName string) ([]pgIP, error) {
 
 	pgips := []pgIP{}
-	res := pg.db.
-		Where("projects.name = ?", projectName).
-		Find(&pgips)
+	res := pg.db.Raw(`
+	SELECT ips.* FROM "ips","projects"
+		WHERE "ips"."deleted_at" IS NULL
+		AND ips.project_id = projects.id
+		AND ((projects.name = ?))
+	`, projectName).Scan(&pgips)
+
 	if res.Error != nil {
 		return nil, errors.New("Could not get IPs : " + res.Error.Error())
 	}
@@ -558,9 +562,16 @@ func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models
 
 func (pg *PostgreSQL) getDomains(projectName string) ([]pgDomain, error) {
 	domains := []pgDomain{}
-	res := pg.db.
-		Where("projects.name = ?", projectName).
-		Find(&domains)
+
+	res := pg.db.Raw(`
+	SELECT domains.name
+		FROM domains, domain_to_ips, ips, projects
+		WHERE projects.name = ?
+		AND domain_to_ips.pg_domain_id = domains.id
+		AND domain_to_ips.pg_ip_id = ips.id
+		`,
+		projectName,
+	).Scan(&domains)
 	if res.Error != nil {
 		return nil, errors.New("Could not get domains : " + res.Error.Error())
 	}
@@ -622,7 +633,11 @@ func (pg *PostgreSQL) createOrUpdatePort(projectName string, ip string, port pgP
 	}
 
 	port.IPId = pip.ID
-	res = pg.db.Where("ip_id = ?", pip.ID).FirstOrCreate(&port)
+	res = pg.db.
+		Where("ip_id = ?", pip.ID).
+		Where("number = ?", port.Number).
+		Where("protocol = ?", port.Protocol).
+		FirstOrCreate(&port)
 	if res.Error != nil {
 		return errors.New("Could not create or update port : " + res.Error.Error())
 	}
@@ -653,6 +668,7 @@ func (pg *PostgreSQL) createOrUpdatePorts(projectName string, ip string, ports [
 
 func (pg *PostgreSQL) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
 	for _, port := range ports {
+		log.Debugf("=========== insert Port : \n %+v\n================", port)
 		pgp := pgPort{}
 		pgp.FromModel(port)
 		err := pg.createOrUpdatePort(projectName, ip, pgp)
@@ -666,10 +682,15 @@ func (pg *PostgreSQL) CreateOrUpdatePorts(projectName string, ip string, ports [
 func (pg *PostgreSQL) getPorts(projectName string, ip string) ([]pgPort, error) {
 
 	ports := []pgPort{}
-
-	res := pg.db.
-		Where("ips.value = ?", ip).
-		Find(&ports)
+	res := pg.db.Raw(`
+	SELECT ports.*
+		FROM ports, ips, projects
+		WHERE projects.name = ?
+		AND ips.value = ?
+		AND ports.ip_id = ips.id`,
+		projectName,
+		ip,
+	).Scan(&ports)
 	if res.Error != nil {
 		return nil, errors.New("Could not get ports : " + res.Error.Error())
 	}
@@ -693,10 +714,17 @@ func (pg *PostgreSQL) GetPorts(projectName string, ip string) ([]models.Port, er
 
 func (pg *PostgreSQL) getPort(projectName string, ip string, port string) (pgPort, error) {
 	var p pgPort
-	res := pg.db.
-		Where("ips.value = ?", ip).
-		Where("ports.number = ?", port).
-		Find(&p)
+	res := pg.db.Raw(`
+	SELECT ports.*
+		FROM ports, ips, projects
+		WHERE projects.name = ?
+		AND ips.value = ?
+		AND ports.ip_id = ips.id
+		AND ports.number = ?`,
+		projectName,
+		ip,
+		port,
+	).Scan(&p)
 
 	if res.Error != nil {
 		return p, errors.New("Could not get port : " + res.Error.Error())

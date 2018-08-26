@@ -135,20 +135,24 @@ type portToType struct {
 	PorttypeID int
 }
 
+func (portToType) TableName() string {
+	return "port_to_types"
+}
+
 /*
 	postgres model for Port
 */
 type pgPort struct {
 	gorm.Model
 	// not using "inclusion" to simlify the models.Ports struct. But this fields MUST match.
-	Number   int16 `gorm:"unique_index:idx_number_ipid"`
-	Protocol string
+	Number   int16  `gorm:"unique_index:idx_number_protocol_ipid"`
+	Protocol string `gorm:"unique_index:idx_number_protocol_ipid"`
 	Status   string
 	Banner   string
 	Type     string
 
 	IP       pgIP
-	IPId     uint         `gorm:"unique_index:idx_number_ipid"`
+	IPId     uint         `gorm:"unique_index:idx_number_protocol_ipid"`
 	PortType []pgPortType `gorm:"many2many:port_to_types;"` // a single port can have multiple can have multiple type.
 }
 
@@ -241,6 +245,7 @@ type pgIP struct {
 	Value     string `gorm:"unique_index:idx_value_network_project"`
 	Network   string `sql:"default:'external'" gorm:"unique_index:idx_value_network_project"` // arbitrary value, default should be "external".
 	ProjectID uint   `gorm:"unique_index:idx_value_network_project"`
+	Project   pgProject
 }
 
 func (pgIP) TableName() string {
@@ -321,6 +326,10 @@ func (p *pgNetwork) BeforeInsert(db orm.DB) error {
 type domainToIps struct {
 	DomainID int
 	IPId     int
+}
+
+func (domainToIps) TableName() string {
+	return "domain_to_ips"
 }
 
 /*
@@ -409,6 +418,10 @@ func (p *pgProject) BeforeInsert(db orm.DB) error {
 type userToProject struct {
 	UserID    int
 	ProjectID int
+}
+
+func (userToProject) TableName() string {
+	return "user_to_projects"
 }
 
 /*
