@@ -7,32 +7,53 @@ Develop
 [![Build Status Develop](https://travis-ci.org/netm4ul/netm4ul.svg?branch=develop)](https://travis-ci.org/netm4ul/netm4ul)
 
 [![GoDoc](https://godoc.org/github.com/netm4ul/netm4ul?status.svg)](https://godoc.org/github.com/netm4ul/netm4ul)
+
 ## Usage
 
-### Running NetM4ul with Docker (recommanded)
+To understand a little bit more of the project, you might want to look at the `documentation/Architecture.md` file.
+
+There is a single binary for the Controller, Agent, CLI client, API...
+
+### Running NetM4ul with Docker (recommended)
+
+You can install Docker on common distribution (ubuntu / debian) with the script at `https://get.docker.com`.
+The full procedure can be found [here](https://docs.docker.com/install/)
+
+You will need docker-compose to simplify the launch of all parts of the application. You can find the installation instruction [here](https://docs.docker.com/compose/install/)
 
 ```
-vim netm4ul.conf # change the credentials (db, api, etc...)
+git clone https://github.com/netm4ul/netm4ul
+cd netm4ul
+vim netm4ul.conf # change the credentials (db, api, etc...
 docker-compose up --build # you can add the "-d" option to detach your terminal, but you will need to "docker log" to see dev traces
 ```
 
-This should download and run :
-- 1 master node of NetM4ul (`netmaulserver`)
-- 1 client node of NetM4ul (`netmaulclient`)
-- 1 mongodb database with data stored in the `./data/db` directory
+This should download and run locally :
+- 1 Controller node of NetM4ul (named `netmaulserver`)
+- 1 Agent node of NetM4ul (named `netmaulclient`)
+- 1 Database with data stored in the `./data/db` directory
 
-NOTE : If running with the provided `docker-compose.yml`, the `netm4ul.conf` **must** use the "container_name" of each service for their ip. (eg : set the database ip to "mongodb" in our case)
+NOTES :
+- If running with the provided `docker-compose.yml`, the `netm4ul.conf` **must** use the "container_name" of each service for their ip. (eg : set the database ip to "postgres" in our case) 
+  
+- We have another repository to enables deployement with Ansible.
+  
+- We might add a sample k8s deployment file soon.
+
 
 ### Running without Docker
+In the following example, a "terminal" could be a single host or multiple. You will need to download the same binary for each of them. Just modify the `netm4ul.conf` accordingly
 
 Requirement : 
-- [Mongodb database](https://www.mongodb.com)
-- [Go](https://golang.org/)
-- [dep](https://github.com/golang/dep)
+- Download the executable from the release section of Github.
+  
+Optionnal database:
+- [PostgreSQL database](https://www.postgresql.org/)
 
 ```
-vim netm4ul.conf # change the credentials (db, api, etc...) and ip / ports
-make
+# ensure the database is running if you plan to use one.
+
+./netm4ul setup # It will help setup all the things.
 
 ./netm4ul start server # in one terminal
 ./netm4ul start client # in another terminal
@@ -45,13 +66,17 @@ make
 
 ### CLI
 
+To help newcomers we provide a complete autocompletion.
 
-Completion : 
+To enable it, you will need to execute one of the following command.
 
-bash : `source <(./netm4ul completion bash)`
-zsh : `source <(./netm4ul completion zsh)`
+for bash : `source <(./netm4ul completion bash)`
+
+for zsh : `source <(./netm4ul completion zsh)`
 
 ```
+netm4ul : Distributed recon made easy
+
 Usage:
   netm4ul [flags]
   netm4ul [command]
@@ -61,39 +86,45 @@ Available Commands:
   create      Create the requested ressource
   help        Help about any command
   list        Return all results
+  report      Generate a new report
   run         Run scan on the defined target
+  setup       NetM4ul setup
   start       Start the requested service
   status      Show status of the requested service
   version     Prints version
-```
 
-Global flags : 
+Flags:
+  -c, --config string    Custom config file path (default "netm4ul.conf")
+  -h, --help             help for netm4ul
+      --no-colors        Disable color printing
+  -p, --project string   Uses the provided project name
+  -v, --verbose          verbose output
 
-```
-  -c, --config string   Custom config file path (default "netm4ul.conf")
-  -h, --help            help for netm4ul
-      --no-colors       Disable color printing
-  -v, --verbose         verbose output
+Use "netm4ul [command] --help" for more information about a command.
+
 ```
 
 You can use -h on every subcommands.
 
-## Contributing
-
-### Structure
+## Structure
 
 ### Core
 
-Located in the `core` folder, all the core components are there.
-The `api` folder contains all the code for the REST api on the Master node.
-The `server` folder contains all the code for recieving and storing data in the DB. It's in charge of balancing all the modules on each client node.
-The `client` folder contains all the code for client connection to the master node.
-The `session` folder contains all the code for handling current session (loaded modules...).
-The `config` is used for parsing the config files.
+All the core components are located in the `core` directory.
 
-#### API
+The `api/` folder contains all the code for the REST api on the Controller node.
 
-The api is a HTTP REST API. It only serves json results with the `Content-Type: application/json`.
+The `server/` folder contains all the code for recieving and storing data in the DB. It's in charge of balancing all the modules on each client node.
+
+The `client/` folder contains all the code for Agent connection to the Controller node.
+
+The `session/` folder contains all the code for handling current session (loaded modules...).
+
+The `config/` is used for parsing the config files.
+
+### API
+
+The api is a HTTP REST API. It only serves JSON results with the `Content-Type: application/json`.
 It uses the following format :
 
 ```
@@ -101,210 +132,81 @@ It uses the following format :
 	"status": "success", // only "success" or "error"
 	"code": CodeOK, // see the "code list" in godocs
 	"message": "Some message", // required only in ERROR code. Not mandatory on success
-	"data" : // any kind of json type : object, array, string, number, ... If error, no data are returned.
+	"data" : // any kind of JSON type : object, array, string, number, ... If error, no data are returned.
 }
 ```
 
-All the JSON fields are **lowercase** and most of them are omitted if empty.
+All the JSON fields are **lowercase** and most of them are omitted if empty. (You can see all the field and possible result in the `core/database/models/models.go`)
+
+The status code list is available in the `core/api/codes.go` file. If you plan to develop something, you might want to use the constant value representing them.
 
 
 ### Module
 
-To write your module you will need to implement the Module interface (`modules/modules.go`) and put it into the `modules/<folder>` folders corresponding to your module.
-All data produced by your module should write into the MongoDB database using the `WriteDB()` method.
-`WriteDB()` **must** write data (at least) under its own collection and optionnaly update the global structure.
+We are open to as many module as possible. Recon, Report, Exploit... are all welcome.
+
+You can enable/disable each modules directly in the config file.
+
+#### Recon
+
+We currently support `nmap`, `masscan`, `traceroute` recon modules. `dns`, `shodan` are WIP and should soon be added.
+
+#### Report 
+
+One report mode is available. More a to come. We aime to provides :
+
+- [ ] Textual reports
+- [ ] PDF
+- [ ] Docs
+- [ ] HTML
+
 
 ### Database
 
-NetM4ul store all of it's data into a Mongodb database.
+Netm4ul support multiple data storage backend.
 
-Database schema :
+For the moment : **PostgreSQL** is the prefered one.
 
-Project : 
-```
-{
-    _id     : ObjectId("1234567890"),
-    name    : "TestName",
-    updated : new Date(),
-    IP      : [
-        ObjectID("22222222222222")
-    ]
-}
-```
+Each database support is called an `adapter` and can be found in the `core/database/adapters` folder.
 
-IPs :
-```
-{
-    _id   : ObjectId("2222222222222")
-    value : "10.0.0.1",
-    port  : [
-        ObjectId("33333333333")
-    ],
-    route : [
+We currently support : `PostgreSQL`, storing to JSON file (`JsonDB` adapter) and a `testadapter` is provided for testing purpose only (it will not store anything).
 
-    ]
-}
-```
+The support for `MongoDB` is wanted but will need help to support it.
 
-Ports :
-
-```
-{
-    _id      : ObjectId("3333333333333"),
-    number   : 443,
-    protocol : "tcp",
-    status   : "open",
-    banner   : "Nginx 4.3.2.1",
-    type     : "http"
-    directories : [
-        ObjectId("44444444444")
-    ]
-}
-```
-
-Directories :
-
-```
-{
-    _id  : ObjectId("444444444444"),
-    name : "index.php",
-    code : 200
-}
-```
-
-Route:
-
-```
-{
-    _id : ObjectId("555555555555")
-    source : "10.0.0.123",
-    destionation : "10.0.0.1"
-    hops : [
-        {ip : 10.0.0.2, max : 10.123, min : 2.68, avg : 6.92},
-        {ip : 192.168.56.1, max : 1.123, min : 0.68, avg : 0.92}
-    ]
-}
-```
-
-Example "final" schema (with all "joins")
-
-```
-{
-    "google":{
-        "IP" : [{
-            "10.0.0.1": {
-                "ports" : {
-                    "tcp": {
-                        "443": {
-                            "status": "open",
-                            "banner": "NGINX 4.3.2.1",
-                            "type":"http"
-                            "directories":{
-                                "index.php":{"status":200}
-                            }
-                        },
-                        "53": {
-                            "status": "open",
-                            "banner": "BIND 9",
-                            "type":"dns"
-                        }
-                    },
-                    "udp":{
-                        "53": {
-                            "status": "open",
-                            "banner": "BIND 9",
-                            "type" : "dns"
-                        }
-                    }
-                },
-                "route" :{
-                    {"ip" : 10.0.0.2, "max" : 10.123, "min" : 2.68, "avg" : 6.92},
-                    {"ip" : 192.168.56.1, "max" : 1.123, "min" : 0.68, "avg" : 0.92}
-                }
-            }
-        }],
-        "results": {
-            "nmap":{raw},
-            "traceroute":{raw},
-            "dirb":{raw}
-        }
-    }
-
-    "facebook":{
-        "IP" : [{
-            "10.0.0.1": {
-                "ports" : {
-                    "tcp": {
-                        "443": {
-                            "status": "open",
-                            "banner": "NGINX 4.3.2.1",
-                            "type":"http"
-                            "directories":{
-                                "index.php":{"status":200}
-                            }
-                        },
-                    }
-                }
-            }
-        }]
-        "results": {
-            "nmap":{raw},
-            "traceroute":{raw},
-            "dirb":{raw}
-        }
-    }
-}
+You can create a new adapters using the `netm4ul create adapter` command. It will generate all the boiler plate and place all the code in the good place. For more information see Developers.
 
 
+#### PostgreSQL
 
-Database Schema :
+The PostgreSQL backend is the recommended database backend for Netm4ul.
+You can use the provided docker-compose to set it up easily.
 
-{
-    DB : netm4ul {
-            Collection_1 = PROJECTS {
-                Document_1 = Project_1 {
-                    ID : P1_ObjectID
-                    Name : "project_1"
-                    IPs : [P1_IP1_ObjectID, P1_IP2_ObjectID, P1_IP3_ObjectID]
-                }
-                Document_2 = Project_2 {
-                    ID : P2_ObjectID
-                    Name : "project_2"
-                    IPs : [P2_IP1_ObjectID, P2_IP2_ObjectID, P3_IP3_ObjectID]
-                }
-            }
-            Collection_2 = IPS {
-                Document_1 = P1_IP_1 {
-                    ID : P1_IP1_ObjectID
-                    Value : "4.4.4.4"
-                    Ports : [P1_IP1_Port1_ObjectID, P1_IP1_Port2_ObjectID, P1_IP1_Port2_ObjectID]
-                }
-                Document_2 = P1_IP_2{
-                    ID : P1_IP2_ObjectID
-                    Value : "4.4.4.5"
-                    Ports : [P1_IP2_Port1_ObjectID, P1_IP2_Port2_ObjectID, P1_IP2_Port3_ObjectID]
-                }
-            }
-            Collection_3 = PORTS {
-                Document_1 = P1_IP1_Port1{
-                    ID : P1_IP1_Port1_ObjectID
-                    Number : Port_nb
-                    State : Filtered, Closed, Opened
-                    Banner : Banner
-                }
-                Document_2 = P1_IP1_Port2{
-                    ID : P1_IP1_Port2_ObjectID
-                    Number : Port_nb
-                    State : Filtered, Closed, Opened
-                    Banner : Banner
-                }
-                Document_3 = P1_IP1_Port3{
-                    ID : P1_IP1_Port3_ObjectID
-                    Number : Port_nb
-                    State : Filtered, Closed, Opened
-                    Banner : Banner
-                }
-            }
-        }
-    }
-```
+If you want to just start the postgres server (without dockerized netm4ul Controller / Agents) with the docker-compose command, run `docker-compose up -d postgres`
+
+Please, before using it, change the password writen in the `docker-compose.yml` file. (`POSTGRES_PASSWORD: password`)
+
+
+## Developers
+
+Netm4ul tries to be developer friend.
+
+If you want to hack on it, you must download [Go](https://golang.org)
+You will also need to get `dep` by running the command `got get -u https://github.com/golang/dep` (for other installation type, see [dep](https://github.com/golang/dep) )
+
+We provide a `Makefile` to download dependencies, build and test the application.
+
+You can run `make` in the netm4ul repository to build and install it.
+You can run tests by running `make test`.
+
+If you want to write a new module (Recon, Report, Exploit) or a new database adapter, you should use the command `netm4ul create`.
+It will generate all the boilerplate needed to efficiently write new code.
+
+## Contributting
+
+You can contribute to Netm4ul by openning pull requests, issues.
+
+Contribution are not only for code. Non-code submission are *strongly* appreciated. (Spelling error? Missing documentation ? Missing example ? Better schema ?)
+
+If you see a bug, please fill up an issues. We will try to fix it as soon as possible.
+
+For more information, follow the [CONTRIBUTING.md](https://github.com/netm4ul/netm4ul/blob/develop/CONTRIBUTING.md)
