@@ -190,9 +190,15 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 
 	err := gob.NewDecoder(rw).Decode(&data)
 
-	// handle connection closed (client shutdown)
+	// handle connection closed (client shutdown). And remove it from the server.Session.Nodes slice !
 	if err == io.EOF {
-		log.Errorf("Connection closed : %s", err.Error())
+		log.Errorf("Connection closed : %s [%s]", err.Error(), conn.RemoteAddr())
+		for i, node := range server.Session.Nodes {
+			if node.Conn.RemoteAddr() == conn.RemoteAddr() {
+				// remove the i'th element
+				server.Session.Nodes = append(server.Session.Nodes[:i], server.Session.Nodes[i+1:]...)
+			}
+		}
 		// stop all handleData for this conn
 		return true
 	}
