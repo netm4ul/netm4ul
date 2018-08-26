@@ -118,6 +118,19 @@ func GenerateNewToken() string {
 	return fmt.Sprintf("%x", b)
 }
 
+//GetPortTypes returns all the port type to insert into the database during the setup. It might be augmented during runtime by the user interaction.
+func GetPortTypes() []PortType {
+	pts := []PortType{
+		PortType{Type: "web", Description: "This port runs a web services (http, https)"},
+		PortType{Type: "mail", Description: "This port runs a mail service"},
+		PortType{Type: "admin", Description: "This port runs an admin tool, it could be a web page (http), a remote desktop application (rdp), or a remote login (ssh, telnet)"},
+		PortType{Type: "gaming", Description: "This port is used by a game"},
+		PortType{Type: "voip", Description: "This port is used by a voip service (Teamspeak, Skype, Mumble...)"},
+		PortType{Type: "api", Description: "This port serve an API"},
+	}
+	return pts
+}
+
 //Database is the mandatory interface for all custom database adapter
 type Database interface {
 	// General purpose functions
