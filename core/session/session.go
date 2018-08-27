@@ -13,6 +13,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/netm4ul/netm4ul/modules/recon/dns"
+	"github.com/netm4ul/netm4ul/modules/recon/dnsbruteforce"
 	"github.com/netm4ul/netm4ul/modules/recon/masscan"
 	"github.com/netm4ul/netm4ul/modules/recon/nmap"
 	"github.com/netm4ul/netm4ul/modules/recon/shodan"
@@ -73,6 +74,7 @@ func (s *Session) loadModule() {
 	s.Register(traceroute.NewTraceroute())
 	s.Register(dns.NewDNS())
 	s.Register(nmap.NewNmap())
+	s.Register(dnsbruteforce.NewDnsbruteforce())
 	s.Register(masscan.NewMasscan())
 	s.Register(shodan.NewShodan())
 }
