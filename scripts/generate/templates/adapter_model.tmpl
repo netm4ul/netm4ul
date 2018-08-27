@@ -1,0 +1,297 @@
+package {{.adapterName | ToLower }}
+
+import (
+	"net"
+	"time"
+
+	"github.com/netm4ul/netm4ul/core/database/models"
+)
+
+/*
+{{.adapterName}} model for Hop
+*/
+type {{.adapterShortName}}Hop struct {
+    models.Hop
+}
+
+func (p *{{.adapterShortName}}Hop) ToModel() models.Hop {
+	hop := models.Hop{
+		Avg: p.Avg,
+		Min: p.Min,
+		Max: p.Max,
+		IP:  p.IP,
+	}
+	return hop
+}
+
+func (p *{{.adapterShortName}}Hop) FromModel(h models.Hop) {
+	p.Avg = h.Avg
+	p.Min = h.Min
+	p.Max = h.Max
+	p.IP = h.IP
+}
+
+/*
+{{.adapterName}} model for Route
+*/
+type {{.adapterShortName}}Route struct {
+    models.Route
+}
+
+func (p *{{.adapterShortName}}Route) ToModel() models.Route {
+	route := models.Route{
+		Source:      p.Source,
+		Destination: p.Destination,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return route
+}
+
+func (p *{{.adapterShortName}}Route) FromModel(r models.Route) {
+	p.Source = r.Source
+	p.Destination = r.Destination
+
+	p.CreatedAt = r.CreatedAt
+	p.UpdatedAt = r.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for URI
+*/
+type {{.adapterShortName}}URI struct {
+    models.URI
+}
+
+func (p *{{.adapterShortName}}URI) ToModel() models.URI {
+	uri := models.URI{
+		Name: p.Name,
+		Code: p.Code,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return uri
+}
+
+func (p *{{.adapterShortName}}URI) FromModel(uri models.URI) {
+	p.Name = uri.Name
+	p.Code = uri.Code
+
+	p.CreatedAt = uri.CreatedAt
+	p.UpdatedAt = uri.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for Port
+*/
+type {{.adapterShortName}}Port struct {
+	models.Port
+}
+
+func (p *{{.adapterShortName}}Port) ToModel() models.Port {
+	port := models.Port{
+		Type:     p.Type,
+		Status:   p.Status,
+		Protocol: p.Protocol,
+		Number:   p.Number,
+		Banner:   p.Banner,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return port
+}
+
+func (p *{{.adapterShortName}}Port) FromModel(pt models.Port) {
+	p.Banner = pt.Banner
+	p.Number = pt.Number
+	p.Protocol = pt.Protocol
+	p.Status = pt.Status
+	p.Type = pt.Type
+
+	p.CreatedAt = pt.CreatedAt
+	p.UpdatedAt = pt.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for Port type
+*/
+type {{.adapterShortName}}PortType struct {
+	models.PortType
+}
+
+func (p *{{.adapterShortName}}PortType) ToModel() models.PortType {
+	porttype := models.PortType{
+		Type:        p.Type,
+		Description: p.Description,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return porttype
+}
+
+func (p *{{.adapterShortName}}PortType) FromModel(pt models.PortType) {
+	p.Type = pt.Type
+	p.Description = pt.Description
+
+	p.CreatedAt = pt.CreatedAt
+	p.UpdatedAt = pt.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for IP
+*/
+type {{.adapterShortName}}IP struct {
+	models.IP
+}
+
+func (p *{{.adapterShortName}}IP) ToModel() models.IP {
+	ip := models.IP{
+		Value:   p.Value,
+		Network: p.Network,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return ip
+}
+
+func (p *{{.adapterShortName}}IP) FromModel(ip models.IP) {
+	p.Value = ip.Value
+	p.Network = ip.Network
+
+	p.CreatedAt = ip.CreatedAt
+	p.UpdatedAt = ip.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for Network
+*/
+type {{.adapterShortName}}Network struct {
+	models.Network
+}
+
+func (p *{{.adapterShortName}}Network) ToModel() models.Network {
+	Network := models.Network{
+		Name:        p.Name,
+		Description: p.Description,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return Network
+}
+
+func (p *{{.adapterShortName}}Network) FromModel(Network models.Network) {
+	p.Name = Network.Name
+	p.Description = Network.Description
+
+	p.CreatedAt = Network.CreatedAt
+	p.UpdatedAt = Network.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for Domain
+*/
+type {{.adapterShortName}}Domain struct {
+	models.Domain
+}
+
+func (p *{{.adapterShortName}}Domain) ToModel() models.Domain {
+	domain := models.Domain{
+		Name: p.Name,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return domain
+}
+
+func (p *{{.adapterShortName}}Domain) FromModel(d models.Domain) {
+	p.Name = d.Name
+
+	p.CreatedAt = d.CreatedAt
+	p.UpdatedAt = d.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for Project
+*/
+type {{.adapterShortName}}Project struct {
+	models.Project
+}
+
+func (p *{{.adapterShortName}}Project) ToModel() models.Project {
+	project := models.Project{
+		Name:        p.Name,
+		Description: p.Description,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return project
+}
+
+func (p *{{.adapterShortName}}Project) FromModel(proj models.Project) {
+	p.Name = proj.Name
+	p.Description = proj.Description
+
+	p.CreatedAt = proj.CreatedAt
+	p.UpdatedAt = proj.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for User
+*/
+type {{.adapterShortName}}User struct {
+	models.User
+}
+
+func (p *{{.adapterShortName}}User) ToModel() models.User {
+	user := models.User{
+		Name:     p.Name,
+		Password: p.Password,
+		Token:    p.Token,
+
+		CreatedAt: p.CreatedAt,
+		UpdatedAt: p.UpdatedAt,
+	}
+	return user
+}
+
+func (p *{{.adapterShortName}}User) FromModel(u models.User) {
+	p.Name = u.Name
+	p.Password = u.Password
+	p.Token = u.Token
+
+	p.CreatedAt = u.CreatedAt
+	p.UpdatedAt = u.UpdatedAt
+}
+
+/*
+	{{.adapterName}} model for Raw data
+*/
+type {{.adapterShortName}}Raw struct {
+	models.Raw
+}
+
+func (p *{{.adapterShortName}}Raw) ToModel() models.Raw {
+	raws := models.Raw{
+		Content:    p.Content,
+		ModuleName: p.ModuleName,
+		CreatedAt:  p.CreatedAt,
+		UpdatedAt:  p.UpdatedAt,
+	}
+	return raws
+}
+
+func (p *{{.adapterShortName}}Raw) FromModel(r models.Raw) {
+	p.Content = r.Content
+	p.ModuleName = r.ModuleName
+
+	p.CreatedAt = r.CreatedAt
+	p.UpdatedAt = r.UpdatedAt
+}

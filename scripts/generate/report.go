@@ -12,25 +12,6 @@ import (
 
 //GenerateReport generate boilerplate for Report
 func GenerateReport(reportName string) {
-	templateReport := `
-package {{.reportName | ToLower }}
-
-import "errors"
-
-type {{.reportName}} struct {
-	Filename string
-}
-
-func Name() string {
-	return "{{.reportName}}"
-}
-
-//Generate a new report in {{.reportName}} format
-func (r *{{.reportName}}) Generate(name string) error {
-	return errors.New("Not implemented yet")
-}
-
-`
 	if reportName == "" {
 		fmt.Println("You must provide a report name")
 		os.Exit(1)
@@ -44,7 +25,7 @@ func (r *{{.reportName}}) Generate(name string) error {
 	dirpath := path.Join("./modules/report", strings.ToLower(reportName))
 	filepath := path.Join(dirpath, strings.ToLower(reportName)+".go")
 
-	bytes, err := scripts.GenerateSourceTemplate(templateReport, data)
+	bytes, err := scripts.GenerateSourceTemplate("report", "./scripts/generate/templates/reports.tmpl", data)
 	if err != nil {
 		log.Fatal(err)
 	}
