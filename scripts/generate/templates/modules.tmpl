@@ -41,7 +41,7 @@ func ({{.shortName}} *{{.name}}) DependsOn() []modules.Condition{
 	return nil
 }
 
-func ({{.shortName}} *{{.name}}) Run([]modules.Input) (modules.Result, error){
+func ({{.shortName}} *{{.name}}) Run(input modules.Input) (modules.Result, error){
 	return modules.Result{}, errors.New("Not implemented yet")
 }
 
