@@ -13,6 +13,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/aeden/traceroute"
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
 )
@@ -75,7 +76,7 @@ func (T *TracerouteModule) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (T *TracerouteModule) Run(input modules.Input) (modules.Result, error) {
+func (T *TracerouteModule) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
 	var ipAddr *net.IPAddr
 	var err error
 
@@ -88,7 +89,7 @@ func (T *TracerouteModule) Run(input modules.Input) (modules.Result, error) {
 	}
 
 	if err != nil {
-		return modules.Result{}, errors.New("Could not resolve the IP : " + err.Error())
+		return communication.Done{Error: err}, errors.New("Could not resolve the IP : " + err.Error())
 	}
 
 	options := traceroute.TracerouteOptions{}
@@ -121,7 +122,8 @@ func (T *TracerouteModule) Run(input modules.Input) (modules.Result, error) {
 
 	log.Debugf("RES : %+v\n", traceRes)
 
-	return modules.Result{Data: traceRes, Timestamp: time.Now(), Module: T.Name()}, nil
+	resultChan <- communication.Result{Data: traceRes, Timestamp: time.Now(), ModuleName: T.Name()}
+	return communication.Done{Timestamp: time.Now(), ModuleName: T.Name()}, nil
 }
 
 // Parse : Parse the result of the execution
@@ -147,7 +149,7 @@ func (T *TracerouteModule) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T *TracerouteModule) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (T *TracerouteModule) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Debug("Writing to the database.")
 
 	var data traceroute.TracerouteResult

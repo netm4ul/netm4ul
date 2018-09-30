@@ -18,6 +18,7 @@ import (
 	"github.com/BurntSushi/toml"
 	gonmap "github.com/edznux/go-nmap"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
 )
@@ -77,7 +78,7 @@ func (N *Nmap) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (N *Nmap) Run(input modules.Input) (modules.Result, error) {
+func (N *Nmap) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
 	N.ParseConfig()
 
 	/*
@@ -90,18 +91,19 @@ func (N *Nmap) Run(input modules.Input) (modules.Result, error) {
 
 	execErr := cmd.Run()
 	if execErr != nil {
-		return modules.Result{}, errors.New("Could not execute : " + execErr.Error())
+		return communication.Done{Error: err}, errors.New("Could not execute : " + execErr.Error())
 	}
 	/*
 		The N.getResults read the file and get the raw and parsed output or error.
 	*/
 	N.Result, N.Nmaprun, err = N.getResults(filename)
 	if err != nil {
-		return modules.Result{}, errors.New("Could not get results : " + err.Error())
+		return communication.Done{Error: err}, errors.New("Could not get results : " + err.Error())
 	}
 	log.Debugf("Result  : %+v", N.Result)
 	log.Debugf("Result parsed : %+v", N.Nmaprun)
-	return modules.Result{Data: N.Nmaprun, Timestamp: time.Now(), Module: N.Name()}, err
+	resultChan <- communication.Result{Data: N.Nmaprun, Timestamp: time.Now(), ModuleName: N.Name()}
+	return communication.Done{Timestamp: time.Now(), ModuleName: N.Name(), Error: nil}, err
 }
 
 func (N *Nmap) getResults(filename string) (raw []byte, parsed *gonmap.NmapRun, err error) {
@@ -118,7 +120,7 @@ func (N *Nmap) getResults(filename string) (raw []byte, parsed *gonmap.NmapRun, 
 	return raw, parsed, err
 }
 
-func (N *Nmap) loadArgs(input modules.Input) (opt []string, filename string, err error) {
+func (N *Nmap) loadArgs(input communication.Input) (opt []string, filename string, err error) {
 	// Fast scan option : -F
 	if N.Config.FastScan {
 		opt = append(opt, "-F")
@@ -225,7 +227,7 @@ func (N *Nmap) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (N *Nmap) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (N *Nmap) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Info("Write raw results to the database.")
 
 	// result.Data = result.Data.(NmapRun)

@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
@@ -79,7 +80,7 @@ type Services struct {
 */
 
 // Run : Main function of the module
-func (S *Shodan) Run(input modules.Input) (modules.Result, error) {
+func (S *Shodan) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
 
 	// Instanciate Result
 	Result := Result{}
@@ -91,12 +92,13 @@ func (S *Shodan) Run(input modules.Input) (modules.Result, error) {
 	var domain string
 
 	if input.Domain == "" {
-		return modules.Result{}, errors.New("Empty domain provided, can't run shodan")
+		err := errors.New("Empty domain provided, can't run shodan")
+		return communication.Done{Error: err}, err
 	}
 
 	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{input.Domain})
 	if err != nil {
-		return modules.Result{}, err
+		return communication.Done{}, err
 	}
 	myIP := *dns[domain]
 	Result.IP = myIP.String()
@@ -107,7 +109,7 @@ func (S *Shodan) Run(input modules.Input) (modules.Result, error) {
 	// log.Println(Result.IP)
 	host, err := shodanClient.GetServicesForHost(shodanContext, Result.IP, &hostServiceOption)
 	if err != nil {
-		return modules.Result{}, err
+		return communication.Done{Error: err}, err
 	}
 
 	Result.Host = host
@@ -117,7 +119,9 @@ func (S *Shodan) Run(input modules.Input) (modules.Result, error) {
 		log.Debug(servicesData)
 	}
 
-	return modules.Result{Data: Result, Timestamp: time.Now(), Module: S.Name()}, err
+	resultChan <- communication.Result{Data: Result, Timestamp: time.Now(), ModuleName: S.Name()}
+
+	return communication.Done{Timestamp: time.Now(), ModuleName: S.Name()}, nil
 }
 
 func printHost(host shodan.Host) {
@@ -150,7 +154,7 @@ func (S *Shodan) ParseConfig() error {
 	return nil
 }
 
-func (S *Shodan) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (S *Shodan) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Debug("Write to the database.")
 	// var data Result
 	// data = result.Data.(Result)

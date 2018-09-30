@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/netm4ul/netm4ul/core/api"
-	"github.com/netm4ul/netm4ul/modules"
+	"github.com/netm4ul/netm4ul/core/communication"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -81,7 +81,7 @@ func createProject(project string) {
 	fmt.Println(res)
 }
 
-func runModules(targets []modules.Input) {
+func runModules(targets []communication.Input) {
 	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
 		"/api/v1/projects/" +
 		CLISession.Config.Project.Name +
@@ -124,7 +124,7 @@ func runModules(targets []modules.Input) {
 	fmt.Printf("Command sent ! (%+v)\n", res)
 }
 
-func runSpecifiedModules(targets []modules.Input, modules []string) {
+func runSpecifiedModules(targets []communication.Input, modules []string) {
 
 	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
 		"/api/v1/projects/" +
