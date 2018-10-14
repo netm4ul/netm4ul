@@ -8,13 +8,18 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
 	log "github.com/sirupsen/logrus"
 )
+
+// this wait group ensure that all the workers will stay alive for all the requests
+var wg sync.WaitGroup
 
 type dnsbruteforceConfig struct {
 	WorkerCount  int    `toml:"worker_count"`
@@ -25,14 +30,14 @@ type dnsbruteforce struct {
 	Config dnsbruteforceConfig
 }
 
-type result struct {
+type Result struct {
 	Domain string
 	Addr   string
 }
 
 // NewDnsbruteforce generate a new dnsbruteforce module (type modules.Module)
 func NewDnsbruteforce() modules.Module {
-	gob.Register(dnsbruteforce{})
+	gob.Register(Result{})
 	var t modules.Module
 	t = &dnsbruteforce{}
 	return t
@@ -70,60 +75,67 @@ func (d *dnsbruteforce) checkWildcard(domain string) bool {
 	return false
 }
 
-func (d *dnsbruteforce) worker(inputList chan string, outputList chan result, stop chan struct{}) {
-	log.Debug("Worker started")
+func (d *dnsbruteforce) worker(inputList chan string, outputList chan Result) {
 	for {
-		select {
-		case testDomain := <-inputList:
-			log.Debugf("Got sub domain : %s", testDomain)
+		testDomain := <-inputList
+		log.Debugf("Got sub domain : %s", testDomain)
 
-			ips, err := net.LookupHost(testDomain)
-			if err != nil {
-				//not found, just try the next one
-				continue
-			}
-
-			// send all the ip found
-			for _, ip := range ips {
-				outputList <- result{Addr: ip, Domain: testDomain}
-			}
-		case <-stop:
-			break
+		ips, err := net.LookupHost(testDomain)
+		if err != nil {
+			//not found, just try the next one
+			wg.Done()
+			continue
 		}
+
+		// send all the ip found
+		for _, ip := range ips {
+			outputList <- Result{Addr: ip, Domain: testDomain}
+		}
+		wg.Done()
 	}
 }
 
-func (d *dnsbruteforce) Run(input modules.Input) (modules.Result, error) {
-	res := modules.Result{}
+func (d *dnsbruteforce) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
+	err := d.ParseConfig()
+	if err != nil {
+		err := errors.New("Could not parse the config file")
+		return communication.Done{Error: err}, err
+	}
 
+	log.Debugf("Starting dns bruteforcing. [Worker count : %d, Wordlist : %s, Timeout : %d]", d.Config.WorkerCount, d.Config.WordlistPath, d.Config.Timeout)
 	if input.Domain == "" {
-		return modules.Result{}, errors.New("No domain name provided")
+		err := errors.New("No domain name provided")
+		return communication.Done{Error: err}, err
 	}
 
 	isWildcard := d.checkWildcard(input.Domain)
 	if isWildcard {
-		return modules.Result{}, errors.New("The domain is a wildcard domain")
+		err := errors.New("The domain is a wildcard domain")
+		return communication.Done{Error: err}, err
 	}
 
 	// launch all workers
 	inputList := make(chan string)
-	outputList := make(chan result)
-	stop := make(chan struct{})
+	outputList := make(chan Result)
 
 	worker := 0
 	for worker < d.Config.WorkerCount {
-		go d.worker(inputList, outputList, stop)
+		log.Debugf("Starting worker : %d/%d)", worker, d.Config.WorkerCount)
+		go d.worker(inputList, outputList)
+		worker++
 	}
 
 	// print all the domains found
 	go func() {
+		log.Debug("Started listening from workers")
 		for {
 			select {
 			case found := <-outputList:
-				log.Println("Found domain : " + found.Domain + " at " + found.Addr)
-			case <-stop:
-				break
+				log.Debug("Found domain : " + found.Domain + " at " + found.Addr)
+				res := Result{Addr: found.Addr, Domain: found.Domain}
+				resultChan <- communication.Result{Data: res, Timestamp: time.Now(), ModuleName: d.Name()}
 			}
+
 		}
 	}()
 
@@ -136,16 +148,19 @@ func (d *dnsbruteforce) Run(input modules.Input) (modules.Result, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		inputList <- line
+		inputList <- line + "." + input.Domain // prepend the domain with the subdomain name
+		wg.Add(1)
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+	wg.Wait()
 
-	return res, nil
+	return communication.Done{ModuleName: d.Name(), Timestamp: time.Now()}, nil
 }
 
 func (d *dnsbruteforce) ParseConfig() error {
@@ -166,6 +181,21 @@ func (d *dnsbruteforce) ParseConfig() error {
 	return nil
 }
 
-func (d *dnsbruteforce) WriteDb(result modules.Result, db models.Database, projectName string) error {
-	return errors.New("Not implemented yet")
+func (d *dnsbruteforce) WriteDb(result communication.Result, db models.Database, projectName string) error {
+
+	res := result.Data.(Result)
+
+	raw := models.Raw{Content: res.Domain + ":" + res.Addr, CreatedAt: time.Now(), UpdatedAt: time.Now(), ModuleName: d.Name()}
+	err := db.AppendRawData(projectName, raw)
+	if err != nil {
+		return err
+	}
+
+	domain := models.Domain{Name: res.Domain, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	err = db.CreateOrUpdateDomain(projectName, domain)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
