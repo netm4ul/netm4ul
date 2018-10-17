@@ -11,9 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/server"
-
-	"github.com/netm4ul/netm4ul/modules"
 
 	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -307,13 +306,13 @@ func printProjectInfo(projectName string, s *session.Session) {
 	table.Render()
 }
 
-func parseTargets(targets []string) ([]modules.Input, error) {
+func parseTargets(targets []string) ([]communication.Input, error) {
 
-	var inputs []modules.Input
-	var input modules.Input
+	var inputs []communication.Input
+	var input communication.Input
 
 	if len(targets) == 0 {
-		return []modules.Input{}, errors.New("Not target found")
+		return []communication.Input{}, errors.New("Not target found")
 	}
 
 	// loop on each targets
@@ -326,16 +325,16 @@ func parseTargets(targets []string) ([]modules.Input, error) {
 			ips, err := net.LookupIP(target)
 
 			if err != nil {
-				return []modules.Input{}, errors.New("Could lookup address : " + target + ", " + err.Error())
+				return []communication.Input{}, errors.New("Could lookup address : " + target + ", " + err.Error())
 			}
 
 			if ips == nil {
-				return []modules.Input{}, errors.New("Could not resolve :" + target)
+				return []communication.Input{}, errors.New("Could not resolve :" + target)
 			}
 
 			// convert ips to strings
 			for _, ip := range ips {
-				input = modules.Input{Domain: target, IP: ip}
+				input = communication.Input{Domain: target, IP: ip}
 				inputs = append(inputs, input)
 			}
 
@@ -343,22 +342,22 @@ func parseTargets(targets []string) ([]modules.Input, error) {
 			// if this is an ip
 			// check if ip is specified (not :: or 0.0.0.0)
 			if ip.IsUnspecified() {
-				return []modules.Input{}, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
+				return []communication.Input{}, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
 			}
 
 			// check if ip isn't loopback
 			if ip.IsLoopback() {
-				return []modules.Input{}, errors.New("Target ip is loopback address")
+				return []communication.Input{}, errors.New("Target ip is loopback address")
 			}
 
 			// IP Range (CIDR)
 			if ipNet != nil {
 				h, err := hosts(target)
 				if err != nil {
-					return []modules.Input{}, errors.New("Target ip range is invalid (" + err.Error() + ")")
+					return []communication.Input{}, errors.New("Target ip range is invalid (" + err.Error() + ")")
 				}
 				for _, host := range h {
-					input = modules.Input{IP: host}
+					input = communication.Input{IP: host}
 					inputs = append(inputs, input)
 				}
 			}

@@ -10,8 +10,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/netm4ul/netm4ul/modules"
-
 	"crypto/tls"
 
 	"github.com/netm4ul/netm4ul/core/communication"
@@ -186,7 +184,7 @@ func (server *Server) getNextNodes(cmd communication.Command) ([]communication.N
 // handleData decode and route all data after the "hello". It listens forever until connection closed.
 // the boolean is a "stop" boolean. True indicate stop connection
 func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
-	var data modules.Result
+	var data communication.Result
 
 	err := gob.NewDecoder(rw).Decode(&data)
 
@@ -210,9 +208,9 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	}
 	log.Debugf("%+v", data)
 
-	module, ok := server.Session.Modules[strings.ToLower(data.Module)]
+	module, ok := server.Session.Modules[strings.ToLower(data.ModuleName)]
 	if !ok {
-		log.Errorf("Unknown module : %s %+v %+v", data.Module, module, ok)
+		log.Errorf("Unknown module : %s %+v %+v", data.ModuleName, module, ok)
 		return false
 	}
 
@@ -249,6 +247,6 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 		log.Errorf("Database error : %+v", err)
 		return false
 	}
-	log.Infof("Saved database info, module : %s", data.Module)
+	log.Infof("Saved database info, module : %s", data.ModuleName)
 	return false
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/miekg/dns"
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/modules"
@@ -70,7 +71,7 @@ func (D *DNS) DependsOn() []modules.Condition {
 */
 
 // Run : Main function of the module
-func (D *DNS) Run(input modules.Input) (modules.Result, error) {
+func (D *DNS) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
 	// Banner
 	fmt.Println("DNS world!")
 
@@ -120,7 +121,7 @@ func (D *DNS) Run(input modules.Input) (modules.Result, error) {
 			requestRoutine(dnsType, result, fqdn, config)
 		}
 	} else {
-		// Normal iteration of DNS resolvers
+		// Normal iteration of DNS resolvers (round robin)
 		i := 0
 		for _, dnsType := range dns.TypeToString {
 			// Get config
@@ -133,8 +134,12 @@ func (D *DNS) Run(input modules.Input) (modules.Result, error) {
 		}
 	}
 
-	// Return result (DnsResult{}) with timestamp and module name
-	return modules.Result{Data: result, Timestamp: time.Now(), Module: D.Name()}, nil
+	//TODO : send result
+	// change requestRoutine function to return the result.
+	// same for the dnsParser func
+
+	// Send Done struct when finished
+	return communication.Done{Timestamp: time.Now(), ModuleName: D.Name(), Error: nil}, nil
 }
 
 // Forge and send DNS request for dnsType type
@@ -193,7 +198,7 @@ func (D *DNS) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (D *DNS) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (D *DNS) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Println("Write to the database.")
 	// var data DnsResult
 	// data = result.Data.(DnsResult)

@@ -8,8 +8,6 @@ import (
 
 	"github.com/netm4ul/netm4ul/core/loadbalancing"
 
-	"github.com/netm4ul/netm4ul/modules"
-
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -310,7 +308,7 @@ func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 //RunModules runs every enabled modules
 func (api *API) RunModules(w http.ResponseWriter, r *http.Request) {
-	var inputs []modules.Input
+	var inputs []communication.Input
 	var res Result
 
 	err := json.NewDecoder(r.Body).Decode(&inputs)
@@ -364,7 +362,7 @@ RunModule return this template after starting the modules
 */
 func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("RunModule api.db : %+v", api.db)
-	var inputs []modules.Input
+	var inputs []communication.Input
 	var res Result
 
 	vars := mux.Vars(r)
