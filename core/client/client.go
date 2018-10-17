@@ -88,18 +88,17 @@ func (client *Client) handleData() {
 		}
 
 		// must exist, if it doesn't, the next lines shouldn't be executed
-		module, ok := client.Session.Modules[cmd.Name]
-		if !ok {
+		module, exist := client.Session.Modules[cmd.Name]
+		if !exist {
 			continue
 		}
 
-		//TODO
-		// send data back to the server
-		data, err := client.Execute(module, cmd)
-		if err != nil {
-			log.Error("Could not execute module : " + err.Error())
-		}
-		client.SendResult(data)
+		go func() {
+			_, err = client.Execute(module, cmd)
+			if err != nil {
+				log.Error("Could not execute module : " + err.Error())
+			}
+		}()
 	}
 }
 
@@ -226,16 +225,31 @@ func (client *Client) Recv() (communication.Command, error) {
 }
 
 // Execute runs modules with the right options and handle errors.
-func (client *Client) Execute(module modules.Module, cmd communication.Command) (modules.Result, error) {
+func (client *Client) Execute(module modules.Module, cmd communication.Command) (communication.Done, error) {
 
 	log.Debugf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
-	//TODO
-	res, err := module.Run(cmd.Options)
+	result := make(chan communication.Result)
+	done := make(chan communication.Done)
+
+	go func() {
+		for {
+			select {
+			case res := <-result:
+				client.SendResult(res)
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	// Pass the channel in every module so we can get the data back
+	res, err := module.Run(cmd.Options, result)
+	done <- res
 	return res, err
 }
 
 // SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
-func (client *Client) SendResult(res modules.Result) error {
+func (client *Client) SendResult(res communication.Result) error {
 	var rw *bufio.ReadWriter
 
 	if client.Session.Connector.TLSConn == nil {

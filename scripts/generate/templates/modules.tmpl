@@ -41,14 +41,14 @@ func ({{.shortName}} *{{.name}}) DependsOn() []modules.Condition{
 	return nil
 }
 
-func ({{.shortName}} *{{.name}}) Run(input modules.Input) (modules.Result, error){
-	return modules.Result{}, errors.New("Not implemented yet")
+func ({{.shortName}} *{{.name}}) Run(input communication.Input, result chan communication.Result) (communication.Done, error) {
+	return communication.Done{}, errors.New("Not implemented yet")
 }
 
 func ({{.shortName}} *{{.name}}) ParseConfig() error{
 	return errors.New("Not implemented yet")
 }
 
-func ({{.shortName}} *{{.name}}) WriteDb(result modules.Result, db models.Database, projectName string) error{
+func ({{.shortName}} *{{.name}}) WriteDb(result communication.Result, db models.Database, projectName string) error{
 	return errors.New("Not implemented yet")
 }

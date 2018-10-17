@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
 
 	"github.com/BurntSushi/toml"
@@ -114,7 +115,7 @@ func (M *Masscan) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (M *Masscan) Run(input modules.Input) (modules.Result, error) {
+func (M *Masscan) Run(input communication.Input, result chan communication.Result) (communication.Done, error) {
 
 	outputfile := generateUUID() + ".json"
 
@@ -146,13 +147,15 @@ func (M *Masscan) Run(input modules.Input) (modules.Result, error) {
 
 	log.Debug(stdout.String())
 	res, err := M.Parse(outputfile)
-
 	if err != nil {
 		log.Error(err)
 	}
+
+	// send result to the chan !
+	result <- communication.Result{Data: res, ModuleName: M.Name(), Timestamp: time.Now()}
 	log.Debug("Masscan done.")
 
-	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
+	return communication.Done{Timestamp: time.Now(), ModuleName: M.Name(), Error: nil}, nil
 }
 
 // ParseConfig : Load the config from the config folder
@@ -197,7 +200,7 @@ func (M *Masscan) Parse(file string) (MasscanResult, error) {
 }
 
 // WriteDb : Save data
-func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (M *Masscan) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Info("Write to the database.")
 
 	var data MasscanResult

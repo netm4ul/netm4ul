@@ -1,0 +1,7 @@
+www
+www3
+test
+prod
+staging
+bot
+admin
