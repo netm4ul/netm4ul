@@ -337,8 +337,10 @@ func (domainToIps) TableName() string {
 */
 type pgDomain struct {
 	gorm.Model
-	Name string
-	IP   []pgIP `gorm:"many2many:domain_to_ips;"`
+	Name      string `gorm:"unique_index:idx_name_project"`
+	IP        []pgIP `gorm:"many2many:domain_to_ips;"`
+	ProjectID uint   `gorm:"unique_index:idx_name_project"`
+	Project   pgProject
 }
 
 func (pgDomain) TableName() string {

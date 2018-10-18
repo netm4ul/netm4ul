@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/netm4ul/netm4ul/core/database/models"
+	log "github.com/sirupsen/logrus"
 )
 
 func (pg *PostgreSQL) createOrUpdateDomain(projectName string, domain pgDomain) error {
@@ -12,8 +13,11 @@ func (pg *PostgreSQL) createOrUpdateDomain(projectName string, domain pgDomain) 
 	if res.Error != nil {
 		return errors.New("Could not find assiociated projet : " + res.Error.Error())
 	}
+	log.Debugf("Project with name : %s : %+v", projectName, project)
 
-	res = pg.db.Where("project_id", project.ID).Where("name = ?", domain.Name).FirstOrInit(&domain)
+	domain.Project = project
+	log.Debugf("Saving domain : %+v", domain)
+	res = pg.db.Where("project_id = ?", project.ID).Where("name = ?", domain.Name).FirstOrCreate(&domain)
 	if res.Error != nil {
 		return errors.New("Could not save or update domain : " + res.Error.Error())
 	}
