@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	maxRetry = 3
+	maxRetry          = 10
+	delayBetweenTries = 3 * time.Second
 )
 
 type Client struct {
@@ -55,8 +56,8 @@ func (client *Client) Start() {
 		}
 
 		log.Errorf("Could not connect : %+v", err)
-		log.Errorf("Retry count : %d, Max retry : %d", tries, maxRetry)
-		time.Sleep(10 * time.Second)
+		log.Errorf("Retry count : %d, Max retries : %d", tries, maxRetry)
+		time.Sleep(delayBetweenTries)
 	}
 
 	if err != nil {
