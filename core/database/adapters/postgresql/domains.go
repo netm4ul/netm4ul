@@ -67,16 +67,15 @@ func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models
 
 func (pg *PostgreSQL) getDomains(projectName string) ([]pgDomain, error) {
 	domains := []pgDomain{}
-
 	res := pg.db.Raw(`
-	SELECT domains.name
-		FROM domains, domain_to_ips, ips, projects
+	SELECT *
+		FROM domains, projects
 		WHERE projects.name = ?
-		AND domain_to_ips.pg_domain_id = domains.id
-		AND domain_to_ips.pg_ip_id = ips.id
+		AND projects.id = domains.project_id
 		`,
 		projectName,
 	).Scan(&domains)
+
 	if res.Error != nil {
 		return nil, errors.New("Could not get domains : " + res.Error.Error())
 	}
