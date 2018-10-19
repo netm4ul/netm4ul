@@ -197,5 +197,11 @@ func (d *dnsbruteforce) WriteDb(result communication.Result, db models.Database,
 		return err
 	}
 
+	ip := models.IP{Value: res.Addr, CreatedAt: time.Now(), UpdatedAt: time.Now(), Network: "external"}
+	err = db.CreateOrUpdateIP(projectName, ip)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
