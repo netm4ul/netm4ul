@@ -45,6 +45,8 @@ const (
 	defaultAlgorithm          = "random"
 	defaultProjectName        = "first"
 	defaultProjectDescription = "Your first project"
+	defaultPasswordWordlist   = "0"
+	defaultDomainWordlist     = "0"
 )
 
 var (
@@ -65,12 +67,14 @@ var (
 	cliApiPort                uint16
 	cliDisableTLS             bool
 	cliAlgorithm              string
+	cliWordlist               string
 	skipDBSetup               bool
 	skipServerSetup           bool
 	skipApiSetup              bool
 	skipModulesSetup          bool
 	skipAlgorithmSetup        bool
 	skipProjectSetup          bool
+	skipWordlists             bool
 )
 
 var setupDatabaseCmd = &cobra.Command{
@@ -128,6 +132,22 @@ var setupAlgorithmCmd = &cobra.Command{
 		err := setupAlgorithm()
 		if err != nil {
 			log.Errorln("Could not setup the Algorithm : " + err.Error())
+		}
+
+		err = saveConfigFile()
+		if err != nil {
+			log.Fatal("Could not save the file : " + err.Error())
+		}
+	},
+}
+
+var setupWordlistsCmd = &cobra.Command{
+	Use:   "wordlists",
+	Short: "NetM4ul setup",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := setupWordlists()
+		if err != nil {
+			log.Errorln("Could not setup the Wordlists : " + err.Error())
 		}
 
 		err = saveConfigFile()
@@ -230,6 +250,15 @@ var setupCmd = &cobra.Command{
 			fmt.Println("Skiping algorithm setup")
 		}
 
+		if !skipWordlists {
+			err = setupWordlists()
+			if err != nil {
+				log.Fatalf("Could not setup the wordlists : %s", err.Error())
+			}
+		} else {
+			fmt.Println("Skiping wordlists setup")
+		}
+
 		err = saveConfigFile()
 		if err != nil {
 			log.Fatal("Could not save the file : " + err.Error())
@@ -262,6 +291,8 @@ func prompt(param string) (answer string) {
 		"algorithm":          {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: CLISession.Config.Algorithm.Name},
 		"projectname":        {Message: "Project name (default : %s) : ", DefaultValue: CLISession.Config.Project.Name},
 		"projectdescription": {Message: "Project description (default : %s) : ", DefaultValue: CLISession.Config.Project.Description},
+		"wordlist-password":  {Message: "Choose a password wordlist to download [default : %s]: \n", DefaultValue: defaultPasswordWordlist},
+		"wordlist-domain":    {Message: "Choose a domain wordlist to download [default : %s]: \n", DefaultValue: defaultDomainWordlist},
 	}
 
 	fmt.Printf(promptString[param].Message, promptString[param].DefaultValue)
@@ -427,6 +458,52 @@ func setupAlgorithm() error {
 	return err
 }
 
+func setupWordlists() error {
+
+	// passwords
+	index := printWordlistByType("passwords")
+	askPasswordWordlist := prompt("wordlist-password")
+	selectedPasswordIndex, err := strconv.Atoi(askPasswordWordlist)
+	if err != nil {
+		return errors.New("Your input is not a number")
+	}
+
+	if selectedPasswordIndex < 0 || selectedPasswordIndex >= index {
+		return errors.New("Input out of range")
+	}
+
+	// subdomains
+	index = printWordlistByType("subdomains")
+	askDomainWordlist := prompt("wordlist-domain")
+	selectedDomainIndex, err := strconv.Atoi(askDomainWordlist)
+	if err != nil {
+		return errors.New("Your input is not a number")
+	}
+
+	if selectedDomainIndex < 0 || selectedDomainIndex >= index {
+		return errors.New("Input out of range")
+	}
+
+	// return the selected "wordlist" struct from its index number
+	// This is not optimal. (TOFIX)
+	passwordWordlist, err := getWordlistByTypeAndIndex("passwords", selectedPasswordIndex)
+	domainWordlist, err := getWordlistByTypeAndIndex("subdomains", selectedDomainIndex)
+
+	fmt.Printf("Downloading : [%s] and [%s] wordlists\n", passwordWordlist.Name, domainWordlist.Name)
+	err = downloadWordlist(passwordWordlist)
+	if err != nil {
+		return errors.New("Could not download the password wordlist : " + err.Error())
+	}
+
+	err = downloadWordlist(domainWordlist)
+	if err != nil {
+		return errors.New("Could not download the subdomains wordlist : " + err.Error())
+	}
+
+	fmt.Println("Download complete")
+	return nil
+}
+
 func yesNo(response string) (bool, error) {
 	response = strings.ToLower(strings.TrimSpace(response))
 
@@ -500,6 +577,7 @@ func init() {
 	setupCmd.AddCommand(setupAPICmd)
 	setupCmd.AddCommand(setupTLSCmd)
 	setupCmd.AddCommand(setupAlgorithmCmd)
+	setupCmd.AddCommand(setupWordlistsCmd)
 
 	// database
 	setupCmd.PersistentFlags().StringVar(&cliDBSetupUser, "database-user", defaultDBSetupUser, "Custom database user")
@@ -523,7 +601,10 @@ func init() {
 	setupCmd.PersistentFlags().BoolVar(&cliDisableTLS, "disable-tls", false, "Disable TLS")
 
 	//Algorithm
-	setupCmd.PersistentFlags().StringVar(&cliAlgorithm, "algorithm ", defaultAlgorithm, "Load balancing algorithm")
+	setupCmd.PersistentFlags().StringVar(&cliAlgorithm, "algorithm", defaultAlgorithm, "Load balancing algorithm")
+
+	//Wordlist
+	setupCmd.PersistentFlags().StringVar(&cliWordlist, "wordlists", defaultAlgorithm, "Download wordlists (password, subdomains...)")
 
 	//Skips
 	setupCmd.PersistentFlags().BoolVar(&skipDBSetup, "skip-database", false, "Skip configuration of the database")
@@ -532,4 +613,5 @@ func init() {
 	setupCmd.PersistentFlags().BoolVar(&skipAlgorithmSetup, "skip-algorithm", false, "Skip configuration of the algorithm")
 	setupCmd.PersistentFlags().BoolVar(&skipModulesSetup, "skip-modules", false, "Skip configuration of the modules")
 	setupCmd.PersistentFlags().BoolVar(&skipProjectSetup, "skip-project", false, "Skip configuration of the project")
+	setupCmd.PersistentFlags().BoolVar(&skipWordlists, "skip-wordlists", false, "Skip downloading of wordlists")
 }
