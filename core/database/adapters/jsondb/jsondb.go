@@ -13,6 +13,7 @@ import (
 
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/security"
 )
 
 /*
@@ -380,7 +381,7 @@ func (f *JsonDB) GetUserByToken(token string) (models.User, error) {
 }
 
 func (f *JsonDB) GenerateNewToken(user models.User) error {
-	user.Token = models.GenerateNewToken()
+	user.Token = security.GenerateNewToken()
 	err := f.CreateOrUpdateUser(user)
 	if err != nil {
 		return errors.New("Could not generate a new token : " + err.Error())

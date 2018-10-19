@@ -1,8 +1,6 @@
 package models
 
 import (
-	"crypto/rand"
-	"fmt"
 	"net"
 	"time"
 
@@ -109,13 +107,6 @@ type Raw struct {
 	ModuleName string
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
-}
-
-//GenerateNewToken return a new random token string
-func GenerateNewToken() string {
-	b := make([]byte, 20)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
 }
 
 //GetPortTypes returns all the port type to insert into the database during the setup. It might be augmented during runtime by the user interaction.

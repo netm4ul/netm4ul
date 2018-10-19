@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/netm4ul/netm4ul/core/security"
+
 	"github.com/netm4ul/netm4ul/core/config"
 
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -405,7 +407,12 @@ func setupAPI() error {
 			return errors.New("Could not create the database session : " + err.Error())
 		}
 		now := time.Now()
-		user := models.User{Name: CLISession.Config.API.User, Password: password, CreatedAt: now, UpdatedAt: now}
+
+		hashedPassword, err := security.HashAndSalt([]byte(password))
+		if err != nil {
+			return err
+		}
+		user := models.User{Name: CLISession.Config.API.User, Password: hashedPassword, CreatedAt: now, UpdatedAt: now}
 
 		err = db.CreateOrUpdateUser(user)
 		if err != nil {

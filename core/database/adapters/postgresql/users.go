@@ -5,6 +5,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/security"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,7 +40,7 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 
 	//if the in-database user doesn't have a token, create one : it might be a security issues without one.
 	if tmpUser.Token == "" {
-		tmpUser.Token = models.GenerateNewToken()
+		tmpUser.Token = security.GenerateNewToken()
 	}
 
 	if pguser.Token != "" && tmpUser.Token != pguser.Token {
@@ -101,7 +102,7 @@ It uses the function GenerateNewToken provided by the `models` class
 */
 func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
 
-	user.Token = models.GenerateNewToken()
+	user.Token = security.GenerateNewToken()
 	err := pg.CreateOrUpdateUser(user)
 	if err != nil {
 		return errors.New("Could not generate a new token : " + err.Error())

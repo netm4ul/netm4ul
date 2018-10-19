@@ -6,34 +6,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/security"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type simplifiedUser struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
-}
-
-func hashAndSalt(pwd []byte) (string, error) {
-
-	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.DefaultCost)
-	if err != nil {
-		log.Error(err)
-		return "", err
-	}
-
-	return string(hash), nil
-}
-
-func comparePassword(hashedPwd string, plain string) bool {
-
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plain))
-	if err != nil {
-		log.Error(err)
-		return false
-	}
-	return true
 }
 
 func (api *API) isCorrectPassword(username string, plain string) (bool, models.User, error) {
@@ -43,7 +22,7 @@ func (api *API) isCorrectPassword(username string, plain string) (bool, models.U
 		return false, models.User{}, err
 	}
 
-	if comparePassword(user.Password, plain) {
+	if security.ComparePassword(user.Password, plain) {
 		return true, user, nil
 	}
 
@@ -78,7 +57,7 @@ func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pass, err := hashAndSalt([]byte(user.Password))
+	pass, err := security.HashAndSalt([]byte(user.Password))
 	if err != nil {
 		sendDefaultValue(w, CodeServerError)
 		return
@@ -86,7 +65,7 @@ func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	newUser := models.User{
 		Name:     user.Name,
 		Password: pass,
-		Token:    models.GenerateNewToken(),
+		Token:    security.GenerateNewToken(),
 	}
 
 	err = api.db.CreateOrUpdateUser(newUser)
