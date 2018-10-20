@@ -190,12 +190,19 @@ var setupCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		var err error
-		// Check if file exist
+
+		// Create a new config file if it doesn't exist.
+		// Use the saveConfigFile so we don't need to copy an "example file" to copy and maintain.
 		if _, err := os.Stat(CLISession.ConfigPath); err != nil {
-			CLISession.Config, err = loadExistingConfig()
+			err := saveConfigFile()
 			if err != nil {
-				log.Fatalf("Could not copy example file to standard config : %s", err.Error())
+				log.Fatalf("Could not create: %s", err.Error())
 			}
+		}
+
+		CLISession.Config, err = loadExistingConfig()
+		if err != nil {
+			log.Fatalf("Could load the existing config file %s", err.Error())
 		}
 
 		if !skipProjectSetup {
