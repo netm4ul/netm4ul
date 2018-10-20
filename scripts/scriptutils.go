@@ -50,6 +50,7 @@ func SaveFileToPath(filepath string, data []byte) error {
 	return err
 }
 
+//EnsureDir returns an error if the folder already exist. This is wanted in the case we don't want to override it.
 func EnsureDir(filepath string) error {
 	dirpath := path.Dir(filepath)
 	//ensure data folder exists
