@@ -1,9 +1,5 @@
 {{define "Domains"}}
-
-{{range $index, $tld := .Domains}}
-    {{$tld.Name}}
-    {{range $index, $element := $tld.SubDomains}}
-        {{ $element.Name}}.{{$tld.Name}}
-    {{- end}}
-{{end}}
+{{range $index, $domain := .Domains}}
+    {{(Add $index 1) | printf "%#02x" }}  {{$domain.Name}}
+{{- end}}
 {{end}}

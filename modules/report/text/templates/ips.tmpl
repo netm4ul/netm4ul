@@ -1,5 +1,5 @@
 {{ define "IPs" }}
 {{range $index, $element := .IPs}}
-    [-{{$index}}-] {{$element.Value}}
+    {{(Add $index 1) | printf "%#02x"}}  {{$element.Value}}
 {{- end}}
 {{end}}

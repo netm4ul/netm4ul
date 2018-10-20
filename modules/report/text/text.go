@@ -56,6 +56,15 @@ func NewReport() *Text {
 		"Suffix": func(text string, char string) string {
 			return text + strings.Repeat(char, t.Width-len(text))
 		},
+		"Prefix": func(text string, char string) string {
+			return strings.Repeat(char, t.Width-len(text)) + text
+		},
+		"LeftPad": func(text string, paddingChar string, wantedLen int) string {
+			return strings.Repeat(paddingChar, wantedLen-len(text)) + text
+		},
+		"Add": func(a int, b int) int {
+			return a + b
+		},
 	}
 
 	return &t
@@ -113,6 +122,7 @@ func (t *Text) getData() (map[string]interface{}, error) {
 		return nil, errors.New("Couldn't retrieve Domains from the database [" + t.DB.Name() + "] : " + err.Error())
 	}
 	data["Domains"] = domains
+	fmt.Printf("Domain : %+v\n", domains)
 
 	ips, err := t.DB.GetIPs(t.cfg.Project.Name)
 	if err != nil {
