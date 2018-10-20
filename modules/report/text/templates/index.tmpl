@@ -1,0 +1,23 @@
+{{ define "index" }}
+{{CenterWithFix ".: " " :." .Name}}
+{{CenterWithFix "-= " " =-" (FormatDate .Date) }}
+
+[[ {{ Pad "-" 74}} ]]
+{{Center .Description}}
+[[ {{ Pad "-" 74}} ]]
+
+{{ template "TOC" . }}
+
+{{Suffix "---[ 0x01 - IPs ]" "-"}}
+{{- template "IPs" . }}
+
+{{Suffix "---[ 0x02 - Domains ]" "-"}}
+{{- template "Domains" . }}
+
+{{Suffix "---[ 0x03 - Ports ]" "-"}}
+{{- template "Ports" . }}
+
+{{Suffix "---[ 0x04 - Vulnerabilities ]" "-"}}
+{{- template "Vulnerabilities" . }}
+
+{{end}}

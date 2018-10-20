@@ -1,0 +1,5 @@
+{{define "Domains"}}
+{{range $index, $domain := .Domains}}
+    {{(Add $index 1) | printf "%#02x" }}  {{$domain.Name}}
+{{- end}}
+{{end}}

@@ -1,11 +1,11 @@
 TARGET=netm4ul
-GO_FILES=$(shell find . -iname '*.go' -type f 2>&1 -not -path "./vendor/*" | grep -v "Permission denied")
-GO_TEST_PKG=$(shell find . -iname '*_test.go' -type f 2>&1 -not -path "./vendor/*" -exec dirname {} \; | grep -v "Permission denied")
-all: deps build
+GO_LIST=$(shell go list ./... 2>&1 | grep -v /vendor/ | grep -v "permission denied")
+
+all: vet fmt deps build
 	@echo "All done"
 
-test: build
-	@go test $(GO_TEST_PKG) 
+test: all
+	@go test $(GO_LIST)
 
 build:
 	@echo "Building ..."
@@ -13,13 +13,13 @@ build:
 	@echo "Building done"
 
 vet:
-	@go vet $(GO_FILES)
+	@go vet $(GO_LIST)
 
 fmt:
-	@go fmt $(GO_FILES)
+	@go fmt $(GO_LIST)
 
 lint:
-	@golint $(GO_FILES)
+	@golint $(GO_LIST)
 
 deps:
 	@echo "Ensure dependencies"

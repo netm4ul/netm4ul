@@ -2,6 +2,8 @@ package session
 
 import (
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/modules"
 	"github.com/netm4ul/netm4ul/modules/recon/dns"
+	"github.com/netm4ul/netm4ul/modules/recon/dnsbruteforce"
 	"github.com/netm4ul/netm4ul/modules/recon/masscan"
 	"github.com/netm4ul/netm4ul/modules/recon/nmap"
 	"github.com/netm4ul/netm4ul/modules/recon/shodan"
@@ -31,10 +34,15 @@ type Session struct {
 	Connector      Connector
 	Algo           loadbalancing.Algorithm
 	Nodes          []communication.Node
+	IsServer       bool
+	IsClient       bool
+	ConfigPath     string
+	Verbose        bool
 }
 
 // NewSession func :
-func NewSession(c config.ConfigToml) *Session {
+func NewSession(c config.ConfigToml) (*Session, error) {
+	var err error
 	s := Session{
 		Modules:        make(map[string]modules.Module, 0),
 		ModulesEnabled: make(map[string]modules.Module, 0),
@@ -42,7 +50,13 @@ func NewSession(c config.ConfigToml) *Session {
 	// populate all modules
 	s.Config = c
 	s.loadModule()
-	return &s
+
+	s.Algo, err = loadbalancing.NewAlgo(c.Algorithm.Name)
+
+	if err != nil {
+		return nil, errors.New("Could not create the session : " + err.Error())
+	}
+	return &s, nil
 }
 
 // Register func :
@@ -58,8 +72,9 @@ func (s *Session) Register(m modules.Module) {
 // loadModule func
 func (s *Session) loadModule() {
 	s.Register(traceroute.NewTraceroute())
-	s.Register(dns.NewDns())
+	s.Register(dns.NewDNS())
 	s.Register(nmap.NewNmap())
+	s.Register(dnsbruteforce.NewDnsbruteforce())
 	s.Register(masscan.NewMasscan())
 	s.Register(shodan.NewShodan())
 }
@@ -72,4 +87,21 @@ func (s *Session) GetServerIPPort() string {
 // GetAPIIPPort fun
 func (s *Session) GetAPIIPPort() string {
 	return s.Config.Server.IP + ":" + strconv.FormatUint(uint64(s.Config.API.Port), 10)
+}
+
+// GetModulesList return a string of all modules (listed and enabled)
+// display them in 2 lines
+func (s *Session) GetModulesList() string {
+	mod := "["
+	for _, m := range s.Modules {
+		mod += " " + m.Name()
+	}
+	mod += " ]"
+
+	modEnabled := "["
+	for _, m := range s.ModulesEnabled {
+		modEnabled += " " + m.Name()
+	}
+	modEnabled += "]"
+	return fmt.Sprintf("Modules : [%s]\n Modules enabled : [%s]", mod, modEnabled)
 }

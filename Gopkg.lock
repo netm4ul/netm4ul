@@ -14,6 +14,23 @@
   version = "1.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/aeden/traceroute"
+  packages = ["."]
+  revision = "ae2abf0a43c93d78edae54d460c58cdc80634563"
+
+[[projects]]
+  name = "github.com/edznux/go-nmap"
+  packages = ["."]
+  revision = "33d4dd00c1c123805b8e84b805d3defc0e422df8"
+
+[[projects]]
+  name = "github.com/fatih/color"
+  packages = ["."]
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
+
+[[projects]]
   name = "github.com/go-ole/go-ole"
   packages = [
     ".",
@@ -21,6 +38,17 @@
   ]
   revision = "a41e3c4b706f6ae8dfbff342b06e40fa4d2d0506"
   version = "v1.2.1"
+
+[[projects]]
+  name = "github.com/go-pg/pg"
+  packages = [
+    "internal",
+    "internal/parser",
+    "orm",
+    "types"
+  ]
+  revision = "d4fc7afde3ee9d0a780f9c67daf8a8a3bfd84060"
+  version = "v6.14.2"
 
 [[projects]]
   branch = "master"
@@ -47,13 +75,41 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/jinzhu/gorm"
+  packages = [
+    ".",
+    "dialects/postgres"
+  ]
+  revision = "6ed508ec6a4ecb3531899a69cbc746ccf65a4166"
+  version = "v1.9.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jinzhu/inflection"
+  packages = ["."]
+  revision = "04140366298a54a039076d798123ffa108fff46c"
+
+[[projects]]
   branch = "master"
   name = "github.com/lib/pq"
   packages = [
     ".",
+    "hstore",
     "oid"
   ]
-  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
+
+[[projects]]
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -123,6 +179,8 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
+    "bcrypt",
+    "blowfish",
     "ed25519",
     "ed25519/internal/edwards25519",
     "ssh/terminal"
@@ -150,18 +208,6 @@
   revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [[projects]]
-  branch = "v2"
-  name = "gopkg.in/mgo.v2"
-  packages = [
-    ".",
-    "bson",
-    "internal/json",
-    "internal/sasl",
-    "internal/scram"
-  ]
-  revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
-
-[[projects]]
   name = "gopkg.in/ns3777k/go-shodan.v3"
   packages = ["shodan"]
   revision = "c1bc298e2b11df7a72949191c4102d5935ede169"
@@ -170,6 +216,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "183083644a998bbb35c8788a200a5c68781632232d55c513c5063370a6c915cf"
+  inputs-digest = "9b7fbb4516e2b3b880ed10c54b159c040419ea85b1b009346d7f1f73ccca3250"
   solver-name = "gps-cdcl"
   solver-version = 1

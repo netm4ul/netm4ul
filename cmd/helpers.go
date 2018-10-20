@@ -10,10 +10,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/netm4ul/netm4ul/modules"
+	"github.com/netm4ul/netm4ul/core/communication"
+	"github.com/netm4ul/netm4ul/core/server"
 
+	"github.com/netm4ul/netm4ul/core/client"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/core/session"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +26,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+/*
+getURL returns a full URL with all the configured attributes (ip, port, version...)
+It takes a ressource name and a valid session
+*/
 func getURL(ressource string, s *session.Session) string {
 	port := strconv.FormatInt(int64(s.Config.API.Port), 10)
 	url := "http://" + s.Config.Server.IP + ":" + port
@@ -36,6 +41,16 @@ func getURL(ressource string, s *session.Session) string {
 	return strings.TrimRight(url, "/")
 }
 
+/*
+* getData takes care of getting data from the API
+* It handles the creation of the full url, all the json formatting and verify the API return status
+* Args:
+	- the ressource name
+	- the current sessions
+* Return :
+	- The returned data of the api using api.Result type
+	- any error encountered during the execution
+*/
 func getData(ressource string, s *session.Session) (api.Result, error) {
 
 	var result api.Result
@@ -67,6 +82,17 @@ func getData(ressource string, s *session.Session) (api.Result, error) {
 	return result, nil
 }
 
+/*
+* postData takes care of posting data to the API
+* It sets the correct content type and
+* Args:
+	- the ressource name
+	- the current sessions
+	- any kind of data that is expected by the api
+* Return :
+	- The returned data of the api using api.Result type
+	- any error encountered during the execution
+*/
 func postData(ressource string, s *session.Session, rawdata interface{}) (api.Result, error) {
 	var result api.Result
 
@@ -111,6 +137,9 @@ func createProjectIfNotExist(s *session.Session) {
 
 }
 
+/*
+CreateProject is a wrapper function to create a new project.
+*/
 func CreateProject(p models.Project, s *session.Session) error {
 
 	ressource := "/projects"
@@ -130,6 +159,12 @@ type Projects struct {
 	Projects []models.Project
 }
 
+/*
+GetProjects is an helper function to get a slice of all the projects availables
+Return :
+	- Slice of models.Projects from any kind of database
+	- error if anything unexpected occured during the execution of the function
+*/
 func GetProjects(s *session.Session) ([]models.Project, error) {
 
 	var data []models.Project
@@ -141,11 +176,13 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 		return data, err
 	}
 
+	// using mapstructure to decode all the json response into the data variable.
 	err = mapstructure.Decode(resjson.Data, &data)
 	if err != nil {
 		return data, err
 	}
 
+	// Check if the api response code say that everything went fine or abort.
 	if resjson.Code != api.CodeOK {
 		return data, errors.New("Can't get projects list :" + err.Error())
 	}
@@ -153,6 +190,12 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 	return data, nil
 }
 
+/*
+GetProject is an helper function to get all the information from a project by its name
+Return :
+	- a models.Projects from any kind of database
+	- error if anything unexpected occured during the execution of the function
+*/
 func GetProject(name string, s *session.Session) (models.Project, error) {
 	var data models.Project
 	resjson, err := getData("/projects/"+name, s)
@@ -175,14 +218,12 @@ func GetProject(name string, s *session.Session) (models.Project, error) {
 	return data, nil
 }
 
-func GetIPsByProject(project string, s *session.Session) (models.IP, error) {
-	return models.IP{}, nil
-}
-
-func GetPortsByIP(project string, ip string, s *session.Session) ([]models.Port, error) {
-	return []models.Port{}, nil
-}
-
+/*
+parseModules gets all the modules configured for this session.
+Return :
+	- slice of all the modules name (string)
+	- error is anything unexpected happens
+*/
 func parseModules(modules []string, s *session.Session) ([]string, error) {
 
 	if len(modules) == 0 {
@@ -229,10 +270,10 @@ func printProjectsInfo(s *session.Session) {
 
 	// build array of array for the table !
 	for _, p := range listOfProjects {
-		if s.Config.Verbose {
+		if s.Verbose {
 			log.Infof("p : %+v", p)
 		}
-		data = append(data, []string{p.Name, p.Description, strconv.Itoa(len(p.IPs)), time.Unix(p.UpdatedAt, 0).String()})
+		data = append(data, []string{p.Name, p.Description, strconv.Itoa(int(p.UpdatedAt.Unix()))})
 	}
 
 	table.AppendBulk(data)
@@ -240,7 +281,8 @@ func printProjectsInfo(s *session.Session) {
 }
 
 func printProjectInfo(projectName string, s *session.Session) {
-
+	//TODO
+	// everyhting !
 	var p models.Project
 	var err error
 	var data [][]string
@@ -260,24 +302,17 @@ func printProjectInfo(projectName string, s *session.Session) {
 
 	log.Debugf("Project : %+v", p)
 
-	for _, ip := range p.IPs {
-		log.Debugf("ip : %+v", ip)
-		for _, port := range ip.Ports {
-			data = append(data, []string{ip.Value, strconv.Itoa(int(port.Number))})
-		}
-	}
-
 	table.AppendBulk(data)
 	table.Render()
 }
 
-func parseTargets(targets []string) ([]modules.Input, error) {
+func parseTargets(targets []string) ([]communication.Input, error) {
 
-	var inputs []modules.Input
-	var input modules.Input
+	var inputs []communication.Input
+	var input communication.Input
 
 	if len(targets) == 0 {
-		return []modules.Input{}, errors.New("Not target found")
+		return []communication.Input{}, errors.New("Not target found")
 	}
 
 	// loop on each targets
@@ -290,16 +325,16 @@ func parseTargets(targets []string) ([]modules.Input, error) {
 			ips, err := net.LookupIP(target)
 
 			if err != nil {
-				return []modules.Input{}, errors.New("Could lookup address : " + target + ", " + err.Error())
+				return []communication.Input{}, errors.New("Could lookup address : " + target + ", " + err.Error())
 			}
 
 			if ips == nil {
-				return []modules.Input{}, errors.New("Could not resolve :" + target)
+				return []communication.Input{}, errors.New("Could not resolve :" + target)
 			}
 
 			// convert ips to strings
 			for _, ip := range ips {
-				input = modules.Input{Domain: target, IP: ip}
+				input = communication.Input{Domain: target, IP: ip}
 				inputs = append(inputs, input)
 			}
 
@@ -307,22 +342,22 @@ func parseTargets(targets []string) ([]modules.Input, error) {
 			// if this is an ip
 			// check if ip is specified (not :: or 0.0.0.0)
 			if ip.IsUnspecified() {
-				return []modules.Input{}, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
+				return []communication.Input{}, errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
 			}
 
 			// check if ip isn't loopback
 			if ip.IsLoopback() {
-				return []modules.Input{}, errors.New("Target ip is loopback address")
+				return []communication.Input{}, errors.New("Target ip is loopback address")
 			}
 
 			// IP Range (CIDR)
 			if ipNet != nil {
 				h, err := hosts(target)
 				if err != nil {
-					return []modules.Input{}, errors.New("Target ip range is invalid (" + err.Error() + ")")
+					return []communication.Input{}, errors.New("Target ip range is invalid (" + err.Error() + ")")
 				}
 				for _, host := range h {
-					input = modules.Input{IP: host}
+					input = communication.Input{IP: host}
 					inputs = append(inputs, input)
 				}
 			}
@@ -357,5 +392,94 @@ func hosts(cidr string) ([]net.IP, error) {
 
 //PrintVersion Prints the version of all the components : The server, the Client, and the HTTP API
 func PrintVersion(s *session.Session) {
-	fmt.Printf("Version :\n - Server : %s\n - Client : %s\n - HTTP API : %s\n", s.Config.Versions.Server, s.Config.Versions.Client, s.Config.Versions.Api)
+	fmt.Printf("Version :\n - Server : %s\n - Client : %s\n - HTTP API : %s\n", server.Version, client.Version, api.Version)
+}
+
+func getGlobalModulesList() ([]string, error) {
+	res := []string{}
+
+	exploitsModules, err := getModulesList("exploit")
+	if err != nil {
+		return nil, errors.New("Could not load exploit modules : " + err.Error())
+	}
+
+	reconsModules, err := getModulesList("recon")
+	if err != nil {
+		return nil, errors.New("Could not load recon modules : " + err.Error())
+	}
+
+	reportsModules, err := getModulesList("report")
+	if err != nil {
+		return nil, errors.New("Could not load report modules : " + err.Error())
+	}
+
+	res = append(res, exploitsModules...)
+	res = append(res, reconsModules...)
+	res = append(res, reportsModules...)
+	return res, nil
+}
+
+func getModulesList(modType string) ([]string, error) {
+	files, err := ioutil.ReadDir("./modules/" + modType)
+	if err != nil {
+		return nil, err
+	}
+
+	res := []string{}
+	for _, f := range files {
+		if f.IsDir() {
+			res = append(res, f.Name())
+		}
+	}
+	return res, nil
+}
+
+//TOFIX : must be a better way
+func setDefaultValues(cfg *config.ConfigToml) {
+
+	//Algorithm
+	if cfg.Algorithm.Name == "" {
+		cfg.Algorithm.Name = defaultAlgorithm
+	}
+
+	//API
+	if cfg.API.Port == 0 {
+		cfg.API.Port = defaultAPIPort
+	}
+	if cfg.API.User == "" {
+		cfg.API.User = defaultAPIUser
+	}
+
+	//DATABASE
+	if cfg.Database.Database == "" {
+		cfg.Database.Database = defaultDBname
+	}
+	if cfg.Database.DatabaseType == "" {
+		cfg.Database.DatabaseType = defaultDBType
+	}
+	if cfg.Database.IP == "" {
+		cfg.Database.IP = defaultDBIP
+	}
+	if cfg.Database.User == "" {
+		cfg.Database.User = defaultDBSetupUser
+	}
+	if cfg.Database.Password == "" {
+		cfg.Database.Password = defaultDBSetupPassword
+	}
+	if cfg.Database.Port == 0 {
+		cfg.Database.Port = defaultDBPort
+	}
+
+	//Project
+	if cfg.Project.Name == "" {
+		cfg.Project.Name = defaultProjectName
+	}
+	if cfg.Project.Description == "" {
+		cfg.Project.Description = defaultProjectDescription
+	}
+
+	//Modules
+	if cfg.Modules == nil {
+		cfg.Modules = make(map[string]config.Module, 0)
+	}
 }

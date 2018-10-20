@@ -1,17 +1,3 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package cmd
 
 import (
@@ -22,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/netm4ul/netm4ul/core/api"
-	"github.com/netm4ul/netm4ul/modules"
+	"github.com/netm4ul/netm4ul/core/communication"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -36,7 +22,7 @@ var runCmd = &cobra.Command{
 	Short: "Run scan on the defined target",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
-		CLISession.Config.Mode = CLImode
+		CLISession.Config.Algorithm.Mode = CLImode
 		if CLIprojectName != "" {
 			createProject(CLIprojectName)
 		}
@@ -48,14 +34,14 @@ var runCmd = &cobra.Command{
 
 		targets, err := parseTargets(args)
 		if err != nil {
-			log.Errorf("Error while parsing targets : %v", err.Error())
+			log.Errorf("Error while parsing targets : %s\n", err.Error())
 		}
 
 		log.Debugf("targets : %+v", targets)
 		log.Debugf("CLIModules : %+v", CLImodules)
 		log.Debugf("Modules : %+v", CLISession.Config.Modules)
 		log.Debugf("CLIMode : %+v", CLImode)
-		log.Debugf("Mode : %+v", CLISession.Config.Mode)
+		log.Debugf("Mode : %+v", CLISession.Config.Algorithm.Mode)
 
 		// if len(CLImodules) > 0 {
 		// 	mods, err := parseModules(CLImodules, CLISession)
@@ -76,7 +62,8 @@ var runCmd = &cobra.Command{
 }
 
 func createProject(project string) {
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects"
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+		"/api/v1/projects"
 	jsonInput, err := json.Marshal(project)
 	if err != nil {
 		log.Fatal(err)
@@ -94,28 +81,55 @@ func createProject(project string) {
 	fmt.Println(res)
 }
 
-func runModules(targets []modules.Input) {
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run"
+func runModules(targets []communication.Input) {
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+		"/api/v1/projects/" +
+		CLISession.Config.Project.Name +
+		"/run"
 
 	jsonInput, err := json.Marshal(targets)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Error : %s\n", err.Error())
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonInput))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonInput))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Error : %s\n", err.Error())
 	}
-	res, err := json.Marshal(resp.Body)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Session-Token", CLISession.Config.API.Token)
+
+	var res api.Result
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error : %s\n", err.Error())
+		return
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&res)
 	if err != nil {
 		fmt.Println("Recieved invalid json !", err)
+		return
 	}
-	fmt.Println(res)
+	defer req.Body.Close()
+
+	if res.Status == "error" {
+		fmt.Printf("Could not execute command : %s\n", res.Message)
+		return
+	}
+
+	fmt.Printf("Command sent ! (%+v)\n", res)
 }
 
-func runSpecifiedModules(targets []modules.Input, modules []string) {
+func runSpecifiedModules(targets []communication.Input, modules []string) {
 
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) + "/api/v1/projects/FirstProject/run"
+	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+		"/api/v1/projects/" +
+		CLISession.Config.Project.Name +
+		"/run"
 
 	jsonInput, err := json.Marshal(targets)
 	if err != nil {

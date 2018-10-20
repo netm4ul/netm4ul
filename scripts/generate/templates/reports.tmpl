@@ -1,0 +1,16 @@
+package {{.reportName | ToLower }}
+
+import "errors"
+
+type {{.reportName}} struct {
+	Filename string
+}
+
+func Name() string {
+	return "{{.reportName}}"
+}
+
+//Generate a new report in {{.reportName}} format
+func (r *{{.reportName}}) Generate(name string) error {
+	return errors.New("Not implemented yet")
+}

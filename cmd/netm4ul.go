@@ -48,24 +48,26 @@ func init() {
 }
 
 func createSessionBase() {
-	var cfg config.ConfigToml
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	err := config.LoadConfig(configPath)
-	cfg = config.Config
+	cfg, err := config.LoadConfig(configPath)
 
 	if err != nil {
 		log.Debugf("Could not load the config file : %s", configPath)
 		cfg = config.ConfigToml{}
 	}
+	// this function will fill the missing value if the config file is missing field
+	// will be especially useful during updates
+	setDefaultValues(&cfg)
 
-	cfg.ConfigPath = DefaultConfigPath
-	cfg.ConfigPath = configPath
-	cfg.Verbose = verbose
-
-	CLISession = session.NewSession(cfg)
+	CLISession, err = session.NewSession(cfg)
+	if err != nil {
+		log.Fatalf("Could not create the CLI session : %s", err)
+	}
+	CLISession.ConfigPath = configPath
+	CLISession.Verbose = verbose
 
 	if CLIprojectName != "" {
 		CLISession.Config.Project.Name = CLIprojectName

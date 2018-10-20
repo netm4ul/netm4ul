@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	Version  = "0.1"
-	maxRetry = 3
+	maxRetry          = 10
+	delayBetweenTries = 3 * time.Second
 )
 
 type Client struct {
@@ -56,8 +56,8 @@ func (client *Client) Start() {
 		}
 
 		log.Errorf("Could not connect : %+v", err)
-		log.Errorf("Retry count : %d, Max retry : %d", tries, maxRetry)
-		time.Sleep(10 * time.Second)
+		log.Errorf("Retry count : %d, Max retries : %d", tries, maxRetry)
+		time.Sleep(delayBetweenTries)
 	}
 
 	if err != nil {
@@ -88,13 +88,18 @@ func (client *Client) handleData() {
 			continue
 		}
 
-		// must exist, if it doesn't, this line shouldn't be executed (checks above)
-		module := client.Session.Modules[cmd.Name]
+		// must exist, if it doesn't, the next lines shouldn't be executed
+		module, exist := client.Session.Modules[cmd.Name]
+		if !exist {
+			continue
+		}
 
-		//TODO
-		// send data back to the server
-		data, err := client.Execute(module, cmd)
-		client.SendResult(data)
+		go func() {
+			_, err = client.Execute(module, cmd)
+			if err != nil {
+				log.Error("Could not execute module : " + err.Error())
+			}
+		}()
 	}
 }
 
@@ -106,14 +111,12 @@ func (client *Client) Connect() error {
 
 	if client.Session.Config.TLSParams.UseTLS {
 		client.Session.Connector.TLSConn, err = tls.Dial("tcp", ipport, client.Session.Config.TLSParams.TLSConfig)
-		if err != nil {
-			return errors.Wrap(err, "Dialing "+ipport+" failed")
-		}
 	} else {
 		client.Session.Connector.Conn, err = net.Dial("tcp", ipport)
-		if err != nil {
-			return errors.Wrap(err, "Dialing "+ipport+" failed")
-		}
+	}
+
+	if err != nil {
+		return errors.Wrap(err, "Dialing "+ipport+" failed")
 	}
 
 	return nil
@@ -223,16 +226,31 @@ func (client *Client) Recv() (communication.Command, error) {
 }
 
 // Execute runs modules with the right options and handle errors.
-func (client *Client) Execute(module modules.Module, cmd communication.Command) (modules.Result, error) {
+func (client *Client) Execute(module modules.Module, cmd communication.Command) (communication.Done, error) {
 
 	log.Debugf("Executing module : \n\t %s, version %s by %s\n\t", module.Name(), module.Version(), module.Author())
-	//TODO
-	res, err := module.Run(cmd.Options)
+	result := make(chan communication.Result)
+	done := make(chan communication.Done)
+
+	go func() {
+		for {
+			select {
+			case res := <-result:
+				client.SendResult(res)
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	// Pass the channel in every module so we can get the data back
+	res, err := module.Run(cmd.Options, result)
+	done <- res
 	return res, err
 }
 
 // SendResult sends the data back to the server. It will then be handled by each module.WriteDb to be saved
-func (client *Client) SendResult(res modules.Result) error {
+func (client *Client) SendResult(res communication.Result) error {
 	var rw *bufio.ReadWriter
 
 	if client.Session.Connector.TLSConn == nil {
@@ -244,13 +262,13 @@ func (client *Client) SendResult(res modules.Result) error {
 	err := gob.NewEncoder(rw).Encode(res)
 
 	if err != nil {
-		log.Errorf("Error : %+v", err)
+		log.Errorf("Could not encode result : %+v", err)
 		return err
 	}
 
 	err = rw.Flush()
 	if err != nil {
-		log.Errorf("Error : %+v", err)
+		log.Errorf("Could not flush the read/writer : %+v", err)
 		return err
 	}
 

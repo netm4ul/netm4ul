@@ -1,17 +1,3 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package cmd
 
 import (
@@ -23,7 +9,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"github.com/spf13/cobra"
 	"log"
 	"math/big"
 	"net"
@@ -31,9 +16,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/netm4ul/netm4ul/core/config"
+	"github.com/spf13/cobra"
+
 	"path/filepath"
 	"strconv"
+
+	"github.com/netm4ul/netm4ul/core/config"
 )
 
 var (
@@ -47,19 +35,18 @@ var (
 )
 
 var (
+	caEntityID      = "ca"
+	caEntityType    = "CA"
+	caDirectoryName = "CA"
 
-	caEntityID = "ca"
-	caEntityType = "CA"
-	caDirectoryName	= "CA"
-
-	serverEntityType = "Server"
+	serverEntityType    = "Server"
 	serverDirectoryName = "Server"
 
-	clientEntityType = "Client"
-	clientDirectoryName = "Clients"
+	clientEntityType     = "Client"
+	clientDirectoryName  = "Clients"
 	clientEntityIDPrefix = "client_"
 
-	keySuffix = "_key.pem"
+	keySuffix  = "_key.pem"
 	certSuffix = "_cert.pem"
 )
 
@@ -78,10 +65,13 @@ var pkiCmd = &cobra.Command{
 	The client nodes don't need a publicly known hostname, but you may assign them a name that suits your use (e.g. your logs may see "client_x successfully connected to API"")`,
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		config.LoadConfig(configPath)
+		cfg, err := config.LoadConfig(configPath)
+		if err != nil {
+			log.Fatalf("Could not load config file : %s", err.Error())
+		}
 
 		if serverID == "" {
-			serverID = config.Config.Server.IP
+			serverID = cfg.Server.IP
 		}
 
 	},
@@ -222,7 +212,7 @@ func writeCertAndKeyToDisk(entityType string, privateKey *ecdsa.PrivateKey, cert
 	if entityType != caEntityType || keepPrivCA {
 		keyOut, err := os.OpenFile(keyFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
-			log.Print("failed to open " + keyFilename + "  for writing:", err)
+			log.Print("failed to open "+keyFilename+"  for writing:", err)
 		}
 		pem.Encode(keyOut, pemBlockForKey(privateKey))
 		keyOut.Close()
@@ -327,7 +317,7 @@ func pkiSetup(organisationSubject string, numberClients uint, certDuration time.
 	// Create clients
 	clientsDir := append(targetDir, clientDirectoryName)
 	for i := 0; i < int(numberClients); i++ {
-		create(clientEntityIDPrefix + strconv.Itoa(i), certDuration, clientEntityType, ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
+		create(clientEntityIDPrefix+strconv.Itoa(i), certDuration, clientEntityType, ecdsaCurve, caCert, caKey, organisationSubject, clientsDir)
 
 	}
 

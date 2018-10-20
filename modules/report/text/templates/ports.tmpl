@@ -1,0 +1,7 @@
+{{define "Ports"}}
+{{range $index, $element := .Ports}}
+    {{ LeftPad ($element.Number | printf "%d") " " 5}} -=-
+    {{- $portStatus := (printf "%5s | %-8s" $element.Protocol $element.Status) }}
+    {{- $portStatus }} -=- [{{- $element.Banner}}]
+{{- end}}
+{{end}}

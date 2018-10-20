@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
 
 	"github.com/BurntSushi/toml"
@@ -80,7 +81,8 @@ type ConfigToml struct {
 // Masscan "class"
 type Masscan struct {
 	// Config : exported config
-	Config ConfigToml
+	Config   ConfigToml
+	rawsData string
 }
 
 //NewMasscan generate a new Masscan module (type modules.Module)
@@ -113,8 +115,7 @@ func (M *Masscan) DependsOn() []modules.Condition {
 }
 
 // Run : Main function of the module
-func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
-	log.Debug("H3ll-0 M4sscan")
+func (M *Masscan) Run(input communication.Input, result chan communication.Result) (communication.Done, error) {
 
 	outputfile := generateUUID() + ".json"
 
@@ -126,10 +127,9 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 	opt = append(opt, "-oJ", outputfile)
 
 	// Get IP
-	for _, i := range inputs {
-		if i.IP != nil {
-			opt = append([]string{i.IP.String()}, opt...)
-		}
+	// IP is the first arguments !
+	if input.IP != nil {
+		opt = append([]string{input.IP.String()}, opt...)
 	}
 
 	// Command execution
@@ -147,13 +147,15 @@ func (M *Masscan) Run(inputs []modules.Input) (modules.Result, error) {
 
 	log.Debug(stdout.String())
 	res, err := M.Parse(outputfile)
-
 	if err != nil {
 		log.Error(err)
 	}
-	log.Debug("M4sscan done.")
 
-	return modules.Result{Data: res, Timestamp: time.Now(), Module: M.Name()}, nil
+	// send result to the chan !
+	result <- communication.Result{Data: res, ModuleName: M.Name(), Timestamp: time.Now()}
+	log.Debug("Masscan done.")
+
+	return communication.Done{Timestamp: time.Now(), ModuleName: M.Name(), Error: nil}, nil
 }
 
 // ParseConfig : Load the config from the config folder
@@ -178,6 +180,7 @@ func (M *Masscan) Parse(file string) (MasscanResult, error) {
 	if err != nil {
 		return MasscanResult{}, err
 	}
+	M.rawsData = string(data)
 	fileReformatted := string(data)
 
 	// JSON reformatted
@@ -197,7 +200,7 @@ func (M *Masscan) Parse(file string) (MasscanResult, error) {
 }
 
 // WriteDb : Save data
-func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName string) error {
+func (M *Masscan) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Info("Write to the database.")
 
 	var data MasscanResult
@@ -228,9 +231,17 @@ func (M *Masscan) WriteDb(result modules.Result, db models.Database, projectName
 		return errors.New("Could not create or update ip : " + err.Error())
 	}
 
-	err = db.AppendRawData(projectName, M.Name(), data)
+	now := time.Now()
+	raw := models.Raw{
+		Content:    M.rawsData,
+		ModuleName: M.Name(),
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	err = db.AppendRawData(projectName, raw)
 	if err != nil {
-		return errors.New("Could not append : " + err.Error())
+		return errors.New("Could not append raw data : " + err.Error())
 	}
 
 	return nil

@@ -4,17 +4,21 @@ go:
   - 1.9
   - master
 
+
+matrix:
+  # It's ok if our code fails on unstable development versions of Go.
+  allow_failures:
+    - go: master
+  # Don't wait for tip tests to finish. Mark the test run green if the
+  # tests pass on the stable versions of Go.
+fast_finish: true
+
 before_script:
-  - GO_FILES=$(find . -iname '*.go' -type f 2>&1 -not -path "./vendor/*" | grep -v "Permission denied")
-  - GO_TEST_PKG=$(find . -iname '*_test.go' -type f 2>&1 -not -path "./vendor/*" -exec dirname {} \; | grep -v "Permission denied")
   - go get -u github.com/golang/dep/...
-  - dep ensure
   - cp netm4ul.conf.example netm4ul.conf
 
 script:
-  - test -z $(gofmt -s -l $GO_FILES)
-  - go test -v -race $GO_TEST_PKG
-  - go vet ./...
+  - make test
 
 notifications:
   slack:

@@ -38,7 +38,7 @@ You should find your boiler plate code inside the `core/database/adapters/<mydat
 
 *Then*, you will need to `Register` your adapter inside `database.go`.
 
-## Create a new load balance algorithm
+## Create a new load balancing algorithm
 
 To add a new algorithm, you will need to implement the algorithm.Algorithm interface (available in the `core/loadbalancing/algorithms/` directory)
 

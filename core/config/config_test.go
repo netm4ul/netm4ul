@@ -4,12 +4,18 @@ import (
 	"testing"
 )
 
+var config ConfigToml
+
 func init() {
-	LoadConfig("../../netm4ul.conf")
+	var err error
+	config, err = LoadConfig("../../netm4ul.conf")
+	if err != nil {
+		panic("Could not load config for testing !")
+	}
 }
 
 func TestParseProject(t *testing.T) {
-	if Config.Project.Name == "" {
+	if config.Project.Name == "" {
 		t.Error("Expected project name, got nothing")
 	}
 }
@@ -17,10 +23,10 @@ func TestParseProject(t *testing.T) {
 func TestParseAPI(t *testing.T) {
 	var port uint16
 
-	user := Config.API.User
-	password := Config.API.Password
+	user := config.API.User
+	token := config.API.Token
 
-	port = Config.API.Port
+	port = config.API.Port
 
 	if user == "" {
 		t.Error("Expected user, got empty string")
@@ -28,21 +34,17 @@ func TestParseAPI(t *testing.T) {
 	if port == 0 {
 		t.Error("Expected port, got 0")
 	}
-	if password == "" {
-		t.Error("Expected password, got empty string")
+	if token == "" {
+		t.Log("Expected token, got empty string")
 	}
 }
 
 func TestParseServer(t *testing.T) {
 
-	user := Config.Server.User
-	password := Config.Server.Password
-	ip := Config.Server.IP
-	port := Config.Server.Port
+	password := config.Server.Password
+	ip := config.Server.IP
+	port := config.Server.Port
 
-	if user == "" {
-		t.Error("Expected user, got ", user)
-	}
 	if password == "" {
 		t.Error("Expected password, got ", password)
 	}
@@ -56,12 +58,12 @@ func TestParseServer(t *testing.T) {
 
 func TestParseTLS(t *testing.T) {
 
-	usetls := Config.TLSParams.UseTLS
-	caCert := Config.TLSParams.CaCert
-	serverCert := Config.TLSParams.ServerCert
-	serverPrivateKey := Config.TLSParams.ServerPrivateKey
-	clientCert := Config.TLSParams.ClientCert
-	clientPrivateKey := Config.TLSParams.ClientPrivateKey
+	usetls := config.TLSParams.UseTLS
+	caCert := config.TLSParams.CaCert
+	serverCert := config.TLSParams.ServerCert
+	serverPrivateKey := config.TLSParams.ServerPrivateKey
+	clientCert := config.TLSParams.ClientCert
+	clientPrivateKey := config.TLSParams.ClientPrivateKey
 
 	// Test only if the config is using TLS.
 	// Don't want false fail, but might reconsider
@@ -86,11 +88,11 @@ func TestParseTLS(t *testing.T) {
 
 func TestParseDatabase(t *testing.T) {
 
-	database := Config.Database.Database
-	user := Config.Database.User
-	password := Config.Database.Password
-	ip := Config.Database.IP
-	port := Config.Database.Port
+	database := config.Database.Database
+	user := config.Database.User
+	password := config.Database.Password
+	ip := config.Database.IP
+	port := config.Database.Port
 
 	if database == "" {
 		t.Error("Expected database name, got empty string")
@@ -111,11 +113,11 @@ func TestParseDatabase(t *testing.T) {
 
 func TestModules(t *testing.T) {
 	//	var enabled bool
-	moduleCount := len(Config.Modules)
+	moduleCount := len(config.Modules)
 	if moduleCount == 0 {
 		t.Error("Expected at least one module, got 0")
 	}
-	if !Config.Modules["traceroute"].Enabled {
-		t.Error("Expected traceroute to be enabled", Config.Modules["traceroute"].Enabled)
+	if !config.Modules["traceroute"].Enabled {
+		t.Error("Expected traceroute to be enabled", config.Modules["traceroute"].Enabled)
 	}
 }

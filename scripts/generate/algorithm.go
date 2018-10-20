@@ -12,41 +12,6 @@ import (
 
 //GenerateAlgorithm generate boilerplate for algorithm
 func GenerateAlgorithm(algorithmName, algorithmShortName string) {
-	templateAlgorithm := `
-package {{.algorithmName}}
-
-import (
-	"github.com/netm4ul/netm4ul/core/communication"
-	log "github.com/sirupsen/logrus"
-)
-
-//{{.algorithmName}} is the struct for this algorithm
-type {{.algorithmName}} struct {
-	Nodes []communication.Node
-}
-
-//New{{.algorithmName}} is a {{.algorithmName}} generator.
-func New{{.algorithmName}}() *{{.algorithmName}} {
-	{{.algorithmShortName}} := {{.algorithmName}}{}
-	return &{{.algorithmShortName}}
-}
-
-//Name is the name of the algorithm
-func ({{.algorithmShortName}} *{{.algorithmName}}) Name() string {
-	return "{{.algorithmName}}"
-}
-
-func ({{.algorithmShortName}} *{{.algorithmName}}) SetNodes(nodes []communication.Node) {
-	{{.algorithmShortName}}.Nodes = nodes
-}
-
-//NextExecutionNodes returns selected nodes
-func ({{.algorithmShortName}} *{{.algorithmName}}) NextExecutionNodes(cmd communication.Command) []communication.Node {
-	selectedNode := []communication.Node{}
-
-	return selectedNode
-}
-`
 	if algorithmName == "" {
 		fmt.Println("You must provide an algorithm name")
 		os.Exit(1)
@@ -66,9 +31,20 @@ func ({{.algorithmShortName}} *{{.algorithmName}}) NextExecutionNodes(cmd commun
 	dirpath := path.Join("./core/loadbalancing/algorithms", strings.ToLower(algorithmName))
 	filepath := path.Join(dirpath, strings.ToLower(algorithmName)+".go")
 
-	bytes, err := scripts.GenerateSourceTemplate(templateAlgorithm, data)
+	bytes, err := scripts.GenerateSourceTemplate("algorithm.tmpl", "./scripts/generate/templates/algorithm.tmpl", data)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	err = scripts.EnsureDir(filepath)
+	if err != nil {
+		log.Println("The directory already exist. Do you want to continue ? [y/n]")
+
+		input := ""
+		fmt.Scanln(&input)
+		if input != "y" && input != "Y" {
+			log.Fatal("Aborting.")
+		}
 	}
 
 	err = scripts.SaveFileToPath(filepath, bytes)

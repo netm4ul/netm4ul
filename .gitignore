@@ -23,8 +23,10 @@ netm4ul
 # Remove project folder
 vendor/
 .idea/
+.vscode/
 data/
 *.log
+reports/*
 
 # personnal conf
 netm4ul.conf.my
@@ -36,3 +38,4 @@ certificates/*
 
 # Random Files
 127.0.0.1.xml
+wordlists/*

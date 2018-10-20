@@ -2,6 +2,7 @@ package models
 
 import (
 	"net"
+	"time"
 
 	"github.com/netm4ul/netm4ul/core/config"
 )
@@ -13,7 +14,6 @@ import (
 
 // Hop defines each "hop" from the host (netm4ul client) to the target.
 type Hop struct {
-	ID  string `json:"-" bson:"_id,omitempty"`
 	IP  net.IP
 	Max float32
 	Min float32
@@ -22,84 +22,158 @@ type Hop struct {
 
 // Route defines the route from the host (netm4ul client) to the target
 type Route struct {
-	ID          string `json:"-" bson:"_id,omitempty"`
-	Source      string `json:"source,omitempty" bson:"Source"`
-	Destination string `json:"destination,omitempty" bson:"Destination"`
-	Hops        []Hop  `json:"hops,omitempty" bson:"Hops,omitempty"`
+	Source      string `json:"source,omitempty"`
+	Destination string `json:"destination,omitempty"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // URI defines one ressource from a remote target (webserver), either files or directory
 type URI struct {
-	ID   string `json:"-" bson:"_id,omitempty"`
-	Name string `json:"name" bson:"Name"`
-	Code string `json:"code,omitempty" bson:"Code,omitempty"`
+	Name string `json:"name"`
+	Code string `json:"code,omitempty"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Port defines the basic structure for each port scanned on the target
 type Port struct {
-	ID       string `json:"-" bson:"_id,omitempty"`
-	Number   int16  `json:"number,omitempty" bson:"Number"`
-	Protocol string `json:"protocol,omitempty" bson:"Protocol"`
-	Status   string `json:"status,omitempty" bson:"Status"` // open, filtered, closed
-	Banner   string `json:"banner,omitempty" bson:"Banner,omitempty"`
-	Type     string `json:"type,omitempty" bson:"Type,omitempty"`
-	URI      []URI  `json:"value,omitempty" bson:"Value,omitempty"`
+	Number   int16  `json:"number,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+	Status   string `json:"status,omitempty"` // open, filtered, closed
+	Banner   string `json:"banner,omitempty"`
+	Type     string `json:"type,omitempty"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 //IP defines the IP address of a target.
 type IP struct {
-	ID    string `json:"-" bson:"_id,omitempty"`
-	Value string `json:"value,omitempty" bson:"Value"` // should be net.IP, but can't enforce that in the db...
-	Ports []Port `json:"ports,omitempty" bson:"Ports,omitempty"`
+	Value   string `json:"value,omitempty" gorm:"primary_key"`   // should be net.IP, but can't enforce that in the db...
+	Network string `sql:"default:'external'" gorm:"primary_key"` // arbitrary value, default should be "external".
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+//Network represent the network used by one IP.
+//By default, every ip should be in the "external" Network
+type Network struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+//Domain defines the Domain address of a target.
+type Domain struct {
+	Name string `json:"name,omitempty"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 //Project is the top level struct for a target. It contains a list of IPs and other metadata.
 type Project struct {
-	ID          string `json:"-" bson:"_id,omitempty"`
-	Name        string `json:"name" bson:"Name"`
-	Description string `json:"description" bson:"Description,omitempty"`
-	UpdatedAt   int64  `json:"updated_at" bson:"UpdatedAt,omitempty"`
-	IPs         []IP   `json:"ips,omitempty" bson:"IPs,omitempty"`
+	Name        string `json:"name" sql:",unique"`
+	Description string `json:"description"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-//Raws is a map, the key is module name (string). Each module write in a map of interface (key : string version of current timestamp)
-type Raws map[string]map[string]interface{}
+type User struct {
+	Name     string `json:"name" sql:",unique"`
+	Password string `json:"password,omitempty"`
+	Token    string `json:"token,omitempty" toml:"token"`
 
-//AllRaws represents all Raws output, for a project string
-type AllRaws map[string]Raws
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type PortType struct {
+	Type        string
+	Description string
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type Raw struct {
+	Content    string
+	ModuleName string
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+//GetPortTypes returns all the port type to insert into the database during the setup. It might be augmented during runtime by the user interaction.
+func GetPortTypes() []PortType {
+	pts := []PortType{
+		PortType{Type: "web", Description: "This port runs a web services (http, https)"},
+		PortType{Type: "mail", Description: "This port runs a mail service"},
+		PortType{Type: "admin", Description: "This port runs an admin tool, it could be a web page (http), a remote desktop application (rdp), or a remote login (ssh, telnet)"},
+		PortType{Type: "gaming", Description: "This port is used by a game"},
+		PortType{Type: "voip", Description: "This port is used by a voip service (Teamspeak, Skype, Mumble...)"},
+		PortType{Type: "api", Description: "This port serve an API"},
+	}
+	return pts
+}
 
 //Database is the mandatory interface for all custom database adapter
 type Database interface {
 	// General purpose functions
 	Name() string
+	SetupDatabase() error
+	DeleteDatabase() error
 	SetupAuth(username, password, dbname string) error
 	Connect(*config.ConfigToml) error
+
+	//Users
+	CreateOrUpdateUser(user User) error
+	GetUser(username string) (User, error)
+	GetUserByToken(token string) (User, error)
+	GenerateNewToken(user User) error
+	DeleteUser(user User) error
 
 	// Project
 	CreateOrUpdateProject(Project) error
 	GetProjects() ([]Project, error)
 	GetProject(projectName string) (Project, error)
+	DeleteProject(project Project) error
 
 	// IP
 	CreateOrUpdateIP(projectName string, ip IP) error
 	CreateOrUpdateIPs(projectName string, ip []IP) error
 	GetIPs(projectName string) ([]IP, error)
 	GetIP(projectName string, ip string) (IP, error)
+	DeleteIP(ip IP) error
+
+	// Domain
+	CreateOrUpdateDomain(projectName string, domain Domain) error
+	CreateOrUpdateDomains(projectName string, domain []Domain) error
+	GetDomains(projectName string) ([]Domain, error)
+	GetDomain(projectName string, domain string) (Domain, error)
+	DeleteDomain(projectName string, domain Domain) error
 
 	// Port
 	CreateOrUpdatePort(projectName string, ip string, port Port) error
 	CreateOrUpdatePorts(projectName string, ip string, port []Port) error
 	GetPorts(projectName string, ip string) ([]Port, error)
 	GetPort(projectName string, ip string, port string) (Port, error)
+	DeletePort(projectName string, ip string, port Port) error
 
 	// URI (directory and files)
 	CreateOrUpdateURI(projectName string, ip string, port string, dir URI) error
 	CreateOrUpdateURIs(projectName string, ip string, port string, dir []URI) error
 	GetURIs(projectName string, ip string, port string) ([]URI, error)
 	GetURI(projectName string, ip string, port string, dir string) (URI, error)
+	DeleteURI(projectName string, ip string, port string, dir URI) error
 
 	// Raw data
-	AppendRawData(projectName string, moduleName string, data interface{}) error
-	GetRaws(projectName string) (Raws, error)
-	GetRawModule(projectName string, moduleName string) (map[string]interface{}, error)
+	AppendRawData(projectName string, data Raw) error
+	GetRaws(projectName string) ([]Raw, error)
+	GetRawModule(projectName string, moduleName string) (map[string][]Raw, error)
 }
