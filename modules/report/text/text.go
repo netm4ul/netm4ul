@@ -14,6 +14,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	log "github.com/sirupsen/logrus"
 )
 
 type Text struct {
@@ -79,6 +80,7 @@ const templatesPath = "modules/report/text/templates/"
 
 //Generate a new report in text format
 func (t *Text) Generate(name string) error {
+	t1 := time.Now()
 
 	var buff bytes.Buffer
 	data, err := t.getData()
@@ -105,7 +107,13 @@ func (t *Text) Generate(name string) error {
 		return err
 	}
 
-	return WriteReport(name, buff.Bytes())
+	err = WriteReport(name, buff.Bytes())
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Report done in %s.\n", time.Since(t1))
+	return nil
 }
 
 func (t *Text) getData() (map[string]interface{}, error) {
@@ -122,7 +130,7 @@ func (t *Text) getData() (map[string]interface{}, error) {
 		return nil, errors.New("Couldn't retrieve Domains from the database [" + t.DB.Name() + "] : " + err.Error())
 	}
 	data["Domains"] = domains
-	fmt.Printf("Domain : %+v\n", domains)
+	log.Debug("Domain : %+v\n", domains)
 
 	ips, err := t.DB.GetIPs(t.cfg.Project.Name)
 	if err != nil {
@@ -132,9 +140,9 @@ func (t *Text) getData() (map[string]interface{}, error) {
 
 	data["Ports"] = make([]models.Port, 0)
 	for _, ip := range ips {
-		fmt.Printf("ip : %s\n", ip.Value)
+		log.Debug("ip : %s\n", ip.Value)
 		ports, err := t.DB.GetPorts(t.cfg.Project.Name, ip.Value)
-		fmt.Printf("ports : %+v\n", ports)
+		log.Debug("ports : %+v\n", ports)
 		if err != nil {
 			return nil, errors.New("Couldn't retrieve Ports from the database [" + t.DB.Name() + "] : " + err.Error())
 		}
