@@ -14,6 +14,7 @@ type Random struct {
 
 //NewRandom is a Random generator.
 func NewRandom() *Random {
+	rand.Seed(time.Now().UnixNano())
 	r := Random{}
 	return &r
 }
@@ -29,7 +30,6 @@ func (r *Random) SetNodes(nodes []communication.Node) {
 
 //NextExecutionNodes returns selected nodes
 func (r *Random) NextExecutionNodes(cmd communication.Command) []communication.Node {
-	rand.Seed(time.Now().UnixNano())
 
 	// no client found !
 	if len(r.Nodes) == 0 {
