@@ -16,7 +16,7 @@ var completionCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			fmt.Println("To few arguments, please provide your type of shell : sh or zsh")
+			fmt.Println("To few arguments, please provide your type of shell : bash or zsh")
 			os.Exit(1)
 		}
 
