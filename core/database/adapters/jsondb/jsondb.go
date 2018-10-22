@@ -23,7 +23,7 @@ It tries to follow the ReconJSON structure.
 By default, the data are stored 2 files for each project:
 	- one parsed results file
 	- one raw file for storing unformatted data
-One more file is used globaly for storing users data.
+One more file is used globally for storing users data.
 
 */
 
@@ -570,7 +570,7 @@ func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 }
 
 // CreateOrUpdateIPs is not implemented yet.
-// It should be only usefull for bulk update. It might use CreateOrUpdateIP internally
+// It should be only useful for bulk update. It might use CreateOrUpdateIP internally
 func (f *JsonDB) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 	return errors.New("Not implemented yet")
 }

@@ -177,7 +177,7 @@ func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 	return nil
 }
 
-//Connect is trying to connect to the database (and writting the connection to pg.db) with the provided configuration.
+//Connect is trying to connect to the database (and writing the connection to pg.db) with the provided configuration.
 func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 	var err error
 	log.Debugf("Connecting  to the database")

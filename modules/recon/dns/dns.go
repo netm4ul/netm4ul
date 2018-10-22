@@ -18,7 +18,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 )
 
-// Result represent the parsed ouput
+// Result represent the parsed output
 type Result struct {
 	Types map[string][]string
 }
@@ -64,7 +64,7 @@ func (D *DNS) DependsOn() []modules.Condition {
 }
 
 /*
-	Usefull command
+	useful command
 	curl -XPOST http://localhost:8080/api/v1/projects/FirstProject/run/dns
 	check db: Db.projects.find()
 	remove all data: db.projects.remove({})

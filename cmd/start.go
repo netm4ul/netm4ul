@@ -40,7 +40,7 @@ var startServerCmd = &cobra.Command{
 
 		var err error
 		// init session...
-		// there is no chaining of persistent pre run ... so we are doing it manualy...
+		// there is no chaining of persistent pre run ... so we are doing it manually...
 		createSessionBase()
 		if cliLogfile {
 			setupLoggingToFile(serverLogPath)
@@ -85,7 +85,7 @@ var startClientCmd = &cobra.Command{
 
 		var err error
 		// init session
-		// there is no chaining of persistent pre run ... so we are doing it manualy...
+		// there is no chaining of persistent pre run ... so we are doing it manually...
 		createSessionBase()
 		if cliLogfile {
 			setupLoggingToFile(clientLogPath)

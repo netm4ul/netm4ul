@@ -216,7 +216,7 @@ func (client *Client) Recv() (communication.Command, error) {
 		return communication.Command{}, errors.New("Could not decode received message : " + err.Error())
 	}
 
-	log.Debugf("Recieved command %+v", cmd)
+	log.Debugf("Received command %+v", cmd)
 	_, ok := client.Session.Modules[cmd.Name]
 
 	if !ok {

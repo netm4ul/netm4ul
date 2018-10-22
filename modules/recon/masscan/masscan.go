@@ -25,7 +25,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 )
 
-// Results represent the parsed ouput
+// Results represent the parsed output
 type Results struct {
 	Scans []Scan
 }

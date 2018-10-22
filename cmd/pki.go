@@ -321,6 +321,6 @@ func pkiSetup(organisationSubject string, numberClients uint, certDuration time.
 
 	}
 
-	log.Println("It seems PKI creation was successfull.")
+	log.Println("It seems PKI creation was successful.")
 
 }

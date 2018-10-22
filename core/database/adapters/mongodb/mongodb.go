@@ -61,7 +61,7 @@ package mongodb
 // 	}
 
 // 	log.Debugf("User : %+v", cfg.Database.User)
-// 	log.Debugf("Datbase : %+v", cfg.Database.Database)
+// 	log.Debugf("Database : %+v", cfg.Database.Database)
 // 	s, err := mgo.DialWithInfo(mongoDBDialInfo)
 
 // 	if err != nil {

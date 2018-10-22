@@ -159,7 +159,7 @@ func CreateProject(p models.Project, s *session.Session) error {
 GetProjects is an helper function to get a slice of all the projects availables
 Return :
 	- Slice of models.Projects from any kind of database
-	- error if anything unexpected occured during the execution of the function
+	- error if anything unexpected occurred during the execution of the function
 */
 func GetProjects(s *session.Session) ([]models.Project, error) {
 
@@ -190,7 +190,7 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 GetProject is an helper function to get all the information from a project by its name
 Return :
 	- a models.Projects from any kind of database
-	- error if anything unexpected occured during the execution of the function
+	- error if anything unexpected occurred during the execution of the function
 */
 func GetProject(name string, s *session.Session) (models.Project, error) {
 	var data models.Project

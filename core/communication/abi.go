@@ -39,7 +39,7 @@ type Result struct {
 
 /*
 Done represent the data sent by a module when it has finished all operation.
-It is normaly sent just before exiting.
+It is normally sent just before exiting.
 If the module errored, it MUST send this structure with the Error field set.
 */
 type Done struct {

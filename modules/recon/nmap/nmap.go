@@ -71,7 +71,7 @@ func (N *Nmap) Author() string {
 	return "pruno"
 }
 
-// DependsOn : Generate the dependancies requirements
+// DependsOn : Generate the dependencies requirements
 func (N *Nmap) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}

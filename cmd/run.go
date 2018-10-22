@@ -111,7 +111,7 @@ func runModules(targets []communication.Input) {
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&res)
 	if err != nil {
-		fmt.Println("Recieved invalid json !", err)
+		fmt.Println("Received invalid json !", err)
 		return
 	}
 	defer req.Body.Close()
@@ -145,12 +145,12 @@ func runSpecifiedModules(targets []communication.Input, modules []string) {
 		var res api.Result
 		err = json.NewDecoder(r.Body).Decode(&res)
 		if err != nil {
-			fmt.Println("Recieved invalid json !", err)
+			fmt.Println("Received invalid json !", err)
 		}
 		if res.Code == api.CodeOK {
 			fmt.Println(res.Message, res.Data)
 		} else {
-			fmt.Printf("An error occured : [%d], %s\n", res.Code, res.Message)
+			fmt.Printf("An error occurred : [%d], %s\n", res.Code, res.Message)
 		}
 	}
 }

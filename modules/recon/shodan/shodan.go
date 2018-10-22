@@ -89,7 +89,7 @@ func (S *Shodan) Run(input communication.Input, resultChan chan communication.Re
 	shodanClient := shodan.NewClient(nil, S.Config.Keys.Shodan)
 	// Create shodan context
 	shodanContext := context.Background()
-	// Get IP adress
+	// Get IP address
 	var domain string
 
 	if input.Domain == "" {

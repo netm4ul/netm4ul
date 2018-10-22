@@ -18,7 +18,7 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 )
 
-// Result represent the parsed ouput
+// Result represent the parsed output
 type Result struct {
 	Source      string
 	Destination string
@@ -97,10 +97,10 @@ func (T *Traceroute) Run(input communication.Input, resultChan chan communicatio
 			for {
 				hop, ok := <-c
 				if !ok {
-					log.Debug("Recieved invalid hop (*)")
+					log.Debug("Received invalid hop (*)")
 					return
 				}
-				log.Debugf("Recieved hop : %+v", hop)
+				log.Debugf("Received hop : %+v", hop)
 			}
 		}()
 		traceRes, err = traceroute.Traceroute(ipAddr.String(), &options, c)
