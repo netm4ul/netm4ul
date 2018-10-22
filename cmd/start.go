@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	ServerLogPath = "server.log"
-	ClientLogPath = "client.log"
+	serverLogPath = "server.log"
+	clientLogPath = "client.log"
 )
 
 var (
-	CLILogfile bool
+	cliLogfile bool
 )
 
 // startCmd represents the start command
@@ -42,15 +42,15 @@ var startServerCmd = &cobra.Command{
 		// init session...
 		// there is no chaining of persistent pre run ... so we are doing it manualy...
 		createSessionBase()
-		if CLILogfile {
-			setupLoggingToFile(ServerLogPath)
+		if cliLogfile {
+			setupLoggingToFile(serverLogPath)
 		}
 
-		CLISession.IsServer = isServer
-		CLISession.Nodes = make([]communication.Node, 0)
+		cliSession.IsServer = isServer
+		cliSession.Nodes = make([]communication.Node, 0)
 
-		if CLISession.Config.TLSParams.UseTLS {
-			CLISession.Config.TLSParams.TLSConfig, err = CLISession.Config.TLSBuildServerConf()
+		if cliSession.Config.TLSParams.UseTLS {
+			cliSession.Config.TLSParams.TLSConfig, err = cliSession.Config.TLSBuildServerConf()
 
 			if err != nil {
 				log.Error("Unable to load TLS configuration. Shutting down.")
@@ -64,12 +64,12 @@ var startServerCmd = &cobra.Command{
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// ss := session.NewSession(config.Config)
 		// listen on all interface + Server port
-		s := server.CreateServer(CLISession)
+		s := server.CreateServer(cliSession)
 		go s.Listen()
 		// TODO flag enable / disable api
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// sa := session.NewSession(config.Config)
-		a := api.CreateAPI(CLISession, s)
+		a := api.CreateAPI(cliSession, s)
 		go a.Start()
 
 		gracefulShutdown()
@@ -87,13 +87,13 @@ var startClientCmd = &cobra.Command{
 		// init session
 		// there is no chaining of persistent pre run ... so we are doing it manualy...
 		createSessionBase()
-		if CLILogfile {
-			setupLoggingToFile(ClientLogPath)
+		if cliLogfile {
+			setupLoggingToFile(clientLogPath)
 		}
-		CLISession.IsClient = isClient
+		cliSession.IsClient = isClient
 
-		if CLISession.Config.TLSParams.UseTLS {
-			CLISession.Config.TLSParams.TLSConfig, err = CLISession.Config.TLSBuildClientConf()
+		if cliSession.Config.TLSParams.UseTLS {
+			cliSession.Config.TLSParams.TLSConfig, err = cliSession.Config.TLSBuildClientConf()
 
 			if err != nil {
 				log.Error("Unable to load TLS configuration. Shutting down.")
@@ -104,7 +104,7 @@ var startClientCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// sc := session.NewSession(config.Config)
-		c := client.CreateClient(CLISession)
+		c := client.CreateClient(cliSession)
 		go c.Start()
 
 		gracefulShutdown()
@@ -114,7 +114,7 @@ var startClientCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(startCmd)
 
-	startCmd.PersistentFlags().BoolVar(&CLILogfile, "log2file", false, "Enable logging to file")
+	startCmd.PersistentFlags().BoolVar(&cliLogfile, "log2file", false, "Enable logging to file")
 
 	startCmd.AddCommand(startServerCmd)
 	startCmd.AddCommand(startClientCmd)

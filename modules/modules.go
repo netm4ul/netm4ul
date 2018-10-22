@@ -11,6 +11,10 @@ type Condition struct {
 	Module string // Module name
 }
 
+// Module is the minimal interface needed for one module
+// The Run function is the "main" function of each module
+// ParseConfig will be run in the init system
+// The WriteDb is called each time a new result is sent in the "communication.Result chan" 
 type Module interface {
 	Name() string
 	Version() string
@@ -21,6 +25,8 @@ type Module interface {
 	WriteDb(result communication.Result, db models.Database, projectName string) error
 }
 
+// Report is the minimal interface for one reporting module
+// The Generate function is the "main" function of the report module
 type Report interface {
 	Name() string
 	Generate(name string) error

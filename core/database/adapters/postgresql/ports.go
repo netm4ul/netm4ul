@@ -33,6 +33,7 @@ func (pg *PostgreSQL) createOrUpdatePort(projectName string, ip string, port pgP
 	return nil
 }
 
+//CreateOrUpdatePort is the public wrapper to create or update a new port in the database.
 func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
 
 	pgp := pgPort{}
@@ -55,6 +56,8 @@ func (pg *PostgreSQL) createOrUpdatePorts(projectName string, ip string, ports [
 	return nil
 }
 
+//CreateOrUpdatePorts is the public wrapper to create or update multiple Port
+// This function should be used instead of CreateOrUpdatePort during bulk inserts.
 func (pg *PostgreSQL) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
 	for _, port := range ports {
 		pgp := pgPort{}
@@ -86,6 +89,7 @@ func (pg *PostgreSQL) getPorts(projectName string, ip string) ([]pgPort, error) 
 	return ports, nil
 }
 
+//GetPorts is the public wrapper for getting all the ports for a project and a specific IP
 func (pg *PostgreSQL) GetPorts(projectName string, ip string) ([]models.Port, error) {
 
 	ports, err := pg.getPorts(projectName, ip)
@@ -122,6 +126,7 @@ func (pg *PostgreSQL) getPort(projectName string, ip string, port string) (pgPor
 	return p, nil
 }
 
+//GetPort is the public wrapper for getting a specific port for a project based on the IP and port.
 func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (models.Port, error) {
 	pgp, err := pg.getPort(projectName, ip, port)
 	if err != nil {
@@ -130,6 +135,7 @@ func (pg *PostgreSQL) GetPort(projectName string, ip string, port string) (model
 	return pgp.ToModel(), nil
 }
 
+//DeletePort TOFIX
 func (pg *PostgreSQL) DeletePort(projectName string, ip string, port models.Port) error {
 	return errors.New("Not implemented yet")
 }

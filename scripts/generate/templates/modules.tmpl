@@ -25,30 +25,37 @@ func New{{.name}}() modules.Module {
 	return t
 }
 
+//Name returns the module name
 func ({{.shortName}} *{{.name}}) Name() string{
 	return "{{.name}}"
 }
 
+//Version returns the module version
 func ({{.shortName}} *{{.name}}) Version() string{
 	return "1.0"
 }
 
+//Author returns the module author
 func ({{.shortName}} *{{.name}}) Author() string{
 	{{ if .author }} return {{.author}}	{{ else }} return "AUTHOR NAME"	{{ end }}
 }
 
+//DependsOn returns the module dependencies
 func ({{.shortName}} *{{.name}}) DependsOn() []modules.Condition{
 	return nil
 }
 
+//Run is the "main" function of the modules.
 func ({{.shortName}} *{{.name}}) Run(input communication.Input, result chan communication.Result) (communication.Done, error) {
 	return communication.Done{}, errors.New("Not implemented yet")
 }
 
+//ParseConfig load and parse the module config file
 func ({{.shortName}} *{{.name}}) ParseConfig() error{
 	return errors.New("Not implemented yet")
 }
 
+//WriteDb save the result in the database
 func ({{.shortName}} *{{.name}}) WriteDb(result communication.Result, db models.Database, projectName string) error{
 	return errors.New("Not implemented yet")
 }

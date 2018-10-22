@@ -36,6 +36,7 @@ func (pg *PostgreSQL) createOrUpdateProject(project pgProject) error {
 	return nil
 }
 
+//CreateOrUpdateProject is the public wrapper to create or update a new project in the database.
 func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 	log.Debugf("Saving project : %s", project)
 
@@ -59,6 +60,7 @@ func (pg *PostgreSQL) getProjects() ([]pgProject, error) {
 	return projects, nil
 }
 
+//GetProjects is the public wrapper for getting all the project available
 func (pg *PostgreSQL) GetProjects() ([]models.Project, error) {
 	var projects []models.Project
 
@@ -84,7 +86,7 @@ func (pg *PostgreSQL) getProject(projectName string) (pgProject, error) {
 
 	return project, nil
 }
-
+//GetProject is the public wrapper for getting all the informations on a specific project 
 func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 	p, err := pg.getProject(projectName)
 	if err != nil {
@@ -94,6 +96,7 @@ func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 	return p.ToModel(), nil
 }
 
+//DeleteProject TOFIX
 func (pg *PostgreSQL) DeleteProject(project models.Project) error {
 	return errors.New("Not implemented yet")
 }

@@ -30,6 +30,7 @@ type dnsbruteforce struct {
 	Config dnsbruteforceConfig
 }
 
+//Result hold the results
 type Result struct {
 	Domain string
 	Addr   string
@@ -42,19 +43,22 @@ func NewDnsbruteforce() modules.Module {
 	t = &dnsbruteforce{}
 	return t
 }
-
+//Name returns the module name
 func (d *dnsbruteforce) Name() string {
 	return "dnsbruteforce"
 }
 
+//Version returns the module version
 func (d *dnsbruteforce) Version() string {
 	return "0.1"
 }
 
+//Author returns the module author
 func (d *dnsbruteforce) Author() string {
 	return "Edznux"
 }
 
+//DependsOn returns the module dependencies
 func (d *dnsbruteforce) DependsOn() []modules.Condition {
 	return nil
 }
@@ -95,6 +99,7 @@ func (d *dnsbruteforce) worker(inputList chan string, outputList chan Result) {
 	}
 }
 
+//Run is the "main" function of the modules.
 func (d *dnsbruteforce) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
 	err := d.ParseConfig()
 	if err != nil {
@@ -163,6 +168,7 @@ func (d *dnsbruteforce) Run(input communication.Input, resultChan chan communica
 	return communication.Done{ModuleName: d.Name(), Timestamp: time.Now()}, nil
 }
 
+//ParseConfig load and parse the module config file
 func (d *dnsbruteforce) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
@@ -181,6 +187,7 @@ func (d *dnsbruteforce) ParseConfig() error {
 	return nil
 }
 
+//WriteDb save the result in the database
 func (d *dnsbruteforce) WriteDb(result communication.Result, db models.Database, projectName string) error {
 
 	res := result.Data.(Result)

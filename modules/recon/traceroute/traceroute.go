@@ -18,8 +18,8 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 )
 
-// TracerouteResult represent the parsed ouput
-type TracerouteResult struct {
+// Result represent the parsed ouput
+type Result struct {
 	Source      string
 	Destination string
 	Max         float32
@@ -33,50 +33,42 @@ type Config struct {
 }
 
 // Traceroute "class"
-type TracerouteModule struct {
+type Traceroute struct {
 	// Config : exported config
 	Config Config
-}
-
-type Traceroute struct {
-	Hops   []models.Hop
-	Src    net.IP
-	Dst    net.IP
-	ttl    int
-	maxTTL int
 }
 
 //NewTraceroute generate a new Traceroute module (type modules.Module)
 func NewTraceroute() modules.Module {
 	gob.Register(traceroute.TracerouteResult{})
 	var t modules.Module
-	t = &TracerouteModule{}
+	t = &Traceroute{}
 	return t
 }
 
 // Name : name getter
-func (T *TracerouteModule) Name() string {
+func (T *Traceroute) Name() string {
 	return "Traceroute"
 }
 
 // Author : Author getter
-func (T *TracerouteModule) Author() string {
+func (T *Traceroute) Author() string {
 	return "Edznux"
 }
 
 // Version : Version  getter
-func (T *TracerouteModule) Version() string {
+func (T *Traceroute) Version() string {
 	return "0.1"
 }
 
 // DependsOn : Generate the dependencies requirement
-func (T *TracerouteModule) DependsOn() []modules.Condition {
+func (T *Traceroute) DependsOn() []modules.Condition {
 	var _ modules.Condition
 	return []modules.Condition{}
 }
 
 // Run : Main function of the module
-func (T *TracerouteModule) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
+func (T *Traceroute) Run(input communication.Input, resultChan chan communication.Result) (communication.Done, error) {
 	var ipAddr *net.IPAddr
 	var err error
 
@@ -127,12 +119,12 @@ func (T *TracerouteModule) Run(input communication.Input, resultChan chan commun
 }
 
 // Parse : Parse the result of the execution
-func (T *TracerouteModule) Parse() (TracerouteResult, error) {
-	return TracerouteResult{}, nil
+func (T *Traceroute) Parse() (Result, error) {
+	return Result{}, nil
 }
 
 // ParseConfig : Load the config from the config folder
-func (T *TracerouteModule) ParseConfig() error {
+func (T *Traceroute) ParseConfig() error {
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -149,7 +141,7 @@ func (T *TracerouteModule) ParseConfig() error {
 }
 
 // WriteDb : Save data
-func (T *TracerouteModule) WriteDb(result communication.Result, db models.Database, projectName string) error {
+func (T *Traceroute) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Debug("Writing to the database.")
 
 	var data traceroute.TracerouteResult

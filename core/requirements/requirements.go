@@ -29,6 +29,7 @@ const (
 	CapacityHigh
 )
 
+//String will expand the capacity to it's human readable value
 func (c Capacity) String() string {
 	switch c {
 	case CapacityLow:
@@ -43,10 +44,13 @@ func (c Capacity) String() string {
 }
 
 const (
+	//NetworkExternal represent a node with outside network access
 	NetworkExternal NetworkType = iota
+	//NetworkInternal represent a node with insider network access (on the target LAN)
 	NetworkInternal
 )
 
+//String will expand the network type to it's human readable value
 func (t NetworkType) String() string {
 	switch t {
 	case NetworkExternal:
@@ -59,17 +63,25 @@ func (t NetworkType) String() string {
 }
 
 const (
+	// KiloByte represent 1024 bytes
 	KiloByte = (1 << 10)
+	// MegaByte represent 1024 kilobytes
 	MegaByte = (KiloByte << 10)
+	// GigaByte represent 1024 megabytes
 	GigaByte = (MegaByte << 10)
+	// TeraByte represent 1024 gigabytes
 	TeraByte = (GigaByte << 10)
 )
 
 var (
+	//MemUsage represents the memory capacity of the node
 	MemUsage map[Capacity]int64
+	//CPUUsage represents the CPU capacity of the node
 	CPUUsage map[Capacity]int64
+	//NetUsage represents the networking capacity of the node
 	NetUsage map[Capacity]int64
-
+	
+	//Usage represent all capacities of the host node
 	Usage = map[string]map[Capacity]int64{
 		"memory":  MemUsage,
 		"cpu":     CPUUsage,

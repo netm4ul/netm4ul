@@ -30,6 +30,7 @@ func (api *API) isCorrectPassword(username string, plain string) (bool, models.U
 
 }
 
+//CreateUser handle the requests for creating users.
 func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var res Result
 	var user simplifiedUser

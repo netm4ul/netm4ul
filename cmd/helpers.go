@@ -155,10 +155,6 @@ func CreateProject(p models.Project, s *session.Session) error {
 	return nil
 }
 
-type Projects struct {
-	Projects []models.Project
-}
-
 /*
 GetProjects is an helper function to get a slice of all the projects availables
 Return :

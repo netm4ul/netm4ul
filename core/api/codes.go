@@ -5,6 +5,8 @@ import (
 	"net/http"
 )
 
+//Code represents the internal status errors for the API. This is distinct from the HTTP error code.
+//All the code are sets below
 type Code int
 
 const (

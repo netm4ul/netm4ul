@@ -72,6 +72,7 @@ func (pg *PostgreSQL) getUser(username string) (pgUser, error) {
 	return pguser, nil
 }
 
+// GetUser will return the user information by it's username
 func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
 	pguser, err := pg.getUser(username)
 	if err != nil {
@@ -81,7 +82,7 @@ func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
 }
 
 func (pg *PostgreSQL) getUserByToken(token string) (pgUser, error) {
-
+	
 	pguser := pgUser{}
 	res := pg.db.Where("token = ?", token).First(&pguser)
 	// Accept empty rows !
@@ -91,6 +92,7 @@ func (pg *PostgreSQL) getUserByToken(token string) (pgUser, error) {
 	return pguser, nil
 }
 
+// GetUserByToken will return the user information by it's token
 func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
 	pguser, err := pg.getUserByToken(token)
 	if err != nil {
@@ -99,10 +101,8 @@ func (pg *PostgreSQL) GetUserByToken(token string) (models.User, error) {
 	return pguser.ToModel(), err
 }
 
-/*
-GenerateNewToken generates a new token and save it in the database.
-It uses the function GenerateNewToken provided by the `models` class
-*/
+// GenerateNewToken generates a new token and save it in the database.
+// It uses the function GenerateNewToken provided by the `models` class
 func (pg *PostgreSQL) GenerateNewToken(user models.User) error {
 
 	user.Token = security.GenerateNewToken()

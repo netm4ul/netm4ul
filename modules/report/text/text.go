@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+//Text is the base struct for this text reporting module
 type Text struct {
 	Filename string
 	Width    int
@@ -71,6 +72,7 @@ func NewReport() *Text {
 	return &t
 }
 
+//Name returns the module's name
 func (t *Text) Name() string {
 	return "Text"
 }

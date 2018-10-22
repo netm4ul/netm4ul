@@ -12,7 +12,7 @@ var versionCmd = &cobra.Command{
 		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		PrintVersion(CLISession)
+		PrintVersion(cliSession)
 	},
 }
 

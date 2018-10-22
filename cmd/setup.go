@@ -22,6 +22,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// PromptRes represents a question for the user.
+// The message is the question.
+// It may uses a default value for the user to accept (by just pressing enter)
 type PromptRes struct {
 	Message      string
 	DefaultValue string
@@ -63,16 +66,16 @@ var (
 	cliServerPassword         string
 	cliServerIP               string
 	cliServerPort             uint16
-	cliApiUser                string
-	cliApiPassword            string
-	cliApiIP                  string
-	cliApiPort                uint16
+	cliAPIUser                string
+	cliAPIPassword            string
+	cliAPIIP                  string
+	cliAPIPort                uint16
 	cliDisableTLS             bool
 	cliAlgorithm              string
 	cliWordlist               string
 	skipDBSetup               bool
 	skipServerSetup           bool
-	skipApiSetup              bool
+	skipAPISetup              bool
 	skipModulesSetup          bool
 	skipAlgorithmSetup        bool
 	skipProjectSetup          bool
@@ -182,8 +185,8 @@ var setupCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
 
-		if CLISession.ConfigPath == "" {
-			CLISession.ConfigPath = defaultConfigPath
+		if cliSession.ConfigPath == "" {
+			cliSession.ConfigPath = defaultConfigPath
 		}
 	},
 
@@ -193,14 +196,14 @@ var setupCmd = &cobra.Command{
 
 		// Create a new config file if it doesn't exist.
 		// Use the saveConfigFile so we don't need to copy an "example file" to copy and maintain.
-		if _, err := os.Stat(CLISession.ConfigPath); err != nil {
+		if _, err := os.Stat(cliSession.ConfigPath); err != nil {
 			err := saveConfigFile()
 			if err != nil {
 				log.Fatalf("Could not create: %s", err.Error())
 			}
 		}
 
-		CLISession.Config, err = loadExistingConfig()
+		cliSession.Config, err = loadExistingConfig()
 		if err != nil {
 			log.Fatalf("Could load the existing config file %s", err.Error())
 		}
@@ -223,7 +226,7 @@ var setupCmd = &cobra.Command{
 			fmt.Println("Skiping Database setup")
 		}
 
-		if !skipApiSetup {
+		if !skipAPISetup {
 			err = setupAPI()
 			if err != nil {
 				log.Fatalf("Could not setup the API : %s", err.Error())
@@ -283,23 +286,23 @@ func prompt(param string) (answer string) {
 	// Database parameters
 	promptString := map[string]PromptRes{
 		"dbdel":              {Message: color.RedString("[DANGER]") + "Do you want to delete the database (default : %s) [y/N]: ", DefaultValue: "N"},
-		"dbuser":             {Message: "Database username (default : %s) : ", DefaultValue: CLISession.Config.Database.User},
-		"dbpassword":         {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: CLISession.Config.Database.Password},
-		"dbip":               {Message: "Database IP (default : %s) : ", DefaultValue: CLISession.Config.Database.IP},
-		"dbport":             {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(CLISession.Config.Database.Port))},
-		"dbtype":             {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: CLISession.Config.Database.DatabaseType},
-		"dbname":             {Message: "Database name (default : %s): ", DefaultValue: CLISession.Config.Database.Database},
-		"apiuser":            {Message: "API username (default : %s) : ", DefaultValue: CLISession.Config.API.User},
+		"dbuser":             {Message: "Database username (default : %s) : ", DefaultValue: cliSession.Config.Database.User},
+		"dbpassword":         {Message: "Database password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: cliSession.Config.Database.Password},
+		"dbip":               {Message: "Database IP (default : %s) : ", DefaultValue: cliSession.Config.Database.IP},
+		"dbport":             {Message: "Database Port (default : %s) : ", DefaultValue: strconv.Itoa(int(cliSession.Config.Database.Port))},
+		"dbtype":             {Message: "Database type [postgres, jsondb, mongodb] (default : %s): ", DefaultValue: cliSession.Config.Database.DatabaseType},
+		"dbname":             {Message: "Database name (default : %s): ", DefaultValue: cliSession.Config.Database.Database},
+		"apiuser":            {Message: "API username (default : %s) : ", DefaultValue: cliSession.Config.API.User},
 		"apipassword":        {Message: "API password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: defaultAPIPassword},
-		"apiport":            {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(CLISession.Config.API.Port))},
-		"serverip":           {Message: "Server IP (default : %s) : ", DefaultValue: CLISession.Config.Server.IP},
-		"serverport":         {Message: "Server port (default : %s) : ", DefaultValue: strconv.Itoa(int(CLISession.Config.Server.Port))},
-		"serverpassword":     {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: CLISession.Config.Server.Password},
+		"apiport":            {Message: "API port (default : %s) : ", DefaultValue: strconv.Itoa(int(cliSession.Config.API.Port))},
+		"serverip":           {Message: "Server IP (default : %s) : ", DefaultValue: cliSession.Config.Server.IP},
+		"serverport":         {Message: "Server port (default : %s) : ", DefaultValue: strconv.Itoa(int(cliSession.Config.Server.Port))},
+		"serverpassword":     {Message: "Server password (generated : (" + color.RedString("%s") + ") : ", DefaultValue: cliSession.Config.Server.Password},
 		"usetls":             {Message: "Use TLS (default : %s) [Y/n]: ", DefaultValue: defaultTLS},
 		"createuser":         {Message: "Create a new user (default : %s) [Y/n]: ", DefaultValue: defaultCreateUser},
-		"algorithm":          {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: CLISession.Config.Algorithm.Name},
-		"projectname":        {Message: "Project name (default : %s) : ", DefaultValue: CLISession.Config.Project.Name},
-		"projectdescription": {Message: "Project description (default : %s) : ", DefaultValue: CLISession.Config.Project.Description},
+		"algorithm":          {Message: "Load balancing algorithm (default : %s) : ", DefaultValue: cliSession.Config.Algorithm.Name},
+		"projectname":        {Message: "Project name (default : %s) : ", DefaultValue: cliSession.Config.Project.Name},
+		"projectdescription": {Message: "Project description (default : %s) : ", DefaultValue: cliSession.Config.Project.Description},
 		"wordlist-password":  {Message: "Choose a password wordlist to download [default : %s]: \n", DefaultValue: defaultPasswordWordlist},
 		"wordlist-domain":    {Message: "Choose a domain wordlist to download [default : %s]: \n", DefaultValue: defaultDomainWordlist},
 	}
@@ -314,8 +317,8 @@ func prompt(param string) (answer string) {
 }
 
 func setupProject() error {
-	CLISession.Config.Project.Name = prompt("projectname")
-	CLISession.Config.Project.Description = prompt("projectdescription")
+	cliSession.Config.Project.Name = prompt("projectname")
+	cliSession.Config.Project.Description = prompt("projectdescription")
 	return nil
 }
 
@@ -336,7 +339,7 @@ func setupModules() error {
 		} else {
 			isEnabled, err = yesNo(input)
 		}
-		CLISession.Config.Modules[m] = config.Module{Enabled: isEnabled}
+		cliSession.Config.Modules[m] = config.Module{Enabled: isEnabled}
 	}
 
 	return nil
@@ -347,19 +350,19 @@ func setupDB() error {
 
 	var err error
 
-	CLISession.Config.Database.IP = prompt("dbip")
+	cliSession.Config.Database.IP = prompt("dbip")
 
 	p, err := strconv.Atoi(prompt("dbport"))
 	if err != nil {
 		return err
 	}
-	CLISession.Config.Database.Port = uint16(p)
-	CLISession.Config.Database.DatabaseType = prompt("dbtype")
-	CLISession.Config.Database.User = prompt("dbuser")
-	CLISession.Config.Database.Password = prompt("dbpassword")
-	CLISession.Config.Database.Database = prompt("dbname")
+	cliSession.Config.Database.Port = uint16(p)
+	cliSession.Config.Database.DatabaseType = prompt("dbtype")
+	cliSession.Config.Database.User = prompt("dbuser")
+	cliSession.Config.Database.Password = prompt("dbpassword")
+	cliSession.Config.Database.Database = prompt("dbname")
 
-	db, err := database.NewDatabase(&CLISession.Config)
+	db, err := database.NewDatabase(&cliSession.Config)
 	if err != nil || db == nil {
 		return errors.New("Could not create the database session : " + err.Error())
 	}
@@ -374,9 +377,9 @@ func setupDB() error {
 	}
 
 	err = db.SetupAuth(
-		CLISession.Config.Database.User,
-		CLISession.Config.Database.Password,
-		CLISession.Config.Database.Database,
+		cliSession.Config.Database.User,
+		cliSession.Config.Database.Password,
+		cliSession.Config.Database.Database,
 	)
 
 	if err != nil {
@@ -401,15 +404,15 @@ func setupAPI() error {
 	if err != nil {
 		return err
 	}
-	CLISession.Config.API.Port = uint16(p)
+	cliSession.Config.API.Port = uint16(p)
 
 	wantToCreateUser := prompt("createuser")
 	createBool, err := yesNo(wantToCreateUser)
 
 	if createBool {
-		CLISession.Config.API.User = prompt("apiuser")
+		cliSession.Config.API.User = prompt("apiuser")
 		password := prompt("apipassword")
-		db, err := database.NewDatabase(&CLISession.Config)
+		db, err := database.NewDatabase(&cliSession.Config)
 		if err != nil || db == nil {
 			return errors.New("Could not create the database session : " + err.Error())
 		}
@@ -419,7 +422,7 @@ func setupAPI() error {
 		if err != nil {
 			return err
 		}
-		user := models.User{Name: CLISession.Config.API.User, Password: hashedPassword, CreatedAt: now, UpdatedAt: now}
+		user := models.User{Name: cliSession.Config.API.User, Password: hashedPassword, CreatedAt: now, UpdatedAt: now}
 
 		err = db.CreateOrUpdateUser(user)
 		if err != nil {
@@ -436,21 +439,21 @@ func setupAPI() error {
 			return errors.New("Could not get newly created user : " + err.Error())
 		}
 
-		CLISession.Config.API.Token = user.Token
+		cliSession.Config.API.Token = user.Token
 	}
 
 	return nil
 }
 
 func setupServer() error {
-	CLISession.Config.Server.IP = prompt("serverip")
+	cliSession.Config.Server.IP = prompt("serverip")
 	p, err := strconv.Atoi(prompt("serverport"))
 	if err != nil {
 		return err
 	}
 
-	CLISession.Config.Server.Port = uint16(p)
-	CLISession.Config.Server.Password = prompt("serverpassword")
+	cliSession.Config.Server.Port = uint16(p)
+	cliSession.Config.Server.Password = prompt("serverpassword")
 
 	//loop until answer is 'y' or 'n'
 	tlsString := prompt("usetls")
@@ -460,14 +463,14 @@ func setupServer() error {
 		tlsBool, err = yesNo(tlsString)
 	}
 
-	CLISession.Config.TLSParams.UseTLS = tlsBool
+	cliSession.Config.TLSParams.UseTLS = tlsBool
 	return nil
 }
 
 func setupAlgorithm() error {
 	var err error
 	usedAlgo := prompt("algorithm")
-	CLISession.Config.Algorithm.Name = usedAlgo
+	cliSession.Config.Algorithm.Name = usedAlgo
 
 	return err
 }
@@ -545,7 +548,7 @@ func saveConfigFile() error {
 
 	//Create new config file
 	file, err := os.OpenFile(
-		CLISession.ConfigPath,
+		cliSession.ConfigPath,
 		os.O_WRONLY|os.O_TRUNC|os.O_CREATE,
 		0666,
 	)
@@ -557,7 +560,7 @@ func saveConfigFile() error {
 	defer file.Close()
 
 	//Write new config to new config file
-	err = toml.NewEncoder(file).Encode(CLISession.Config)
+	err = toml.NewEncoder(file).Encode(cliSession.Config)
 	if err != nil {
 		return err
 	}
@@ -606,10 +609,10 @@ func init() {
 	setupCmd.PersistentFlags().Uint16Var(&cliServerPort, "server-port", defaultServerPort, "Custom server port number")
 
 	//api
-	setupCmd.PersistentFlags().StringVar(&cliApiUser, "api-user", defaultAPIUser, "Custom API user")
-	setupCmd.PersistentFlags().StringVar(&cliApiPassword, "api-password", defaultAPIPassword, "Custom API password")
-	setupCmd.PersistentFlags().StringVar(&cliApiIP, "api-ip", defaultAPIIP, "Custom API ip address")
-	setupCmd.PersistentFlags().Uint16Var(&cliApiPort, "api-port", defaultAPIPort, "Custom API port number")
+	setupCmd.PersistentFlags().StringVar(&cliAPIUser, "api-user", defaultAPIUser, "Custom API user")
+	setupCmd.PersistentFlags().StringVar(&cliAPIPassword, "api-password", defaultAPIPassword, "Custom API password")
+	setupCmd.PersistentFlags().StringVar(&cliAPIIP, "api-ip", defaultAPIIP, "Custom API ip address")
+	setupCmd.PersistentFlags().Uint16Var(&cliAPIPort, "api-port", defaultAPIPort, "Custom API port number")
 
 	//TLS
 	setupCmd.PersistentFlags().BoolVar(&cliDisableTLS, "disable-tls", false, "Disable TLS")
@@ -623,7 +626,7 @@ func init() {
 	//Skips
 	setupCmd.PersistentFlags().BoolVar(&skipDBSetup, "skip-database", false, "Skip configuration of the database")
 	setupCmd.PersistentFlags().BoolVar(&skipServerSetup, "skip-server", false, "Skip configuration of the server")
-	setupCmd.PersistentFlags().BoolVar(&skipApiSetup, "skip-api", false, "Skip configuration of the Api")
+	setupCmd.PersistentFlags().BoolVar(&skipAPISetup, "skip-api", false, "Skip configuration of the Api")
 	setupCmd.PersistentFlags().BoolVar(&skipAlgorithmSetup, "skip-algorithm", false, "Skip configuration of the algorithm")
 	setupCmd.PersistentFlags().BoolVar(&skipModulesSetup, "skip-modules", false, "Skip configuration of the modules")
 	setupCmd.PersistentFlags().BoolVar(&skipProjectSetup, "skip-project", false, "Skip configuration of the project")

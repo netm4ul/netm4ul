@@ -21,6 +21,8 @@ func (rr *RoundRobin) Name() string {
 	return "RoundRobin"
 }
 
+//SetNodes is the setter for the Nodes variable.
+//It is used for adding new nodes from outside this package.
 func (rr *RoundRobin) SetNodes(nodes []communication.Node) {
 	rr.Nodes = nodes
 }

@@ -258,12 +258,13 @@ func (f *JsonDB) openResultFile(project string) (*os.File, error) {
 	return file, nil
 }
 
+//SetupDatabase TODO
 func (f *JsonDB) SetupDatabase() error {
 	log.Debugf("SetupDatabase jsondb")
 	//TODO : maybe create folder / files ?
 	return errors.New("Not implemented yet")
 }
-
+//DeleteDatabase TODO
 func (f *JsonDB) DeleteDatabase() error {
 	return errors.New("Not implemented yet")
 }
@@ -280,6 +281,8 @@ func (f *JsonDB) Connect(c *config.ConfigToml) error {
 }
 
 //User
+
+//CreateOrUpdateUser create or update a new user
 func (f *JsonDB) CreateOrUpdateUser(user models.User) error {
 	var u jsonUser
 	u.FromModel(user)
@@ -291,10 +294,8 @@ func (f *JsonDB) CreateOrUpdateUser(user models.User) error {
 	return nil
 }
 
-/*
-This function is only internaly used to get the jsonUser list.
-The public GetUsers will return the generic model.User
-*/
+// This function is only internaly used to get the jsonUser list.
+// The public GetUsers will return the generic model.User
 func (f *JsonDB) getUsers() ([]jsonUser, error) {
 	var users map[string]jsonUser
 	usersArr := []jsonUser{}
@@ -321,6 +322,7 @@ func (f *JsonDB) getUsers() ([]jsonUser, error) {
 	return usersArr, nil
 }
 
+//GetUsers returns all the users stored in the json database
 func (f *JsonDB) GetUsers() ([]models.User, error) {
 
 	usersModel := []models.User{}
@@ -354,9 +356,7 @@ func (f *JsonDB) getUser(username string) (jsonUser, error) {
 	return jsonUser{}, nil
 }
 
-/*
-GetUser is a wrapper to the getUser function. It is only used to convert a jsonUser to models.User
-*/
+// GetUser is a wrapper to the getUser function. It is only used to convert a jsonUser to models.User
 func (f *JsonDB) GetUser(username string) (models.User, error) {
 	user, err := f.getUser(username)
 	if err != nil {
@@ -365,6 +365,7 @@ func (f *JsonDB) GetUser(username string) (models.User, error) {
 	return user.ToModel(), nil
 }
 
+// GetUserByToken will return the user information by it's token
 func (f *JsonDB) GetUserByToken(token string) (models.User, error) {
 
 	users, err := f.getUsers()
@@ -380,6 +381,8 @@ func (f *JsonDB) GetUserByToken(token string) (models.User, error) {
 	return models.User{}, nil
 }
 
+// GenerateNewToken generates a new token and save it in the database.
+// It uses the function GenerateNewToken provided by the `models` class
 func (f *JsonDB) GenerateNewToken(user models.User) error {
 	user.Token = security.GenerateNewToken()
 	err := f.CreateOrUpdateUser(user)
@@ -389,12 +392,16 @@ func (f *JsonDB) GenerateNewToken(user models.User) error {
 	return nil
 }
 
+
+// DeleteUser remove the user from the database (using its ID)
+// TODO
 func (f *JsonDB) DeleteUser(user models.User) error {
 	return errors.New("Not implemented yet")
 }
 
 // Project
 
+// CreateOrUpdateProject handle project. It will update the project if it does not exist.
 func (f *JsonDB) CreateOrUpdateProject(project models.Project) error {
 	log.Debug("Create Project !")
 	jp := jsonProject{}
@@ -402,7 +409,6 @@ func (f *JsonDB) CreateOrUpdateProject(project models.Project) error {
 	return f.createOrUpdateProject(jp)
 }
 
-//CreateOrUpdateProject handle project. It will update the project if it does not exist.
 func (f *JsonDB) createOrUpdateProject(project jsonProject) error {
 
 	projects, err := f.getProjects()
@@ -463,7 +469,7 @@ func (f *JsonDB) getProjects() ([]jsonProject, error) {
 	return projects, nil
 }
 
-//GetProjects will return all projects available. Use GetProject to select only one
+// GetProjects will return all projects available. Use GetProject to select only one
 func (f *JsonDB) GetProjects() ([]models.Project, error) {
 	projectsModel := []models.Project{}
 	projects, err := f.getProjects()
@@ -478,7 +484,7 @@ func (f *JsonDB) GetProjects() ([]models.Project, error) {
 	return projectsModel, nil
 }
 
-//GetProject return only one project by its name. It use GetProjects internally
+// GetProject return only one project by its name. It use GetProjects internally
 func (f *JsonDB) getProject(projectName string) (jsonProject, error) {
 	projects, err := f.getProjects()
 
@@ -494,7 +500,7 @@ func (f *JsonDB) getProject(projectName string) (jsonProject, error) {
 	return jsonProject{}, nil
 }
 
-//GetProject is a wrapper around getProject.
+// GetProject is a wrapper around getProject.
 func (f *JsonDB) GetProject(projectName string) (models.Project, error) {
 	project, err := f.getProject(projectName)
 	if err != nil {
@@ -503,13 +509,15 @@ func (f *JsonDB) GetProject(projectName string) (models.Project, error) {
 	return project.ToModel(), nil
 }
 
+// DeleteProject deletes the given project
+// TODO
 func (f *JsonDB) DeleteProject(project models.Project) error {
 	return errors.New("Not implemented yet")
 }
 
 // IP
 
-//CreateOrUpdateIP add an ip to a project if it doesn't already exist.
+// CreateOrUpdateIP add an ip to a project if it doesn't already exist.
 func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	project, err := f.getProject(projectName)
 	// Refactor needed
@@ -561,7 +569,7 @@ func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	return nil
 }
 
-//CreateOrUpdateIPs is not implemented yet.
+// CreateOrUpdateIPs is not implemented yet.
 // It should be only usefull for bulk update. It might use CreateOrUpdateIP internally
 func (f *JsonDB) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 	return errors.New("Not implemented yet")
@@ -576,7 +584,7 @@ func (f *JsonDB) getIPs(projectName string) ([]jsonIP, error) {
 	return project.IPs, nil
 }
 
-//GetIPs is a wrapper to getIPs. It return all the IP addresses for the provided project name.
+// GetIPs is a wrapper to getIPs. It return all the IP addresses for the provided project name.
 func (f *JsonDB) GetIPs(projectName string) ([]models.IP, error) {
 	ipsModel := []models.IP{}
 
@@ -591,7 +599,7 @@ func (f *JsonDB) GetIPs(projectName string) ([]models.IP, error) {
 	return ipsModel, nil
 }
 
-//GetIP returns the full data for the provided project and ip string
+// GetIP returns the full data for the provided project and ip string
 func (f *JsonDB) getIP(projectName string, ip string) (jsonIP, error) {
 	IPs, err := f.getIPs(projectName)
 
@@ -608,7 +616,7 @@ func (f *JsonDB) getIP(projectName string, ip string) (jsonIP, error) {
 	return jsonIP{}, nil
 }
 
-//GetIP returns the full data for the provided project and ip string
+// GetIP returns the full data for the provided project and ip string
 func (f *JsonDB) GetIP(projectName string, ip string) (models.IP, error) {
 	ipJson, err := f.getIP(projectName, ip)
 	if err != nil {
@@ -618,34 +626,49 @@ func (f *JsonDB) GetIP(projectName string, ip string) (models.IP, error) {
 	return ipJson.ToModel(), nil
 }
 
+// DeleteIP delete the provided IP from the database
+//TODO
 func (f *JsonDB) DeleteIP(ip models.IP) error {
 	return errors.New("Not implemented yet")
 }
 
 // Domain
+
+// CreateOrUpdateDomain creates or updates a (sub)domain name.
+// TODO
 func (f *JsonDB) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
 	return errors.New("Not implemented yet")
 }
 
+
+// CreateOrUpdateDomains creates or updates multiple (sub)domain name.
+// It should be used instead of CreateOrUpdateDomain for bulk insert
+// TODO
 func (f *JsonDB) CreateOrUpdateDomains(projectName string, domain []models.Domain) error {
 	return errors.New("Not implemented yet")
 }
 
+// GetDomains return all the domains for a given project
+// TODO
 func (f *JsonDB) GetDomains(projectName string) ([]models.Domain, error) {
 	return []models.Domain{}, errors.New("Not implemented yet")
 }
 
+// GetDomain return informaiton about the given domain and project combo
+// TODO
 func (f *JsonDB) GetDomain(projectName string, domain string) (models.Domain, error) {
 	return models.Domain{}, errors.New("Not implemented yet")
 }
 
+//DeleteDomain remove a given domain from the database
+//TODO
 func (f *JsonDB) DeleteDomain(projectName string, domain models.Domain) error {
 	return errors.New("Not implemented yet")
 }
 
 // Port
 
-//CreateOrUpdatePort create or update one port for a givent project name and ip.
+// CreateOrUpdatePort create or update one port for a givent project name and ip.
 func (f *JsonDB) CreateOrUpdatePort(projectName string, ip string, portModel models.Port) error {
 	portsFromFile, err := f.getPorts(projectName, ip)
 	if err != nil {
@@ -675,7 +698,7 @@ func (f *JsonDB) CreateOrUpdatePort(projectName string, ip string, portModel mod
 	return f.writePorts(projectName, ip, portsFromFile)
 }
 
-//CreateOrUpdatePorts loop around CreateOrUpdatePort and *fail* on the first error of it.
+// CreateOrUpdatePorts loop around CreateOrUpdatePort and *fail* on the first error of it.
 func (f *JsonDB) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
 	for _, port := range ports {
 		err := f.CreateOrUpdatePort(projectName, ip, port)
@@ -686,7 +709,7 @@ func (f *JsonDB) CreateOrUpdatePorts(projectName string, ip string, ports []mode
 	return nil
 }
 
-//getPorts return all the port for a given project and ip
+// getPorts return all the port for a given project and ip
 func (f *JsonDB) getPorts(projectName string, ip string) ([]jsonPort, error) {
 	ipFromFile, err := f.getIP(projectName, ip)
 
@@ -697,7 +720,7 @@ func (f *JsonDB) getPorts(projectName string, ip string) ([]jsonPort, error) {
 	return ipFromFile.Ports, nil
 }
 
-//GetPorts is a wrapper for getPorts
+// GetPorts is a wrapper for getPorts
 func (f *JsonDB) GetPorts(projectName string, ip string) ([]models.Port, error) {
 	portsModel := []models.Port{}
 	ports, err := f.getPorts(projectName, ip)
@@ -711,7 +734,7 @@ func (f *JsonDB) GetPorts(projectName string, ip string) ([]models.Port, error) 
 	return portsModel, nil
 }
 
-//GetPort return only one port by it's number. Use GetPorts internally
+// GetPort return only one port by it's number. Use GetPorts internally
 func (f *JsonDB) getPort(projectName string, ip string, port string) (jsonPort, error) {
 	ports, err := f.getPorts(projectName, ip)
 
@@ -732,7 +755,7 @@ func (f *JsonDB) getPort(projectName string, ip string, port string) (jsonPort, 
 	return jsonPort{}, nil
 }
 
-//GetPort is a wrapper of getPort
+// GetPort is a wrapper of getPort
 func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Port, error) {
 	p, err := f.getPort(projectName, ip, port)
 
@@ -743,13 +766,14 @@ func (f *JsonDB) GetPort(projectName string, ip string, port string) (models.Por
 	return p.ToModel(), nil
 }
 
+//DeletePort remove a given port from the database. It will need a projectName and an IP.
 func (f *JsonDB) DeletePort(projectName string, ip string, port models.Port) error {
 	return errors.New("Not implemented yet")
 }
 
 // URI (directory and files)
 
-//CreateOrUpdateURI will get all the corresponding uri for a given ip, port and project combo
+// CreateOrUpdateURI will get all the corresponding uri for a given ip, port and project combo
 func (f *JsonDB) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
 	urisFromFile, err := f.getURIs(projectName, ip, port)
 	if err != nil {
@@ -778,6 +802,7 @@ func (f *JsonDB) CreateOrUpdateURI(projectName string, ip string, port string, u
 	return f.writeURIs(projectName, ip, port, urisFromFile)
 }
 
+// CreateOrUpdateURIs create or update a given URI
 func (f *JsonDB) CreateOrUpdateURIs(projectName string, ip string, port string, uris []models.URI) error {
 	for _, uri := range uris {
 		err := f.CreateOrUpdateURI(projectName, ip, port, uri)
@@ -796,13 +821,14 @@ func (f *JsonDB) getURIs(projectName string, ip string, port string) ([]jsonURI,
 	return p.URIs, nil
 }
 
+// GetURIs returns all the URL from a project, IP, port combo.
 func (f *JsonDB) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
 	uris := []models.URI{}
 	p, err := f.getPort(projectName, ip, port)
 	if err != nil {
 		return nil, errors.New("Could not get URI : " + err.Error())
 	}
-
+	
 	//convert to models.URI
 	for _, uriJson := range p.URIs {
 		uris = append(uris, uriJson.ToModel())
@@ -810,6 +836,7 @@ func (f *JsonDB) GetURIs(projectName string, ip string, port string) ([]models.U
 	return uris, nil
 }
 
+// GetURI returns information about the URL from a project, IP, port combo.
 func (f *JsonDB) GetURI(projectName string, ip string, port string, uri string) (models.URI, error) {
 	uris, err := f.getURIs(projectName, ip, port)
 

@@ -25,9 +25,9 @@ import (
 	"github.com/netm4ul/netm4ul/modules"
 )
 
-// MasscanResult represent the parsed ouput
-type MasscanResult struct {
-	Resultat []Scan
+// Results represent the parsed ouput
+type Results struct {
+	Scans []Scan
 }
 
 // Scan represents the ip and ports output
@@ -87,7 +87,7 @@ type Masscan struct {
 
 //NewMasscan generate a new Masscan module (type modules.Module)
 func NewMasscan() modules.Module {
-	gob.Register(MasscanResult{})
+	gob.Register(Results{})
 	var m modules.Module
 	m = &Masscan{}
 	return m
@@ -174,11 +174,11 @@ func (M *Masscan) ParseConfig() error {
 }
 
 // Parse : Parse the result of the execution
-func (M *Masscan) Parse(file string) (MasscanResult, error) {
+func (M *Masscan) Parse(file string) (Results, error) {
 	var scans []Scan
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return MasscanResult{}, err
+		return Results{}, err
 	}
 	M.rawsData = string(data)
 	fileReformatted := string(data)
@@ -189,26 +189,26 @@ func (M *Masscan) Parse(file string) (MasscanResult, error) {
 
 	err = json.Unmarshal([]byte(fileReformatted), &scans)
 	if err != nil {
-		return MasscanResult{}, err
+		return Results{}, err
 	}
 
 	err = os.Remove(file)
 	if err != nil {
 		log.Error(err)
 	}
-	return MasscanResult{Resultat: scans}, nil
+	return Results{Scans: scans}, nil
 }
 
 // WriteDb : Save data
 func (M *Masscan) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Info("Write to the database.")
 
-	var data MasscanResult
-	data = result.Data.(MasscanResult)
+	var data Results
+	data = result.Data.(Results)
 
 	var ips []models.IP
 
-	for _, itemIP := range data.Resultat {
+	for _, itemIP := range data.Scans {
 		ipn := models.IP{Value: itemIP.IP}
 		ips = append(ips, ipn)
 

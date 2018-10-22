@@ -25,6 +25,7 @@ const (
 	delayBetweenTries = 3 * time.Second
 )
 
+//Client is the base struct for a new node. It holds the basics informations on itself (modules...)
 type Client struct {
 	Session *session.Session
 	// ListModule : global list of modules

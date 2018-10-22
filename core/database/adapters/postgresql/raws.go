@@ -15,6 +15,7 @@ func (pg *PostgreSQL) appendRawData(projectName string, raw pgRaw) error {
 	return nil
 }
 
+//AppendRawData is the public wrapper to insert raw data into the database.
 func (pg *PostgreSQL) AppendRawData(projectName string, raw models.Raw) error {
 	praw := pgRaw{}
 	praw.FromModel(raw)
@@ -36,7 +37,7 @@ func (pg *PostgreSQL) getRaws(projectName string) ([]pgRaw, error) {
 
 	return raws, nil
 }
-
+//GetRaws is the public wrapper to get all the raw data for a project.
 func (pg *PostgreSQL) GetRaws(projectName string) ([]models.Raw, error) {
 
 	raws := []models.Raw{}
@@ -71,6 +72,7 @@ func (pg *PostgreSQL) getRawModule(projectName string, moduleName string) (map[s
 	return mapOfListOfRaw, nil
 }
 
+//GetRawModule is the public wrapper to get all the raw data for a specific module name.
 func (pg *PostgreSQL) GetRawModule(projectName string, moduleName string) (map[string][]models.Raw, error) {
 	var mapOfListOfRaw map[string][]models.Raw
 	mapOfListOfRaw = make(map[string][]models.Raw)

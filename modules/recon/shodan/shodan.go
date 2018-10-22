@@ -23,6 +23,7 @@ type ConfigShodan struct {
 	// API_KEY int `toml:"api_key"`
 }
 
+//Result represent the data structure for the shodan module
 type Result struct {
 	IP   string
 	Host *shodan.Host
@@ -153,7 +154,7 @@ func (S *Shodan) ParseConfig() error {
 	}
 	return nil
 }
-
+//WriteDb saves the information into the database
 func (S *Shodan) WriteDb(result communication.Result, db models.Database, projectName string) error {
 	log.Debug("Write to the database.")
 	// var data Result

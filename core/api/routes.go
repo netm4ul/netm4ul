@@ -2,7 +2,7 @@ package api
 
 import "github.com/gorilla/mux"
 
-//Handler return a new mux router. All
+//Routes is responsible for seting up all the handler function for the API
 func (api *API) Routes() {
 	api.Router = mux.NewRouter()
 	// Add content-type json header !

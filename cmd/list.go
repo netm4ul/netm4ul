@@ -26,7 +26,7 @@ var listProjectsCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listProjectsCmd called")
-		printProjectsInfo(CLISession)
+		printProjectsInfo(cliSession)
 	},
 }
 
@@ -40,12 +40,12 @@ var listProjectCmd = &cobra.Command{
 		fmt.Println("listProjectCmd called")
 		// no argument, read from config
 		if len(args) == 0 {
-			printProjectInfo(CLISession.Config.Project.Name, CLISession)
+			printProjectInfo(cliSession.Config.Project.Name, cliSession)
 			os.Exit(0)
 		}
 		// 1 arguments, use it
 		if len(args) == 1 {
-			printProjectInfo(args[0], CLISession)
+			printProjectInfo(args[0], cliSession)
 		} else {
 			fmt.Println("Too many arguments expected 1, got", len(args))
 		}

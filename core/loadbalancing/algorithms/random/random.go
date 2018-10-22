@@ -24,6 +24,8 @@ func (r *Random) Name() string {
 	return "Random"
 }
 
+//SetNodes is the setter for the Nodes variable.
+//It is used for adding new nodes from outside this package.
 func (r *Random) SetNodes(nodes []communication.Node) {
 	r.Nodes = nodes
 }

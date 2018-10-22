@@ -35,6 +35,7 @@ func (pg *PostgreSQL) createOrUpdateURI(projectName string, ip string, port stri
 	return nil
 }
 
+//CreateOrUpdateURI is the public wrapper to create or update a new URI for a project, ip and port.
 func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
 
 	puris := pgURI{}
@@ -59,7 +60,7 @@ func (pg *PostgreSQL) createOrUpdateURIs(projectName string, ip string, port str
 	}
 	return nil
 }
-
+//CreateOrUpdateURIs is the bulk insert version of CreateOrUpdateURI
 func (pg *PostgreSQL) CreateOrUpdateURIs(projectName string, ip string, port string, uris []models.URI) error {
 	puris := []pgURI{}
 	for _, uri := range uris {
@@ -89,6 +90,8 @@ func (pg *PostgreSQL) getURIs(projectName string, ip string, port string) ([]pgU
 
 	return nil, nil
 }
+
+//GetURIs will return all the available URI in the database from a project ip and port combo. This function is a wrapper around `getURIs`
 func (pg *PostgreSQL) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
 
 	uris := []models.URI{}
@@ -120,6 +123,7 @@ func (pg *PostgreSQL) getURI(projectName string, ip string, port string, dir str
 	return uri, nil
 }
 
+//GetURI will return one URI in the database from a project ip and port combo. This function is a wrapper around `getURI`
 func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
 
 	uri, err := pg.getURI(projectName, ip, port, dir)
@@ -129,7 +133,7 @@ func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir str
 
 	return uri.ToModel(), err
 }
-
+//DeleteURI TOFIX
 func (pg *PostgreSQL) DeleteURI(projectName string, ip string, port string, dir models.URI) error {
 	return errors.New("Not implemented yet")
 }

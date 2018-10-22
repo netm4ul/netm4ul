@@ -21,6 +21,8 @@ func ({{.algorithmShortName}} *{{.algorithmName}}) Name() string {
 	return "{{.algorithmName}}"
 }
 
+//SetNodes is the setter for the Nodes variable.
+//It is used for adding new nodes from outside this package.
 func ({{.algorithmShortName}} *{{.algorithmName}}) SetNodes(nodes []communication.Node) {
 	{{.algorithmShortName}}.Nodes = nodes
 }

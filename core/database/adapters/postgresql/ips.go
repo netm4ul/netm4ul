@@ -30,17 +30,18 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 	return nil
 }
 
+//CreateOrUpdateIP is the public wrapper to create or update a new IP in the database.
 func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
-
+	
 	// convert to pgIP first
 	pip := pgIP{}
 	pip.FromModel(ip)
-
+	
 	err := pg.createOrUpdateIP(projectName, pip)
 	if err != nil {
 		return err
 	}
-
+	
 	return nil
 }
 
@@ -54,6 +55,8 @@ func (pg *PostgreSQL) createOrUpdateIPs(projectName string, ips []pgIP) error {
 	return nil
 }
 
+//CreateOrUpdateIPs is the public wrapper to create or update multiple IP
+// This function should be used instead of CreateOrUpdateIP during bulk inserts.
 func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) error {
 
 	pips := []pgIP{}
@@ -87,6 +90,7 @@ func (pg *PostgreSQL) getIPs(projectName string) ([]pgIP, error) {
 	return pgips, nil
 }
 
+//GetIPs is the public wrapper for getting all the IP for a project
 func (pg *PostgreSQL) GetIPs(projectName string) ([]models.IP, error) {
 
 	pgips, err := pg.getIPs(projectName)
@@ -120,7 +124,7 @@ func (pg *PostgreSQL) getIP(projectName string, ip string) (pgIP, error) {
 
 	return pgip, nil
 }
-
+//GetIP is the public wrapper for getting a specific IP for a project.
 func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 
 	pgip, err := pg.getIP(projectName, ip)
@@ -130,6 +134,7 @@ func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 	return pgip.ToModel(), nil
 }
 
+//DeleteIP TOFIX
 func (pg *PostgreSQL) DeleteIP(ip models.IP) error {
 	return errors.New("Not implemented yet")
 }

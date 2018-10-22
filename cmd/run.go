@@ -22,9 +22,9 @@ var runCmd = &cobra.Command{
 	Short: "Run scan on the defined target",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
-		CLISession.Config.Algorithm.Mode = CLImode
-		if CLIprojectName != "" {
-			createProject(CLIprojectName)
+		cliSession.Config.Algorithm.Mode = cliMode
+		if cliProjectName != "" {
+			createProject(cliProjectName)
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -38,10 +38,10 @@ var runCmd = &cobra.Command{
 		}
 
 		log.Debugf("targets : %+v", targets)
-		log.Debugf("CLIModules : %+v", CLImodules)
-		log.Debugf("Modules : %+v", CLISession.Config.Modules)
-		log.Debugf("CLIMode : %+v", CLImode)
-		log.Debugf("Mode : %+v", CLISession.Config.Algorithm.Mode)
+		log.Debugf("CLIModules : %+v", cliModules)
+		log.Debugf("Modules : %+v", cliSession.Config.Modules)
+		log.Debugf("CLIMode : %+v", cliMode)
+		log.Debugf("Mode : %+v", cliSession.Config.Algorithm.Mode)
 
 		// if len(CLImodules) > 0 {
 		// 	mods, err := parseModules(CLImodules, CLISession)
@@ -51,9 +51,9 @@ var runCmd = &cobra.Command{
 		// 	addModules(mods, CLISession)
 		// }
 
-		if len(CLImodules) > 0 {
-			fmt.Println("Running only specified module(s) :", CLImodules)
-			runSpecifiedModules(targets, CLImodules)
+		if len(cliModules) > 0 {
+			fmt.Println("Running only specified module(s) :", cliModules)
+			runSpecifiedModules(targets, cliModules)
 			return
 		}
 
@@ -62,7 +62,7 @@ var runCmd = &cobra.Command{
 }
 
 func createProject(project string) {
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+	url := "http://" + cliSession.Config.Server.IP + ":" + strconv.FormatUint(uint64(cliSession.Config.API.Port), 10) +
 		"/api/v1/projects"
 	jsonInput, err := json.Marshal(project)
 	if err != nil {
@@ -82,9 +82,9 @@ func createProject(project string) {
 }
 
 func runModules(targets []communication.Input) {
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+	url := "http://" + cliSession.Config.Server.IP + ":" + strconv.FormatUint(uint64(cliSession.Config.API.Port), 10) +
 		"/api/v1/projects/" +
-		CLISession.Config.Project.Name +
+		cliSession.Config.Project.Name +
 		"/run"
 
 	jsonInput, err := json.Marshal(targets)
@@ -97,7 +97,7 @@ func runModules(targets []communication.Input) {
 		fmt.Printf("Error : %s\n", err.Error())
 	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-Session-Token", CLISession.Config.API.Token)
+	req.Header.Add("X-Session-Token", cliSession.Config.API.Token)
 
 	var res api.Result
 	client := &http.Client{}
@@ -126,9 +126,9 @@ func runModules(targets []communication.Input) {
 
 func runSpecifiedModules(targets []communication.Input, modules []string) {
 
-	url := "http://" + CLISession.Config.Server.IP + ":" + strconv.FormatUint(uint64(CLISession.Config.API.Port), 10) +
+	url := "http://" + cliSession.Config.Server.IP + ":" + strconv.FormatUint(uint64(cliSession.Config.API.Port), 10) +
 		"/api/v1/projects/" +
-		CLISession.Config.Project.Name +
+		cliSession.Config.Project.Name +
 		"/run"
 
 	jsonInput, err := json.Marshal(targets)
@@ -157,7 +157,7 @@ func runSpecifiedModules(targets []communication.Input, modules []string) {
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.PersistentFlags().StringArrayVar(&CLImodules, "modules", []string{}, "Set custom module(s)")
-	runCmd.PersistentFlags().StringVarP(&CLImode, "mode", "m", DefaultMode, "Use predefined mode")
-	runCmd.PersistentFlags().StringVarP(&CLIprojectName, "project", "p", "", "Set project name")
+	runCmd.PersistentFlags().StringArrayVar(&cliModules, "modules", []string{}, "Set custom module(s)")
+	runCmd.PersistentFlags().StringVarP(&cliMode, "mode", "m", DefaultMode, "Use predefined mode")
+	runCmd.PersistentFlags().StringVarP(&cliProjectName, "project", "p", "", "Set project name")
 }

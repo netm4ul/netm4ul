@@ -19,6 +19,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/session"
 )
 
+//Server represent the base structure for the server node.
 type Server struct {
 	//Session represent the server side's session. Hold all the modules
 	Session *session.Session

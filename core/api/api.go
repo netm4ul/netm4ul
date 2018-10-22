@@ -118,6 +118,7 @@ func (api *API) GetAlgorithm(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+//ChangeAlgorithm is the api endpoint handler for changing the loadbalancing algorithm
 func (api *API) ChangeAlgorithm(w http.ResponseWriter, r *http.Request) {
 	var algorithm string
 

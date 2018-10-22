@@ -10,16 +10,26 @@ import (
 	"github.com/netm4ul/netm4ul/core/config"
 
 	"github.com/jinzhu/gorm"
+	// This import is needed in order to use the postgres protocol
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
 )
 
 /*
- This adapters relies on the "pg" package and ORM.
- "Models" are being extended in this package (file models.go)
-*/
+ General information about this package :
+ - This adapters relies on the "pg" package and ORM.
+ - "Models" are being extended in this package (file models.go)
 
-const DB_NAME = "netm4ul"
+TODO:
+ - Rewrite the generated SQL statements and write our own (It will simplify the package) but keep the objects/models from pg.
+
+
+This adapters create one tables for each model.
+It superset the defaults models by adding relationships, CreateAt, UpdatedAt, DeletedAd automatically.
+Most of the public functions are a wrapper around the same private function. The only difference is that the internal function they uses the internal models.
+Each internal function should use the internal models as they convey more informations.
+The public wrapper should only convert/cast the *final* results into the default model.
+*/
 
 // PostgreSQL is the structure representing this adapter
 type PostgreSQL struct {
@@ -27,6 +37,8 @@ type PostgreSQL struct {
 	db  *gorm.DB
 }
 
+// InitDatabase is only there to sets up the configuration of the database.
+// This adapters need to connect to the database before any actions.
 func InitDatabase(c *config.ConfigToml) *PostgreSQL {
 	pg := PostgreSQL{}
 	pg.cfg = c
@@ -37,6 +49,7 @@ func InitDatabase(c *config.ConfigToml) *PostgreSQL {
 
 // General purpose functions
 
+//Name return the name of the adapter. It is exported because it's called from other core packages.
 func (pg *PostgreSQL) Name() string {
 	return "PostgreSQL"
 }
@@ -143,6 +156,7 @@ func (pg *PostgreSQL) DeleteDatabase() error {
 	return nil
 }
 
+//SetupDatabase will create the database tables
 func (pg *PostgreSQL) SetupDatabase() error {
 	log.Debugf("SetupDatabase postgres")
 	err := pg.createDb()
@@ -153,15 +167,17 @@ func (pg *PostgreSQL) SetupDatabase() error {
 	return nil
 }
 
+//SetupAuth TOFIX
 func (pg *PostgreSQL) SetupAuth(username, password, dbname string) error {
 	log.Debugf("SetupAuth postgres")
 
-	//TODO : create user/password
+	//TODO : create user/password for the database connection.
 	// pg.Connect(pg.cfg)
 
 	return nil
 }
 
+//Connect is trying to connect to the database (and writting the connection to pg.db) with the provided configuration.
 func (pg *PostgreSQL) Connect(c *config.ConfigToml) error {
 	var err error
 	log.Debugf("Connecting  to the database")
