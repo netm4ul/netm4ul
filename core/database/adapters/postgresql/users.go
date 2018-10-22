@@ -10,9 +10,12 @@ import (
 )
 
 //TODO : refactor this.
+
+//CreateOrUpdateUser will create or update a new user in the database.
+//If the user already exist,
 func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 
-	tmpUser, err := pg.getUser(user.Name)
+	inDbUser, err := pg.getUser(user.Name)
 	if err != nil {
 		return errors.New("Could not get user : " + err.Error())
 	}
@@ -23,33 +26,33 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 	log.Debugf("pguser : %+v", &pguser)
 	log.Debugf("user : %+v", &user)
 
-	//user doesn't exist, create it
-	if tmpUser.Name == "" {
-		res := pg.db.Where("name = ?", tmpUser.Name).FirstOrCreate(&pguser)
+	//user doesn't exist, create it and exit.
+	if inDbUser.Name == "" {
+		res := pg.db.Where("name = ?", inDbUser.Name).FirstOrCreate(&pguser)
 		if res.Error != nil {
 			return errors.New("Could not insert user in the database : " + res.Error.Error())
 		}
 		return nil
 	}
 
-	// update password
-	if pguser.Password != "" && tmpUser.Password != pguser.Password {
-		log.Debug("Updating password for user : ", pguser.Name)
-		tmpUser.Password = pguser.Password
-	}
-
 	//if the in-database user doesn't have a token, create one : it might be a security issues without one.
-	if tmpUser.Token == "" {
-		tmpUser.Token = security.GenerateNewToken()
+	if inDbUser.Token == "" {
+		inDbUser.Token = security.GenerateNewToken()
 	}
 
-	if pguser.Token != "" && tmpUser.Token != pguser.Token {
+	// The user exist, check if the password is correct before updating anything (except the token just above)
+	if !security.ComparePassword(inDbUser.Password, pguser.Password) {
+		log.Debug("Updating password for user : ", pguser.Name)
+		return errors.New("Could not update user : the provided password doesn't match the stored one")
+	}
+
+	if pguser.Token != "" && inDbUser.Token != pguser.Token {
 		log.Debug("Updating token for user : ", pguser.Name)
-		tmpUser.Token = pguser.Token
+		inDbUser.Token = pguser.Token
 	}
 
-	log.Debugf("Writing tmp user : %+v", tmpUser)
-	res := pg.db.Model(&tmpUser).Update(&tmpUser)
+	log.Debugf("Writing tmp user : %+v", inDbUser)
+	res := pg.db.Model(&inDbUser).Update(&inDbUser)
 
 	if res.Error != nil {
 		return errors.New("Could not update user : " + res.Error.Error())
