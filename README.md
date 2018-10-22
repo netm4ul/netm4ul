@@ -1,14 +1,32 @@
 # Netm4ul
+
+<p align="center">
 Distributed recon &amp; pentest tool
+</p>
 
-Master
-[![Build Status Master](https://travis-ci.org/netm4ul/netm4ul.svg?branch=master)](https://travis-ci.org/netm4ul/netm4ul)
-Develop 
-[![Build Status Develop](https://travis-ci.org/netm4ul/netm4ul.svg?branch=develop)](https://travis-ci.org/netm4ul/netm4ul)
-
-[![GoDoc](https://godoc.org/github.com/netm4ul/netm4ul?status.svg)](https://godoc.org/github.com/netm4ul/netm4ul)
+<div align="center">
+  <p>
+    <a href="https://travis-ci.org/netm4ul/netm4ul"><img alt="Travis Master" src="https://travis-ci.org/netm4ul/netm4ul.svg?branch=master"></a>
+    <a href="https://goreportcard.com/report/github.com/netm4ul/netm4ul"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/netm4ul/netm4ul?style=flat-square"></a>
+    <a href="https://godoc.org/github.com/netm4ul/netm4ul"><img alt="Godoc" src="https://godoc.org/github.com/netm4ul/netm4ul?status.svg"></a>
+</div>
 
 ## Usage
+
+```
+# start a first server
+netm4ul start server
+
+# start a client node
+netm4ul start client
+
+# Run all the modules on the "example.tld" domain
+netm4ul run example.tld
+
+# generate the report
+netm4ul report 
+```
+
 
 To understand a little bit more of the project, you might want to look at the `documentation/Architecture.md` file.
 
@@ -35,9 +53,7 @@ This should download and run locally :
 
 NOTES :
 - If running with the provided `docker-compose.yml`, the `netm4ul.conf` **must** use the "container_name" of each service for their ip. (eg : set the database ip to "postgres" in our case) 
-  
 - We have another repository to enables deployement with Ansible.
-  
 - We might add a sample k8s deployment file soon.
 
 
@@ -103,7 +119,6 @@ Flags:
   -v, --verbose          verbose output
 
 Use "netm4ul [command] --help" for more information about a command.
-
 ```
 
 You can use `-h` or `--help` on every subcommands.
