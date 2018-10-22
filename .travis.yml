@@ -18,6 +18,7 @@ before_script:
   - cp netm4ul.conf.example netm4ul.conf
 
 script:
+  - make
   - make test
 
 notifications:
