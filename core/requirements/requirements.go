@@ -80,7 +80,7 @@ var (
 	CPUUsage map[Capacity]int64
 	//NetUsage represents the networking capacity of the node
 	NetUsage map[Capacity]int64
-	
+
 	//Usage represent all capacities of the host node
 	Usage = map[string]map[Capacity]int64{
 		"memory":  MemUsage,

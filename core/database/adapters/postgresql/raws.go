@@ -37,6 +37,7 @@ func (pg *PostgreSQL) getRaws(projectName string) ([]pgRaw, error) {
 
 	return raws, nil
 }
+
 //GetRaws is the public wrapper to get all the raw data for a project.
 func (pg *PostgreSQL) GetRaws(projectName string) ([]models.Raw, error) {
 

@@ -93,7 +93,6 @@ func (test *Test) GetProjects() ([]models.Project, error) {
 	return tests.NormalProjects, nil
 }
 
-
 //GetProject returns the project named "projectName" if it exist in the /tests/values.go file
 //It returns an error if the project doesn't exist.
 func (test *Test) GetProject(projectName string) (models.Project, error) {
@@ -124,6 +123,7 @@ func (test *Test) DeleteProject(project models.Project) error {
 func (test *Test) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	return nil
 }
+
 //CreateOrUpdateIPs is a no-op
 func (test *Test) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 	return nil
@@ -160,6 +160,7 @@ func (test *Test) CreateOrUpdateDomains(projectName string, domain []models.Doma
 func (test *Test) GetDomains(projectName string) ([]models.Domain, error) {
 	return tests.NormalDomains, nil
 }
+
 //GetDomain TOFIX
 func (test *Test) GetDomain(projectName string, domain string) (models.Domain, error) {
 	return models.Domain{}, errors.New("Not implemented yet")
@@ -218,6 +219,7 @@ func (test *Test) CreateOrUpdateURI(projectName string, ip string, port string, 
 func (test *Test) CreateOrUpdateURIs(projectName string, ip string, port string, uris []models.URI) error {
 	return nil
 }
+
 //GetURIs return all the URIs
 func (test *Test) GetURIs(projectName string, ip string, port string) ([]models.URI, error) {
 	return tests.NormalURIs, nil
@@ -236,6 +238,7 @@ func (test *Test) GetURI(projectName string, ip string, port string, uri string)
 	}
 	return models.URI{}, errors.New("Uri not found")
 }
+
 // DeleteURI TOFIX
 func (test *Test) DeleteURI(projectName string, ip string, port string, dir models.URI) error {
 	return errors.New("Not implemented yet")
@@ -247,6 +250,7 @@ func (test *Test) DeleteURI(projectName string, ip string, port string, dir mode
 func (test *Test) AppendRawData(projectName string, raw models.Raw) error {
 	return nil
 }
+
 //GetRaws return all the raws for one project name
 func (test *Test) GetRaws(projectName string) ([]models.Raw, error) {
 	raws, ok := tests.NormalRaws[projectName]

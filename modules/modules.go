@@ -14,7 +14,7 @@ type Condition struct {
 // Module is the minimal interface needed for one module
 // The Run function is the "main" function of each module
 // ParseConfig will be run in the init system
-// The WriteDb is called each time a new result is sent in the "communication.Result chan" 
+// The WriteDb is called each time a new result is sent in the "communication.Result chan"
 type Module interface {
 	Name() string
 	Version() string

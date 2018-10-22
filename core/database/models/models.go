@@ -85,6 +85,7 @@ type Project struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
 //User is the default struct for each users.
 // The token is a random char stored in the database and needed for all the API calls (except the few non authenticated ones)
 type User struct {
@@ -95,6 +96,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
 //PortType is a categorie for one ports.
 type PortType struct {
 	Type        string
@@ -102,6 +104,7 @@ type PortType struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
 // Raw defines the base structure for each module data.
 // One module must save at least this one inside it's WriteDb function.
 // The module should dump all it's result inside the Content field.

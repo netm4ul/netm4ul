@@ -264,6 +264,7 @@ func (f *JsonDB) SetupDatabase() error {
 	//TODO : maybe create folder / files ?
 	return errors.New("Not implemented yet")
 }
+
 //DeleteDatabase TODO
 func (f *JsonDB) DeleteDatabase() error {
 	return errors.New("Not implemented yet")
@@ -391,7 +392,6 @@ func (f *JsonDB) GenerateNewToken(user models.User) error {
 	}
 	return nil
 }
-
 
 // DeleteUser remove the user from the database (using its ID)
 // TODO
@@ -640,7 +640,6 @@ func (f *JsonDB) CreateOrUpdateDomain(projectName string, domain models.Domain) 
 	return errors.New("Not implemented yet")
 }
 
-
 // CreateOrUpdateDomains creates or updates multiple (sub)domain name.
 // It should be used instead of CreateOrUpdateDomain for bulk insert
 // TODO
@@ -828,7 +827,7 @@ func (f *JsonDB) GetURIs(projectName string, ip string, port string) ([]models.U
 	if err != nil {
 		return nil, errors.New("Could not get URI : " + err.Error())
 	}
-	
+
 	//convert to models.URI
 	for _, uriJson := range p.URIs {
 		uris = append(uris, uriJson.ToModel())

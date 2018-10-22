@@ -32,16 +32,16 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 
 //CreateOrUpdateIP is the public wrapper to create or update a new IP in the database.
 func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
-	
+
 	// convert to pgIP first
 	pip := pgIP{}
 	pip.FromModel(ip)
-	
+
 	err := pg.createOrUpdateIP(projectName, pip)
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -124,6 +124,7 @@ func (pg *PostgreSQL) getIP(projectName string, ip string) (pgIP, error) {
 
 	return pgip, nil
 }
+
 //GetIP is the public wrapper for getting a specific IP for a project.
 func (pg *PostgreSQL) GetIP(projectName string, ip string) (models.IP, error) {
 

@@ -40,7 +40,6 @@ func (pg *PostgreSQL) CreateOrUpdateDomain(projectName string, domain models.Dom
 	return nil
 }
 
-
 //TOFIX : uses a single SQL statement
 func (pg *PostgreSQL) createOrUpdateDomains(projectName string, domains []pgDomain) error {
 	for _, domain := range domains {
@@ -118,6 +117,7 @@ func (pg *PostgreSQL) getDomain(projectName string, domainName string) (pgDomain
 
 	return domain, nil
 }
+
 //GetDomain is the public wrapper to get a domain information based on the project name and domain name.
 func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.Domain, error) {
 	d, err := pg.getDomain(projectName, domainName)
@@ -127,6 +127,7 @@ func (pg *PostgreSQL) GetDomain(projectName string, domainName string) (models.D
 
 	return d.ToModel(), nil
 }
+
 //DeleteDomain remove a domain from the database.
 // TOFIX
 func (pg *PostgreSQL) DeleteDomain(projectName string, domain models.Domain) error {

@@ -82,7 +82,7 @@ func (pg *PostgreSQL) GetUser(username string) (models.User, error) {
 }
 
 func (pg *PostgreSQL) getUserByToken(token string) (pgUser, error) {
-	
+
 	pguser := pgUser{}
 	res := pg.db.Where("token = ?", token).First(&pguser)
 	// Accept empty rows !

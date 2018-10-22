@@ -86,7 +86,8 @@ func (pg *PostgreSQL) getProject(projectName string) (pgProject, error) {
 
 	return project, nil
 }
-//GetProject is the public wrapper for getting all the informations on a specific project 
+
+//GetProject is the public wrapper for getting all the informations on a specific project
 func (pg *PostgreSQL) GetProject(projectName string) (models.Project, error) {
 	p, err := pg.getProject(projectName)
 	if err != nil {

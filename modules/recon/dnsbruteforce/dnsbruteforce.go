@@ -43,6 +43,7 @@ func NewDnsbruteforce() modules.Module {
 	t = &dnsbruteforce{}
 	return t
 }
+
 //Name returns the module name
 func (d *dnsbruteforce) Name() string {
 	return "dnsbruteforce"
