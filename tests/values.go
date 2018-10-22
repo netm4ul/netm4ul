@@ -25,22 +25,22 @@ func init() {
 		Description: "Test description",
 	}
 	NormalIPs = []models.IP{
-		models.IP{
+		{
 			Value: "1.1.1.1",
 		},
-		models.IP{
+		{
 			Value: "2.2.2.2",
 		},
 	}
 	NormalPorts = []models.Port{
-		models.Port{
+		{
 			Banner:   "Test banner",
 			Number:   80,
 			Protocol: "tcp",
 			Status:   "open",
 			Type:     "web",
 		},
-		models.Port{
+		{
 			Banner:   "Test banner 2",
 			Number:   22,
 			Protocol: "tcp",
@@ -49,27 +49,27 @@ func init() {
 		},
 	}
 	NormalURIs = []models.URI{
-		models.URI{
+		{
 			Code: "200",
 			Name: "Test URI",
 		},
-		models.URI{
+		{
 			Code: "404",
 			Name: "Test not found URI",
 		},
-		models.URI{
+		{
 			Code: "500",
 			Name: "Test server error URI",
 		},
 	}
 	NormalDomains = []models.Domain{
-		models.Domain{
+		{
 			Name: "domain.tld",
 		},
-		models.Domain{
+		{
 			Name: "another.tld",
 		},
-		models.Domain{
+		{
 			Name: "sub1.another.tld",
 		},
 	}
@@ -87,7 +87,7 @@ func init() {
 	}
 
 	NormalRaws = map[string][]models.Raw{
-		"Test": []models.Raw{
+		"Test": {
 			NormalRaw,
 			NormalRaw,
 		},

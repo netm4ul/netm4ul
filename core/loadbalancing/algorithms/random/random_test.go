@@ -30,13 +30,13 @@ func TestRandom_NextExecutionNodes(t *testing.T) {
 			args: args{cmd: communication.Command{Name: "test_cmd"}},
 			fields: fields{
 				Nodes: []communication.Node{
-					communication.Node{
+					{
 						ID:          "1",
 						Project:     "TestProject",
 						Modules:     []string{"A", "B", "C"},
 						IsAvailable: true,
 					},
-					communication.Node{
+					{
 						ID:          "2",
 						Project:     "TestProject",
 						Modules:     []string{"A", "C", "E"},
@@ -45,7 +45,7 @@ func TestRandom_NextExecutionNodes(t *testing.T) {
 				},
 			},
 			want: []communication.Node{
-				communication.Node{
+				{
 					ID:          "2",
 					Project:     "TestProject",
 					Modules:     []string{"A", "C", "E"},
