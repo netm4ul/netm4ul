@@ -1,5 +1,8 @@
+PACKAGE_NAME=github.com/netm4ul/netm4ul/
 TARGET=netm4ul
+
 GO_LIST=$(shell go list ./... 2>&1 | grep -v /vendor/ | grep -v "permission denied")
+PACKAGES=$(shell echo $(GO_LIST) | sed -e "s!$(PACKAGE_NAME)!!g" | sed -e "s!github.com/netm4ul/netm4ul!!g")
 
 .PHONY: all
 all: vet fmt deps build
@@ -7,7 +10,12 @@ all: vet fmt deps build
 
 .PHONY: test
 test:
-	@go test $(GO_LIST)
+	@echo "mode: atomic" > coverage.profile
+	@for pkg in $(PACKAGES); do \
+		touch $$pkg.profile ; \
+		go test -race ./$$pkg -coverprofile=$$pkg.profile -covermode=atomic; \
+		tail -n +2 $$pkg.profile >> coverage.profile && rm -rf $$pkg.profile ; \
+	done
 
 .PHONY: build
 build:
@@ -22,6 +30,10 @@ vet:
 .PHONY: fmt
 fmt:
 	@go fmt $(GO_LIST)
+
+.PHONY: gofmt
+fmt:
+	@gofmt -s -w $(GO_LIST)
 
 .PHONY: lint
 lint:

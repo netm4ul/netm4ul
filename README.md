@@ -6,9 +6,10 @@ Distributed recon &amp; pentest tool
 
 <div align="center">
   <p>
-    <a href="https://travis-ci.org/netm4ul/netm4ul"><img alt="Travis Master" src="https://travis-ci.org/netm4ul/netm4ul.svg?branch=master"></a>
-    <a href="https://goreportcard.com/report/github.com/netm4ul/netm4ul"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/netm4ul/netm4ul?style=flat-square"></a>
-    <a href="https://godoc.org/github.com/netm4ul/netm4ul"><img alt="Godoc" src="https://godoc.org/github.com/netm4ul/netm4ul?status.svg"></a>
+    <a href="https://travis-ci.org/netm4ul/netm4ul"><img alt="Travis Master" src="https://img.shields.io/travis/netm4ul/netm4ul/master.svg?style=flat-square"></a>
+    <a href="https://goreportcard.com/report/github.com/netm4ul/netm4ul?style=flat-square"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/netm4ul/netm4ul?style=flat-square"></a>
+    <a href="https://godoc.org/github.com/netm4ul/netm4ul"><img alt="Godoc" src="http://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat-square"></a>
+    <a href="https://codecov.io/gh/netm4ul/netm4ul"><img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/netm4ul/netm4ul/master.svg?style=flat-square"></a>
 </div>
 
 ## Usage

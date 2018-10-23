@@ -39,3 +39,9 @@ certificates/*
 # Random Files
 127.0.0.1.xml
 wordlists/*
+
+# Ignore tests files (if any)
+tests/testfile
+
+# Ignore coverage tool results
+coverage.*
