@@ -32,7 +32,7 @@ fmt:
 	@go fmt $(GO_LIST)
 
 .PHONY: gofmt
-fmt:
+gofmt:
 	@gofmt -s -w $(GO_LIST)
 
 .PHONY: lint
