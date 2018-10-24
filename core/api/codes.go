@@ -28,6 +28,29 @@ const (
 	CodeForbidden
 )
 
+func (code Code) String() string {
+	switch code {
+	case CodeOK:
+		return "OK"
+	case CodeNotFound:
+		return "Not Found"
+	case CodeCouldNotDecodeJSON:
+		return "Could not decode JSON"
+	case CodeDatabaseError:
+		return "Database error"
+	case CodeNotImplementedYet:
+		return "Not implemented yet"
+	case CodeInvalidInput:
+		return "Invalid input(s)"
+	case CodeServerError:
+		return "Server error"
+	case CodeForbidden:
+		return "Access forbidden"
+	default:
+		return "Unknown Code (Forgot to add it to the String() switch ?)"
+	}
+}
+
 //CodeToResult defines a simple way to get predefined and coherents results from an error code.
 var CodeToResult map[Code]Result
 

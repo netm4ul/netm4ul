@@ -15,6 +15,7 @@ import (
 
 // API : Rest API config
 type API struct {
+	IP    string `toml:"ip"`
 	Port  uint16 `toml:"port"`
 	User  string `toml:"user"`
 	Token string `toml:"token"`

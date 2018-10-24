@@ -26,10 +26,14 @@ func TestParseAPI(t *testing.T) {
 	user := config.API.User
 	token := config.API.Token
 
+	ip := config.API.IP
 	port = config.API.Port
 
 	if user == "" {
 		t.Error("Expected user, got empty string")
+	}
+	if ip == "" {
+		t.Error("Expected ip, got 0")
 	}
 	if port == 0 {
 		t.Error("Expected port, got 0")

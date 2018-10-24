@@ -20,9 +20,10 @@ func (api *API) Routes() {
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips", api.GetIPsByProjectName).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports", api.GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{protocol}", api.GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
-	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/directories", api.GetURIByPort).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/uris", api.GetURIByPort).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/routes", api.GetRoutesByIP).Methods("GET")
-	api.Router.HandleFunc(api.Prefix+"/projects/{name}/raw/{module}", api.GetRawModuleByProject).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/raws", api.GetRawsByProject).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/raws/{module}", api.GetRawsByModule).Methods("GET")
 
 	// POST
 	api.Router.HandleFunc(api.Prefix+"/users/create", api.CreateUser).Methods("POST")

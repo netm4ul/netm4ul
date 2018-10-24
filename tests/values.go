@@ -27,9 +27,11 @@ func init() {
 	NormalIPs = []models.IP{
 		{
 			Value: "1.1.1.1",
+			Network: "external",
 		},
 		{
 			Value: "2.2.2.2",
+			Network: "internal",
 		},
 	}
 	NormalPorts = []models.Port{
