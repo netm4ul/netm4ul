@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net"
@@ -605,12 +604,11 @@ func TestAPI_GetURIByPort(t *testing.T) {
 	t.Run("Get URI from a new port (empty)", func(t *testing.T) {
 		backup := tests.NormalURIs
 		tests.NormalURIs = []models.URI{}
-		urisNameB64 := base64.StdEncoding.EncodeToString([]byte("non-existing-uri"))
 		urlGetUri := localApi.Prefix +
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(urisNameB64)
+			"/uris/" + url.PathEscape("non-existing-uri")
 		t.Log(urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusNotFound, api.CodeNotFound, true)
 		if jsonres.Data != nil {
@@ -622,12 +620,11 @@ func TestAPI_GetURIByPort(t *testing.T) {
 	t.Run("Get existing URI without slash-", func(t *testing.T) {
 		var uri models.URI
 
-		urisNameB64 := base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[0].Name))
 		urlGetUri := localApi.Prefix +
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(urisNameB64)
+			"/uris/" + url.PathEscape(tests.NormalURIs[0].Name)
 
 		t.Logf("URL :%s", urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
@@ -658,12 +655,11 @@ func TestAPI_GetURIByPort(t *testing.T) {
 
 	t.Run("Get existing URI with middle slash", func(t *testing.T) {
 		var uri models.URI
-		urisNameB64 := base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[1].Name))
 		urlGetUri := localApi.Prefix +
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(urisNameB64)
+			"/uris/" + url.PathEscape(tests.NormalURIs[1].Name)
 
 		t.Logf("URL :%s", urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
@@ -693,12 +689,11 @@ func TestAPI_GetURIByPort(t *testing.T) {
 
 	t.Run("Get existing URI with starting slash", func(t *testing.T) {
 		var uri models.URI
-		urisNameB64 := base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[2].Name))
 		urlGetUri := localApi.Prefix +
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(urisNameB64)
+			"/uris/" + url.PathEscape(tests.NormalURIs[2].Name)
 
 		t.Logf("URL :%s", urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
@@ -728,24 +723,12 @@ func TestAPI_GetURIByPort(t *testing.T) {
 	})
 
 	t.Run("Get non-existing URI", func(t *testing.T) {
-		urisNameB64 := base64.StdEncoding.EncodeToString([]byte("nonExistingURI"))
 		urlGetUri := localApi.Prefix +
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(urisNameB64)
+			"/uris/" + url.PathEscape("nonExistingURI")
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusNotFound, api.CodeNotFound, true)
-		if jsonres.Data != nil {
-			t.Errorf("Got data (%s), should be nil", jsonres.Data)
-		}
-	})
-	t.Run("Get malformed base64 url", func(t *testing.T) {
-		urlGetUri := localApi.Prefix +
-			"/projects/" + url.PathEscape(conf.Project.Name) +
-			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
-			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + "NOT BASE64"
-		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusInternalServerError, api.CodeServerError, true)
 		if jsonres.Data != nil {
 			t.Errorf("Got data (%s), should be nil", jsonres.Data)
 		}

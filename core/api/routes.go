@@ -5,6 +5,7 @@ import "github.com/gorilla/mux"
 //Routes is responsible for seting up all the handler function for the API
 func (api *API) Routes() {
 	api.Router = mux.NewRouter()
+	api.Router.UseEncodedPath()
 	// Add content-type json header !
 	api.Router.Use(api.jsonMiddleware)
 	api.Router.Use(api.authMiddleware)

@@ -2,10 +2,10 @@ package api
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -141,16 +141,31 @@ GetProject return this template
 */
 func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	var res Result
-	vars := mux.Vars(r)
+	var err error
+	var project string
 
-	log.Debugf("Requesting project : %s", vars["name"])
-	p, err := api.db.GetProject(vars["name"])
+	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	log.Debugf("Requesting project : %s", project)
+	p, err := api.db.GetProject(project)
 
 	if err == models.ErrNotFound {
 		res = CodeToResult[CodeNotFound]
 		res.Message = "Project not found"
 
-		log.Warnf("Project not found %s", vars["name"])
+		log.Warnf("Project not found %s", project)
 		w.WriteHeader(CodeToResult[CodeNotFound].HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
@@ -215,12 +230,25 @@ GetIPsByProjectName return this template
 */
 func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	var res Result
+	var err error
+	var project string
 
 	vars := mux.Vars(r)
-	name := vars["name"]
+	pathUnescapeErr := 0
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 
 	// calling the private function !
-	ips, err := api.db.GetIPs(name)
+	ips, err := api.db.GetIPs(project)
 
 	// Database error
 	if err != nil {
@@ -238,7 +266,7 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 
 	// Not found
 	if len(ips) == 0 {
-		log.Debugf("Ip for project %s not found", name)
+		log.Debugf("Ip for project %s not found", project)
 		res = CodeToResult[CodeNotFound]
 		res.Message = "No IP found"
 
@@ -256,19 +284,34 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 // GetPortsByIP return all the ports for a given IP (and project)
 func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	var res Result
-
+	var err error
+	var project, ip string
 	vars := mux.Vars(r)
-	name := vars["name"]
-	ip := vars["ip"]
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 	protocol := r.FormValue("protocol")
 
 	if protocol != "" {
-		log.Debugf("name : %s, ip : %s, protocol : %s", name, ip, protocol)
+		log.Debugf("project : %s, ip : %s, protocol : %s", project, ip, protocol)
 		sendDefaultValue(w, CodeNotImplementedYet)
 		return
 	}
 
-	ports, err := api.db.GetPorts(name, ip)
+	ports, err := api.db.GetPorts(project, ip)
 	if err != nil {
 		log.Debugf("Error : %s", err)
 		res = CodeToResult[CodeDatabaseError]
@@ -279,7 +322,7 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("ports : %+v", ports)
 	if len(ports) == 0 {
-		log.Debugf("No port for project %s found", name)
+		log.Debugf("No port for project %s found", project)
 		res = CodeToResult[CodeNotFound]
 		res.Message = "No port found"
 
@@ -299,20 +342,37 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 // If multiple ports are found with the same number and the protocol isn't specified, the function return an error : CodeAmbiguousRequest
 func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 	var res Result
-
+	var err error
+	var project, ip, port string
 	vars := mux.Vars(r)
-	name := vars["name"]
-	ip := vars["ip"]
-	port := vars["port"]
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+	if port, err = url.PathUnescape(vars["port"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 	protocol := r.FormValue("protocol")
 
 	if protocol != "" {
-		log.Debugf("name : %s, ip : %s, protocol : %s", name, ip, protocol)
+		log.Debugf("project : %s, ip : %s, protocol : %s", project, ip, protocol)
 		sendDefaultValue(w, CodeNotImplementedYet)
 		return
 	}
 
-	dbport, err := api.db.GetPort(name, ip, port)
+	dbport, err := api.db.GetPort(project, ip, port)
 	if err != nil {
 		log.Debugf("Error : %s", err)
 		res = CodeToResult[CodeDatabaseError]
@@ -323,7 +383,7 @@ func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 
 	//Check if the port exist
 	if dbport.CreatedAt.IsZero() {
-		log.Debugf("No port for project %s, ip %s and port %s found", name, ip, port)
+		log.Debugf("No port for project %s, ip %s and port %s found", project, ip, port)
 		res = CodeToResult[CodeNotFound]
 		res.Message = "No port found"
 
@@ -340,11 +400,29 @@ func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
 	var res Result
+	var err error
+	var project, ip, port string
 
 	vars := mux.Vars(r)
-	project := vars["name"]
-	ip := vars["ip"]
-	port := vars["port"]
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+	if port, err = url.PathUnescape(vars["port"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 	protocol := r.FormValue("protocol")
 
 	if protocol != "" {
@@ -381,27 +459,34 @@ func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetURIByPort returns the specified URI information.
-// The HTTP request *MUST* base64 encode this variable.
-// (Golang doesn't parse correctly the input if there is a / (even encoded with %2F) and use it as a url path)
-// (see https://github.com/golang/go/issues/21955 )
 func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 	var res Result
 	var err error
+	var project, ip, port, uri string
 
 	vars := mux.Vars(r)
-	project := vars["name"]
-	ip := vars["ip"]
-	port := vars["port"]
-	uriEncoded := vars["uri"]
-	uriBytes, err := base64.StdEncoding.DecodeString(uriEncoded)
-	if err != nil {
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+	if port, err = url.PathUnescape(vars["port"]); err != nil {
+		pathUnescapeErr++
+	}
+	if uri, err = url.PathUnescape(vars["uri"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
 		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeServerError]
+		res = CodeToResult[CodeInvalidInput]
 		w.WriteHeader(res.HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
 	}
-	uri := string(uriBytes)
 
 	protocol := r.FormValue("protocol")
 
