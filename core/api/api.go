@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"encoding/base64"
 
 	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"time"
@@ -145,8 +146,7 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("Requesting project : %s", vars["name"])
 	p, err := api.db.GetProject(vars["name"])
 
-	//TOFIX
-	if err != nil && err.Error() == "not found" {
+	if err == models.ErrNotFound {
 		res = CodeToResult[CodeNotFound]
 		res.Message = "Project not found"
 
@@ -253,28 +253,14 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-/*
-GetPortsByIP return this template
-  "data": [
-    {
-    "number": 22
-    "protocol": "tcp"
-    "status": "open"
-    "banner": "OpenSSH..."
-    "type": "ssh"
-    },
-    {
-      ...
-    }
-  ]
-*/
+// GetPortsByIP return all the ports for a given IP (and project)
 func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	var res Result
 
 	vars := mux.Vars(r)
 	name := vars["name"]
 	ip := vars["ip"]
-	protocol := vars["protocol"]
+	protocol := r.FormValue("protocol")
 
 	if protocol != "" {
 		log.Debugf("name : %s, ip : %s, protocol : %s", name, ip, protocol)
@@ -308,16 +294,146 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-/*
-GetURIByPort return this template
-  "data": [
+// GetPortByIP return informations about a given port. It requires port number, ip address, and project name
+// It has an optionnal "protocol" query (form) to specify the tcp/upd/... protocol
+// If multiple ports are found with the same number and the protocol isn't specified, the function return an error : CodeAmbiguousRequest
+func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
+	var res Result
 
-  ]
+	vars := mux.Vars(r)
+	name := vars["name"]
+	ip := vars["ip"]
+	port := vars["port"]
+	protocol := r.FormValue("protocol")
+
+	if protocol != "" {
+		log.Debugf("name : %s, ip : %s, protocol : %s", name, ip, protocol)
+		sendDefaultValue(w, CodeNotImplementedYet)
+		return
+	}
+
+	dbport, err := api.db.GetPort(name, ip, port)
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	//Check if the port exist
+	if dbport.CreatedAt.IsZero() {
+		log.Debugf("No port for project %s, ip %s and port %s found", name, ip, port)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No port found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Data = dbport
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
 }
-*/
+
+func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
+	var res Result
+
+	vars := mux.Vars(r)
+	project := vars["name"]
+	ip := vars["ip"]
+	port := vars["port"]
+	protocol := r.FormValue("protocol")
+
+	if protocol != "" {
+		log.Debugf("project : %s, ip : %s, port : %s, protocol %s", project, ip, port, protocol)
+		sendDefaultValue(w, CodeNotImplementedYet)
+		return
+	}
+
+	uris, err := api.db.GetURIs(project, ip, port)
+	if err == models.ErrNotFound || len(uris) == 0 {
+		log.Debugf("No uris for project : %s, ip : %s, port : %s, protocol %s found", project, ip, port, protocol)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No URI found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	log.Debugf("uris : %+v", uris)
+
+	res = CodeToResult[CodeOK]
+	res.Data = uris
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
+// GetURIByPort returns the specified URI information.
+// The HTTP request *MUST* base64 encode this variable.
+// (Golang doesn't parse correctly the input if there is a / (even encoded with %2F) and use it as a url path)
+// (see https://github.com/golang/go/issues/21955 )
 func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
-	//TODO
-	sendDefaultValue(w, CodeNotImplementedYet)
+	var res Result
+	var err error
+
+	vars := mux.Vars(r)
+	project := vars["name"]
+	ip := vars["ip"]
+	port := vars["port"]
+	uriEncoded := vars["uri"]
+	uriBytes, err := base64.StdEncoding.DecodeString(uriEncoded)
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeServerError]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	uri := string(uriBytes)
+
+	protocol := r.FormValue("protocol")
+
+	if protocol != "" {
+		log.Debugf("project : %s, ip : %s, port : %s, protocol %s", project, ip, port, protocol)
+		sendDefaultValue(w, CodeNotImplementedYet)
+		return
+	}
+
+	dburi, err := api.db.GetURI(project, ip, port, uri)
+	if err == models.ErrNotFound {
+		log.Debugf("No uri for project : %s, ip : %s, port : %s, protocol %s found", project, ip, port, protocol)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No URI found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Data = dburi
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
 }
 
 //GetRawsByProject returns all the raws output from a module for a specified project
@@ -332,31 +448,13 @@ func (api *API) GetRawsByModule(w http.ResponseWriter, r *http.Request) {
 	sendDefaultValue(w, CodeNotImplementedYet)
 }
 
-/*
-GetRoutesByIP returns all the routes info following this template :
-  "data": [
-    {
-      "Source": "1.2.3.4",
-      "Destination": "4.3.2.1",
-      "Hops": {
-        "IP" : "127.0.0.1",
-        "Max": 0.123,
-        "Min": 0.1,
-        "Avg": 0.11
-      }
-    },
-    ...
-    ]
-*/
+// GetRoutesByIP returns all the routes informations
 func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	sendDefaultValue(w, CodeNotImplementedYet)
 }
 
-/*
-CreateProject return this template after creating the new project
-  "data": "ProjectName"
-*/
+// CreateProject creates a new project and return its name inside the data field
 func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var project models.Project
 	var res Result

@@ -6,9 +6,13 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"encoding/base64"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
+	"reflect"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/netm4ul/netm4ul/core/api"
@@ -25,7 +29,38 @@ var (
 	reader     io.Reader
 )
 
+
+func customDecode(input interface{}, output interface{}) error{
+	// Add support for time.Time encoding (into string)
+	stringToDateTimeHook := func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		if t == reflect.TypeOf(time.Time{}) && f == reflect.TypeOf("") {
+			return time.Parse(time.RFC3339, data.(string))
+		}
+		return data, nil
+	}
+	var err error
+	// Add support for json tag (renaming of CreatedAt => created_at for example)
+	config := &mapstructure.DecoderConfig{
+		DecodeHook: stringToDateTimeHook,
+		Metadata: nil,
+		Result: &output,
+		TagName:  "json",
+	}
+	
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+
+	err = decoder.Decode(input)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func setup(conf config.ConfigToml) *api.API {
+	
 	sess, err := session.NewSession(conf)
 	if err != nil {
 		log.Fatalf("Could not create session %s", err)
@@ -174,7 +209,7 @@ func TestAPI_GetProjects(t *testing.T) {
 		t.Error("Got empty data")
 	}
 
-	err := mapstructure.Decode(jsonres.Data, &projects)
+	err := customDecode(jsonres.Data, &projects)
 	if err != nil {
 		t.Errorf("Could not decode JSON : %s", err)
 	}
@@ -205,25 +240,37 @@ func TestAPI_GetProject(t *testing.T) {
 	}
 
 	localApi := setup(conf)
-	url := localApi.Prefix + "/projects/" + tests.NormalProject.Name
-	jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetProject, http.StatusOK, api.CodeOK, true)
+	t.Run("Getting non-existing project informations", func(t *testing.T) {
+		url := localApi.Prefix + "/projects/" + "non-existing-project"
+		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetProject, http.StatusNotFound, api.CodeNotFound, true)
 
-	//Do not continue if failed !
-	if jsonres.Data == nil {
-		t.Error("Got empty data")
-	}
-	var project models.Project
-	err := mapstructure.Decode(jsonres.Data, &project)
-	if err != nil {
-		t.Fatalf("Could not decode JSON : %s", err)
-	}
-	if project.Name != tests.NormalProject.Name {
-		t.Errorf("Expected name : %s, got %s", tests.NormalProject.Name, project.Name)
-	}
+		//Do not continue if failed !
+		if jsonres.Data != nil {
+			t.Errorf("Got something else than empty data : %+v", jsonres.Data)
+		}
+	})
 
-	if project.Description != tests.NormalProject.Description {
-		t.Errorf("Expected description : %s, got %s", tests.NormalProject.Description, project.Description)
-	}
+	t.Run("Getting existing project informations", func(t *testing.T) {
+		url := localApi.Prefix + "/projects/" +  url.PathEscape(tests.NormalProject.Name)
+		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetProject, http.StatusOK, api.CodeOK, true)
+
+		//Do not continue if failed !
+		if jsonres.Data == nil {
+			t.Error("Got empty data")
+		}
+		var project models.Project
+		err := customDecode(jsonres.Data, &project)
+		if err != nil {
+			t.Fatalf("Could not decode JSON : %s", err)
+		}
+		if project.Name != tests.NormalProject.Name {
+			t.Errorf("Expected name : %s, got %s", tests.NormalProject.Name, project.Name)
+		}
+
+		if project.Description != tests.NormalProject.Description {
+			t.Errorf("Expected description : %s, got %s", tests.NormalProject.Description, project.Description)
+		}
+	})
 }
 
 func TestAPI_GetUser(t *testing.T) {
@@ -242,8 +289,8 @@ func TestAPI_GetUser(t *testing.T) {
 
 	localApi := setup(conf)
 
-	t.Run("Check the getting existing user informations", func(t *testing.T) {
-		url := localApi.Prefix + "/users/" + tests.NormalUser.Name
+	t.Run("Getting existing user informations", func(t *testing.T) {
+		url := localApi.Prefix + "/users/" + url.PathEscape(tests.NormalUser.Name)
 		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetUser, http.StatusOK, api.CodeOK, true)
 
 		//Do not continue if failed !
@@ -252,7 +299,7 @@ func TestAPI_GetUser(t *testing.T) {
 		}
 
 		var user models.User
-		err := mapstructure.Decode(jsonres.Data, &user)
+		err := customDecode(jsonres.Data, &user)
 		if err != nil {
 			t.Errorf("Could not decode JSON : %s", err)
 		}
@@ -270,7 +317,7 @@ func TestAPI_GetUser(t *testing.T) {
 		}
 	})
 
-	t.Run("Check the getting non-existing user informations", func(t *testing.T) {
+	t.Run("Getting non-existing user informations", func(t *testing.T) {
 		url := localApi.Prefix + "/users/" + "nonExistingUser"
 		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetUser, http.StatusNotFound, api.CodeNotFound, true)
 
@@ -299,8 +346,9 @@ func TestAPI_GetAlgorithm(t *testing.T) {
 
 	localApi := setup(conf)
 
-	t.Run("Check the getting the algorithm", func(t *testing.T) {
-		url := localApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
+	t.Run("Getting the algorithm", func(t *testing.T) {
+		url := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+								"/algorithm"
 		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetProjects, http.StatusOK, api.CodeOK, true)
 
 		//Do not continue if failed !
@@ -333,10 +381,11 @@ func TestAPI_GetIPsByProjectName(t *testing.T) {
 
 	localApi := setup(conf)
 
-	t.Run("Check the getting IP for an empty project (no ip)", func(t *testing.T) {
+	t.Run("Getting IP for an empty project (no ip)", func(t *testing.T) {
 		backup := tests.NormalIPs
 		tests.NormalIPs = nil
-		url := localApi.Prefix + "/projects/" + conf.Project.Name + "/ips"
+		url := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+								"/ips"
 		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetIPsByProjectName, http.StatusNotFound, api.CodeNotFound, true)
 		if jsonres.Data != nil {
 			t.Errorf("Got data (%s), should be nil", jsonres.Data)
@@ -344,12 +393,13 @@ func TestAPI_GetIPsByProjectName(t *testing.T) {
 		tests.NormalIPs = backup
 	})
 
-	t.Run("Check the getting IP for a project", func(t *testing.T) {
+	t.Run("Getting IP for a project", func(t *testing.T) {
 		var ips []models.IP
-		url := localApi.Prefix + "/projects/" + conf.Project.Name + "/ips"
+		url := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+								"/ips"
 		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetIPsByProjectName, http.StatusOK, api.CodeOK, true)
 
-		err := mapstructure.Decode(jsonres.Data, &ips)
+		err := customDecode(jsonres.Data, &ips)
 		if err != nil {
 			t.Errorf("Could not decode JSON : %s", err)
 		}
@@ -359,16 +409,16 @@ func TestAPI_GetIPsByProjectName(t *testing.T) {
 
 		for i, ip := range ips {
 			if ip.Value != tests.NormalIPs[i].Value {
-				t.Errorf("Received wrong value for ,got %s instead of %s", ip.Value, tests.NormalIPs[i].Value)
+				t.Errorf("Received wrong value : got %s instead of %s", ip.Value, tests.NormalIPs[i].Value)
 			}
 			if ip.Network != tests.NormalIPs[i].Network {
-				t.Errorf("Received wrong value for ,got %s instead of %s", ip.Network, tests.NormalIPs[i].Network)
+				t.Errorf("Received wrong network : got %s instead of %s", ip.Network, tests.NormalIPs[i].Network)
 			}
 			if ip.CreatedAt != tests.NormalIPs[i].CreatedAt {
-				t.Errorf("Received wrong value for ,got %s instead of %s", ip.CreatedAt, tests.NormalIPs[i].CreatedAt)
+				t.Errorf("Received wrong creation time : got %s instead of %s", ip.CreatedAt, tests.NormalIPs[i].CreatedAt)
 			}
 			if ip.UpdatedAt != tests.NormalIPs[i].UpdatedAt {
-				t.Errorf("Received wrong value for ,got %s instead of %s", ip.UpdatedAt, tests.NormalIPs[i].UpdatedAt)
+				t.Errorf("Received wrong update time : got %s instead of %s", ip.UpdatedAt, tests.NormalIPs[i].UpdatedAt)
 			}
 		}
 	})
@@ -393,7 +443,8 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 	localApi := setup(conf)
 
 	t.Run("Check the changing algorithm function", func(t *testing.T) {
-		urlChangeAlgo := localApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
+		urlChangeAlgo := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+											"/algorithm"
 		body := strings.NewReader("\"roundrobin\"")
 		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.ChangeAlgorithm, http.StatusOK, api.CodeOK, true)
 
@@ -408,7 +459,8 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 	})
 
 	t.Run("Check if the changes propagate correctly", func(t *testing.T) {
-		urlGetAlgo := localApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
+		urlGetAlgo := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+										"/algorithm"
 		jsonresAfterChange := rrCheck(t, localApi, "GET", urlGetAlgo, nil, localApi.GetAlgorithm, http.StatusOK, api.CodeOK, true)
 
 		expected := "roundrobin"
@@ -421,7 +473,8 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 		}
 	})
 	t.Run("Check the changing algorithm to an unknown one", func(t *testing.T) {
-		urlChangeAlgo := localApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
+		urlChangeAlgo := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+											"/algorithm"
 		body := strings.NewReader("\"NON-EXISTING-ALGORITHM\"")
 		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.ChangeAlgorithm, http.StatusUnprocessableEntity, api.CodeInvalidInput, true)
 
@@ -429,7 +482,7 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 			t.Errorf("Expected empty data, got %s", jsonres.Data)
 		}
 
-		urlGetAlgo := localApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
+		urlGetAlgo := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) + "/algorithm"
 		jsonresAfterChange := rrCheck(t, localApi, "GET", urlGetAlgo, nil, localApi.GetAlgorithm, http.StatusOK, api.CodeOK, true)
 		expected := "roundrobin"
 		if strings.ToLower(jsonresAfterChange.Data.(string)) != expected {
@@ -438,7 +491,8 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 	})
 
 	t.Run("Sending invalid json data", func(t *testing.T) {
-		urlChangeAlgo := localApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
+		urlChangeAlgo := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+											"/algorithm"
 		body := strings.NewReader("INVALID-JSON")
 		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.ChangeAlgorithm, http.StatusBadRequest, api.CodeCouldNotDecodeJSON, true)
 
@@ -446,7 +500,7 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 			t.Errorf("Expected empty data, got %s", jsonres.Data)
 		}
 
-		urlGetAlgo := localApi.Prefix + "/projects/" + conf.Project.Name + "/algorithm"
+		urlGetAlgo := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) + "/algorithm"
 		jsonresAfterChange := rrCheck(t, localApi, "GET", urlGetAlgo, nil, localApi.GetAlgorithm, http.StatusOK, api.CodeOK, true)
 		expected := "roundrobin"
 		if strings.ToLower(jsonresAfterChange.Data.(string)) != expected {
@@ -476,7 +530,9 @@ func TestAPI_GetPortsByIP(t *testing.T) {
 	t.Run("Get ports from an empty ip (no ports)", func(t *testing.T) {
 		backup := tests.NormalPorts
 		tests.NormalPorts = []models.Port{}
-		url := localApi.Prefix + "/projects/" + conf.Project.Name + "/ips/" + tests.NormalIPs[0].Value + "/ports"
+		url := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+								"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+								"/ports"
 		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetPortsByIP, http.StatusNotFound, api.CodeNotFound, true)
 		if jsonres.Data != nil {
 			t.Errorf("Got data (%s), should be nil", jsonres.Data)
@@ -486,11 +542,13 @@ func TestAPI_GetPortsByIP(t *testing.T) {
 
 	t.Run("Get all the ports for an IP", func(t *testing.T) {
 		var ports []models.Port
-		url := localApi.Prefix + "/projects/" + conf.Project.Name + "/ips/" + tests.NormalIPs[0].Value + "/ports"
+		url := localApi.Prefix + "/projects/" +  url.PathEscape(conf.Project.Name) +
+								"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+								"/ports"
 		t.Logf("URL : %s", url)
 		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetPortsByIP, http.StatusOK, api.CodeOK, true)
 
-		err := mapstructure.Decode(jsonres.Data, &ports)
+		err := customDecode(jsonres.Data, &ports)
 		if err != nil {
 			t.Errorf("Could not decode JSON : %s", err)
 		}
@@ -501,25 +559,25 @@ func TestAPI_GetPortsByIP(t *testing.T) {
 
 		for i, port := range ports {
 			if port.Type != tests.NormalPorts[i].Type {
-				t.Errorf("Received wrong Type for ,got %s instead of %s", port.Type, tests.NormalPorts[i].Type)
+				t.Errorf("Received wrong Type : got %s instead of %s", port.Type, tests.NormalPorts[i].Type)
 			}
 			if port.Status != tests.NormalPorts[i].Status {
-				t.Errorf("Received wrong value for ,got %s instead of %s", port.Status, tests.NormalPorts[i].Status)
+				t.Errorf("Received wrong Status : got %s instead of %s", port.Status, tests.NormalPorts[i].Status)
 			}
 			if port.Protocol != tests.NormalPorts[i].Protocol {
-				t.Errorf("Received wrong value for ,got %s instead of %s", port.Protocol, tests.NormalPorts[i].Protocol)
+				t.Errorf("Received wrong Protocol : got %s instead of %s", port.Protocol, tests.NormalPorts[i].Protocol)
 			}
 			if port.Banner != tests.NormalPorts[i].Banner {
-				t.Errorf("Received wrong value for ,got %s instead of %s", port.Banner, tests.NormalPorts[i].Banner)
+				t.Errorf("Received wrong Banner : got %s instead of %s", port.Banner, tests.NormalPorts[i].Banner)
 			}
 			if port.Number != tests.NormalPorts[i].Number {
-				t.Errorf("Received wrong value for ,got %d instead of %d", port.Number, tests.NormalPorts[i].Number)
+				t.Errorf("Received wrong Number : got %d instead of %d", port.Number, tests.NormalPorts[i].Number)
 			}
 			if port.CreatedAt != tests.NormalPorts[i].CreatedAt {
-				t.Errorf("Received wrong value for ,got %s instead of %s", port.CreatedAt, tests.NormalPorts[i].CreatedAt)
+				t.Errorf("Received wrong CreatedAt : got %s instead of %s", port.CreatedAt, tests.NormalPorts[i].CreatedAt)
 			}
 			if port.UpdatedAt != tests.NormalPorts[i].UpdatedAt {
-				t.Errorf("Received wrong value for ,got %s instead of %s", port.UpdatedAt, tests.NormalIPs[i].UpdatedAt)
+				t.Errorf("Received wrong UpdateAt : got %s instead of %s", port.UpdatedAt, tests.NormalIPs[i].UpdatedAt)
 			}
 		}
 	})
@@ -548,12 +606,150 @@ func TestAPI_GetURIByPort(t *testing.T) {
 	t.Run("Get URI from a new port (empty)", func(t *testing.T) {
 		backup := tests.NormalURIs
 		tests.NormalURIs = []models.URI{}
-		urlGetUri := localApi.Prefix + "/projects/" + conf.Project.Name + "/ips/" + tests.NormalIPs[0].Value + "/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) + "/tcp/uris"
+		urisNameB64 := base64.StdEncoding.EncodeToString([]byte("non-existing-uri"))
+		urlGetUri := localApi.Prefix +
+					"/projects/"+  url.PathEscape(conf.Project.Name) +
+					"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+					"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+					"/uris/" + url.PathEscape(urisNameB64)
+		t.Log(urlGetUri)
+		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusNotFound, api.CodeNotFound, true)
+		if jsonres.Data != nil {
+			t.Errorf("Got data (%s), should be nil", jsonres.Data)
+		} 
+		tests.NormalURIs = backup
+	})
+
+	t.Run("Get existing URI without slash-", func(t *testing.T) {
+		var uri models.URI
+
+		urisNameB64 := base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[0].Name))
+		urlGetUri := localApi.Prefix +
+			"/projects/"+  url.PathEscape(conf.Project.Name) +
+			"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+			"/uris/" +  url.PathEscape(urisNameB64)
+
+		t.Logf("URL :%s", urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
+		if jsonres.Data == nil {
+			t.Errorf("Got no data, should be %+v", tests.NormalURIs[0])
+		}
+		err := customDecode(jsonres.Data, &uri)
+		if err != nil {
+			t.Errorf("Cannot decode result, got %+v", jsonres.Data)
+		}
+		if uri.Name != tests.NormalURIs[0].Name {
+			t.Errorf("Got the wrong URI name : %s instead of %s", uri.Name, tests.NormalURIs[0].Name)
+		}
+
+		if uri.Code != tests.NormalURIs[0].Code {
+			t.Errorf("Got the wrong URI Code : %s instead of %s", uri.Code, tests.NormalURIs[0].Code)
+		}
+		
+		if uri.CreatedAt != tests.NormalURIs[0].CreatedAt {
+			t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", uri.CreatedAt, tests.NormalURIs[0].CreatedAt)
+		}
+
+		if uri.UpdatedAt != tests.NormalURIs[0].UpdatedAt {
+			t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", uri.UpdatedAt, tests.NormalURIs[0].UpdatedAt)
+		}
+
+	})
+
+	t.Run("Get existing URI with middle slash", func(t *testing.T) {
+		var uri models.URI
+		urisNameB64 := base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[1].Name))
+		urlGetUri := localApi.Prefix +
+			"/projects/"+  url.PathEscape(conf.Project.Name) +
+			"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+			"/uris/" +  url.PathEscape(urisNameB64)
+
+		t.Logf("URL :%s", urlGetUri)
+		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
+		if jsonres.Data == nil {
+			t.Errorf("Got no data, should be %+v", tests.NormalURIs[1])
+		}
+		err := customDecode(jsonres.Data, &uri)
+		if err != nil {
+			t.Errorf("Cannot decode result, got %+v", jsonres.Data)
+		}
+		if uri.Name != tests.NormalURIs[1].Name {
+			t.Errorf("Got the wrong URI name : %s instead of %s", uri.Name, tests.NormalURIs[1].Name)
+		}
+
+		if uri.Code != tests.NormalURIs[1].Code {
+			t.Errorf("Got the wrong URI Code : %s instead of %s", uri.Code, tests.NormalURIs[1].Code)
+		}
+		
+		if uri.CreatedAt != tests.NormalURIs[1].CreatedAt {
+			t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", uri.CreatedAt, tests.NormalURIs[1].CreatedAt)
+		}
+
+		if uri.UpdatedAt != tests.NormalURIs[1].UpdatedAt {
+			t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", uri.UpdatedAt, tests.NormalURIs[1].UpdatedAt)
+		}
+	})
+
+	t.Run("Get existing URI with starting slash", func(t *testing.T) {
+		var uri models.URI
+		urisNameB64 := base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[2].Name))
+		urlGetUri := localApi.Prefix +
+			"/projects/"+  url.PathEscape(conf.Project.Name) +
+			"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+			"/uris/" +  url.PathEscape(urisNameB64)
+
+		t.Logf("URL :%s", urlGetUri)
+		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
+		if jsonres.Data == nil {
+			t.Errorf("Got no data, should be %+v", tests.NormalURIs[2])
+		}
+		err := customDecode(jsonres.Data, &uri)
+		if err != nil {
+			t.Errorf("Cannot decode result, got %+v", jsonres.Data)
+		}
+		if uri.Name != tests.NormalURIs[2].Name {
+			t.Errorf("Got the wrong URI name : %s instead of %s", uri.Name, tests.NormalURIs[2].Name)
+		}
+
+		if uri.Code != tests.NormalURIs[2].Code {
+			t.Errorf("Got the wrong URI Code : %s instead of %s", uri.Code, tests.NormalURIs[2].Code)
+		}
+		
+		if uri.CreatedAt != tests.NormalURIs[2].CreatedAt {
+			t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", uri.CreatedAt, tests.NormalURIs[2].CreatedAt)
+		}
+
+		if uri.UpdatedAt != tests.NormalURIs[2].UpdatedAt {
+			t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", uri.UpdatedAt, tests.NormalURIs[2].UpdatedAt)
+		}
+
+	})
+
+	t.Run("Get non-existing URI", func(t *testing.T) {
+		urisNameB64 := base64.StdEncoding.EncodeToString([]byte("nonExistingURI"))
+		urlGetUri := localApi.Prefix +
+			"/projects/"+  url.PathEscape(conf.Project.Name) +
+			"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+			"/uris/" +  url.PathEscape(urisNameB64)
+		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusNotFound, api.CodeNotFound, true)
 		if jsonres.Data != nil {
 			t.Errorf("Got data (%s), should be nil", jsonres.Data)
 		}
-		tests.NormalURIs = backup
+	})
+	t.Run("Get malformed base64 url", func(t *testing.T) {
+		urlGetUri := localApi.Prefix +
+			"/projects/"+  url.PathEscape(conf.Project.Name) +
+			"/ips/" +  url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+			"/uris/" +  "NOT BASE64"
+		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusInternalServerError, api.CodeServerError, true)
+		if jsonres.Data != nil {
+			t.Errorf("Got data (%s), should be nil", jsonres.Data)
+		}
 	})
 }
 

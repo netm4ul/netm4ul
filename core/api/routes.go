@@ -18,9 +18,12 @@ func (api *API) Routes() {
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}", api.GetProject).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/algorithm", api.GetAlgorithm).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips", api.GetIPsByProjectName).Methods("GET")
-	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports", api.GetPortsByIP).Methods("GET")            // We don't need to go deeper. Get all ports at once
-	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{protocol}", api.GetPortsByIP).Methods("GET") // get only one protocol result (tcp, udp). Same GetPortsByIP function
-	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{protocol}/{port}/uris", api.GetURIByPort).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports", api.GetPortsByIP).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports", api.GetPortsByIP).Queries("protocol", "{protocol}").Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{port}", api.GetPortByIP).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{port}", api.GetPortByIP).Queries("protocol", "{protocol}").Methods("GET") // register optionnal protocol (tcp/udp...)
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{port}/uris", api.GetURIsByPort).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports/{port}/uris/{uri}", api.GetURIByPort).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/routes", api.GetRoutesByIP).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/raws", api.GetRawsByProject).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/raws/{module}", api.GetRawsByModule).Methods("GET")
@@ -37,5 +40,4 @@ func (api *API) Routes() {
 
 	// DELETE
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}", api.DeleteProject).Methods("DELETE")
-
 }
