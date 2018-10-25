@@ -80,13 +80,13 @@ func (s *Session) loadModule() {
 
 // GetServerIPPort func
 func (s *Session) GetServerIPPort() string {
-	ipport := net.TCPAddr{IP: net.ParseIP(s.Config.Server.IP), Port:int(s.Config.Server.Port) }
+	ipport := net.TCPAddr{IP: net.ParseIP(s.Config.Server.IP), Port: int(s.Config.Server.Port)}
 	return ipport.String()
 }
 
 // GetAPIIPPort func
 func (s *Session) GetAPIIPPort() string {
-	ipport := net.TCPAddr{IP: net.ParseIP(s.Config.API.IP), Port:int(s.Config.API.Port) }
+	ipport := net.TCPAddr{IP: net.ParseIP(s.Config.API.IP), Port: int(s.Config.API.Port)}
 	return ipport.String()
 }
 

@@ -2,13 +2,13 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
-	"encoding/base64"
 
 	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"time"
