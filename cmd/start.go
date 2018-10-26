@@ -69,7 +69,7 @@ var startServerCmd = &cobra.Command{
 		// TODO flag enable / disable api
 		// TODO : not sure if we should use the CLI session or a new one ...
 		// sa := session.NewSession(config.Config)
-		a := api.CreateAPI(cliSession, s)
+		a := api.NewAPI(cliSession, s)
 		go a.Start()
 
 		gracefulShutdown()

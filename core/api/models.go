@@ -40,14 +40,3 @@ type Metadata struct {
 	Nodes []communication.Node `json:"nodes"`
 	Info  Info                 `json:"api"`
 }
-
-// CreateAPI : Initialise the infinite server loop on the master node
-func CreateAPI(s *session.Session, server *server.Server) *API {
-	api := API{
-		Session: s,
-		Server:  server,
-		db:      server.Db,
-	}
-
-	return &api
-}

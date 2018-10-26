@@ -45,3 +45,4 @@ tests/testfile
 
 # Ignore coverage tool results
 coverage.*
+*.profile

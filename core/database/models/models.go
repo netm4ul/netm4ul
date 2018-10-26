@@ -128,6 +128,14 @@ func GetPortTypes() []PortType {
 	return pts
 }
 
+/*
+You can generate a new adapter automatically with the "create". (see `netm4ul create --help` command)
+This interface sets the abi for the adapters.
+
+This interface is made to be as database agnostic as possible.
+We do not infer on how to store the data, nor how you do "relationship" between items etc...
+*/
+
 //Database is the mandatory interface for all custom database adapter
 type Database interface {
 	// General purpose functions
@@ -168,7 +176,7 @@ type Database interface {
 	CreateOrUpdatePort(projectName string, ip string, port Port) error
 	CreateOrUpdatePorts(projectName string, ip string, port []Port) error
 	GetPorts(projectName string, ip string) ([]Port, error)
-	GetPort(projectName string, ip string, port string) (Port, error)
+	GetPort(projectName string, ip string, port string) (Port, error) // TOFIX : includes protocols (tcp, upd...) *optionnal* parameters. Returns CodeAmbiguousRequest if 2 ports of differents type are found.
 	DeletePort(projectName string, ip string, port Port) error
 
 	// URI (directory and files)

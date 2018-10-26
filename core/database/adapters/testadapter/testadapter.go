@@ -54,7 +54,7 @@ func (test *Test) GetUser(username string) (models.User, error) {
 	if tests.NormalUser.Name == username {
 		return tests.NormalUser, nil
 	}
-	return models.User{}, errors.New("User not found")
+	return models.User{}, models.ErrNotFound
 }
 
 //GetUserByToken return a models.User if the provided token correspond to the test token (stored in the /tests/values.go file).
@@ -62,7 +62,7 @@ func (test *Test) GetUserByToken(token string) (models.User, error) {
 	if tests.NormalUser.Token == token {
 		return tests.NormalUser, nil
 	}
-	return models.User{}, errors.New("User not found")
+	return models.User{}, models.ErrNotFound
 }
 
 //CreateOrUpdateUser is a no-op.
@@ -109,7 +109,7 @@ func (test *Test) GetProject(projectName string) (models.Project, error) {
 			return p, nil
 		}
 	}
-	return models.Project{}, errors.New("Could not get project " + projectName)
+	return models.Project{}, models.ErrNotFound
 }
 
 //DeleteProject TOFIX
@@ -200,7 +200,7 @@ func (test *Test) GetPort(projectName string, ip string, port string) (models.Po
 			return p, nil
 		}
 	}
-	return models.Port{}, errors.New("Port not found")
+	return models.Port{}, models.ErrNotFound
 }
 
 //DeletePort TOFIX
@@ -229,14 +229,14 @@ func (test *Test) GetURIs(projectName string, ip string, port string) ([]models.
 func (test *Test) GetURI(projectName string, ip string, port string, uri string) (models.URI, error) {
 	uris, err := test.GetURIs(projectName, ip, port)
 	if err != nil {
-		return models.URI{}, nil
+		return models.URI{}, err
 	}
 	for _, u := range uris {
 		if u.Name == uri {
 			return u, nil
 		}
 	}
-	return models.URI{}, errors.New("Uri not found")
+	return models.URI{}, models.ErrNotFound
 }
 
 // DeleteURI TOFIX
@@ -255,7 +255,7 @@ func (test *Test) AppendRawData(projectName string, raw models.Raw) error {
 func (test *Test) GetRaws(projectName string) ([]models.Raw, error) {
 	raws, ok := tests.NormalRaws[projectName]
 	if !ok {
-		return []models.Raw{}, errors.New("Project not found")
+		return []models.Raw{}, models.ErrNotFound
 	}
 	return raws, nil
 }
@@ -268,7 +268,7 @@ func (test *Test) GetRawModule(projectName string, moduleName string) (map[strin
 	}
 
 	if len(raws) == 0 {
-		return nil, errors.New("Module not found")
+		return nil, models.ErrNotFound
 	}
 	//TOFIX : return actual raw data...
 	return map[string][]models.Raw{}, nil

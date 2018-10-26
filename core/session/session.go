@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 
 	"github.com/netm4ul/netm4ul/core/communication"
@@ -81,12 +80,14 @@ func (s *Session) loadModule() {
 
 // GetServerIPPort func
 func (s *Session) GetServerIPPort() string {
-	return s.Config.Server.IP + ":" + strconv.FormatUint(uint64(s.Config.Server.Port), 10)
+	ipport := net.TCPAddr{IP: net.ParseIP(s.Config.Server.IP), Port: int(s.Config.Server.Port)}
+	return ipport.String()
 }
 
-// GetAPIIPPort fun
+// GetAPIIPPort func
 func (s *Session) GetAPIIPPort() string {
-	return s.Config.Server.IP + ":" + strconv.FormatUint(uint64(s.Config.API.Port), 10)
+	ipport := net.TCPAddr{IP: net.ParseIP(s.Config.API.IP), Port: int(s.Config.API.Port)}
+	return ipport.String()
 }
 
 // GetModulesList return a string of all modules (listed and enabled)

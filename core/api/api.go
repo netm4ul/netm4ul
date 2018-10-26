@@ -1,32 +1,93 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/netm4ul/netm4ul/core/loadbalancing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/server"
+	"github.com/netm4ul/netm4ul/core/session"
 	log "github.com/sirupsen/logrus"
 )
 
-//Start the API and route endpoints to functions
-func (api *API) Start() {
+var c chan os.Signal
 
-	api.IPPort = api.Session.GetAPIIPPort()
-	api.Version = Version
-	api.Prefix = "/api/" + api.Version
-
-	log.Infof("API Listenning : %s, version : %s", api.IPPort, api.Version)
-	log.Infof("API Endpoint : %s", api.IPPort+api.Prefix)
+//NewAPI is the constructor method for the HTTP API
+func NewAPI(s *session.Session, server *server.Server) *API {
+	api := API{
+		Session: s,
+		Server:  server,
+		db:      server.Db,
+		IPPort:  s.GetAPIIPPort(),
+		Version: Version,
+		Prefix:  "/api/" + Version,
+	}
 
 	api.Routes()
+	api.setupSignal()
+	return &api
+}
 
-	log.Fatal(http.ListenAndServe(api.IPPort, api.Router))
+func (api *API) setupSignal() {
+	log.Debug("Creating signal channel to gracefully close the API.")
+	c = make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+}
+
+//Start the API and route endpoints to functions
+func (api *API) Start() {
+	// timeout before forcing shutdown
+	wait := time.Second * 3
+
+	// this is from the mux documentation
+	srv := &http.Server{
+		Addr: api.IPPort,
+		// Good practice to set timeouts to avoid Slowloris attacks.
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      api.Router, // Pass our instance of gorilla/mux in.
+	}
+
+	go func() {
+		log.Infof("API Listenning : %s, version : %s", api.IPPort, api.Version)
+		log.Infof("API Endpoint : %s", api.IPPort+api.Prefix)
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	// Optionally, you could run srv.Shutdown in a goroutine and block on
+	// <-ctx.Done() if your application should wait for other services
+	// to finalize based on context cancellation.
+	log.Println("shutting down")
+	os.Exit(0)
+}
+
+//Shutdown is responsible for graceful shutdown of the API.
+func (api *API) Shutdown() {
+	c <- os.Interrupt
 }
 
 //GetIndex returns a link to the documentation on the root path
@@ -38,6 +99,7 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 	res := CodeToResult[CodeOK]
 	res.Data = d
 	res.Message = "Documentation available at https://github.com/netm4ul/netm4ul"
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -65,9 +127,8 @@ func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res = CodeToResult[CodeOK]
-
 	res.Data = projects
-
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -80,17 +141,31 @@ GetProject return this template
 */
 func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	var res Result
+	var err error
+	var project string
+
 	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
 
-	log.Debugf("Requesting project : %s", vars["name"])
-	p, err := api.db.GetProject(vars["name"])
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 
-	//TOFIX
-	if err != nil && err.Error() == "not found" {
+	log.Debugf("Requesting project : %s", project)
+	p, err := api.db.GetProject(project)
+
+	if err == models.ErrNotFound {
 		res = CodeToResult[CodeNotFound]
 		res.Message = "Project not found"
 
-		log.Warnf("Project not found %s", vars["name"])
+		log.Warnf("Project not found %s", project)
 		w.WriteHeader(CodeToResult[CodeNotFound].HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
@@ -106,7 +181,7 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 
 	res = CodeToResult[CodeOK]
 	res.Data = p
-
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -115,6 +190,7 @@ func (api *API) GetAlgorithm(w http.ResponseWriter, r *http.Request) {
 	var res Result
 	res = CodeToResult[CodeOK]
 	res.Data = api.Server.Session.Algo.Name()
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -132,16 +208,15 @@ func (api *API) ChangeAlgorithm(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	newAlgo, err := loadbalancing.NewAlgo(algorithm)
-
 	if err != nil {
-		sendDefaultValue(w, CodeServerError)
+		sendDefaultValue(w, CodeInvalidInput)
 		return
 	}
 
 	api.Server.Session.Algo = newAlgo
 	res := CodeToResult[CodeOK]
 	res.Message = "Algorithm changed to : " + algorithm
-	w.WriteHeader(CodeToResult[CodeOK].HTTPCode)
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -155,12 +230,33 @@ GetIPsByProjectName return this template
 */
 func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	var res Result
+	var err error
+	var project string
 
 	vars := mux.Vars(r)
-	name := vars["name"]
+	pathUnescapeErr := 0
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
 
-	// calling the private function !
-	ips, err := api.db.GetIPs(name)
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	ips, err := api.db.GetIPs(project)
+	if err == models.ErrNotFound {
+		log.Debugf("Ip for project %s not found", project)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No IP found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 
 	// Database error
 	if err != nil {
@@ -169,118 +265,277 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 		res = CodeToResult[CodeDatabaseError]
 		res.Message += "[error in selecting project IPs]"
 
-		w.WriteHeader(CodeToResult[CodeDatabaseError].HTTPCode)
+		w.WriteHeader(res.HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
 	log.Debugf("IPs : %+v", ips)
 
-	// convert [{Value: "1.1.1.1"},...] to ["1.1.1.1",...]
-	var data []string
-	for _, ip := range ips {
-		data = append(data, ip.Value)
+	res = CodeToResult[CodeOK]
+	res.Data = ips
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
+// GetPortsByIP return all the ports for a given IP (and project)
+func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
+	var res Result
+	var err error
+	var project, ip string
+	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
 	}
 
-	// Not found
-	if len(data) == 0 {
-		log.Debugf("Project %s not found", name)
-		res = CodeToResult[CodeNotFound]
-		res.Message = "No IP found"
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	protocol := r.FormValue("protocol")
 
-		w.WriteHeader(CodeToResult[CodeNotFound].HTTPCode)
+	if protocol != "" {
+		log.Debugf("project : %s, ip : %s, protocol : %s", project, ip, protocol)
+		sendDefaultValue(w, CodeNotImplementedYet)
+		return
+	}
+
+	ports, err := api.db.GetPorts(project, ip)
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	log.Debugf("ports : %+v", ports)
+	if len(ports) == 0 {
+		log.Debugf("No port for project %s found", project)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No port found"
+
+		w.WriteHeader(res.HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
 	res = CodeToResult[CodeOK]
-	res.Data = data
+	res.Data = ports
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
-/*
-GetPortsByIP return this template
-  "data": [
-    {
-    "number": 22
-    "protocol": "tcp"
-    "status": "open"
-    "banner": "OpenSSH..."
-    "type": "ssh"
-    },
-    {
-      ...
-    }
-  ]
-*/
-func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
+// GetPortByIP return informations about a given port. It requires port number, ip address, and project name
+// It has an optionnal "protocol" query (form) to specify the tcp/upd/... protocol
+// If multiple ports are found with the same number and the protocol isn't specified, the function return an error : CodeAmbiguousRequest
+func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 	var res Result
-
+	var err error
+	var project, ip, port string
 	vars := mux.Vars(r)
-	name := vars["name"]
-	ip := vars["ip"]
-	protocol := vars["protocol"]
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+	if port, err = url.PathUnescape(vars["port"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	protocol := r.FormValue("protocol")
 
 	if protocol != "" {
-		log.Debugf("name : %s, ip : %s, protocol : %s", name, ip, protocol)
+		log.Debugf("project : %s, ip : %s, protocol : %s", project, ip, protocol)
 		sendDefaultValue(w, CodeNotImplementedYet)
 		return
 	}
 
-	ports, err := api.db.GetPorts(name, ip)
+	dbport, err := api.db.GetPort(project, ip, port)
+	//Check if the port exist
+	if err == models.ErrNotFound {
+		log.Debugf("No port for project %s, ip %s and port %s found", project, ip, port)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No port found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Data = dbport
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
+func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
+	var res Result
+	var err error
+	var project, ip, port string
+
+	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+	if port, err = url.PathUnescape(vars["port"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	protocol := r.FormValue("protocol")
+
+	if protocol != "" {
+		log.Debugf("project : %s, ip : %s, port : %s, protocol %s", project, ip, port, protocol)
+		sendDefaultValue(w, CodeNotImplementedYet)
+		return
+	}
+
+	uris, err := api.db.GetURIs(project, ip, port)
+	if err == models.ErrNotFound {
+		log.Debugf("No uris for project : %s, ip : %s, port : %s, protocol %s found", project, ip, port, protocol)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No URI found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 
 	if err != nil {
 		log.Debugf("Error : %s", err)
 		res = CodeToResult[CodeDatabaseError]
+		w.WriteHeader(res.HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
 	}
-	log.Debugf("ports : %s", ports)
+
+	log.Debugf("uris : %+v", uris)
+
+	res = CodeToResult[CodeOK]
+	res.Data = uris
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
 }
 
-/*
-GetURIByPort return this template
-  "data": [
-
-  ]
-}
-*/
+// GetURIByPort returns the specified URI information.
 func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
+	var res Result
+	var err error
+	var project, ip, port, uri string
+
+	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+	if port, err = url.PathUnescape(vars["port"]); err != nil {
+		pathUnescapeErr++
+	}
+	if uri, err = url.PathUnescape(vars["uri"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeInvalidInput]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	protocol := r.FormValue("protocol")
+
+	if protocol != "" {
+		log.Debugf("project : %s, ip : %s, port : %s, protocol %s", project, ip, port, protocol)
+		sendDefaultValue(w, CodeNotImplementedYet)
+		return
+	}
+
+	dburi, err := api.db.GetURI(project, ip, port, uri)
+	if err == models.ErrNotFound {
+		log.Debugf("No uri for project : %s, ip : %s, port : %s, protocol %s found", project, ip, port, protocol)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No URI found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Data = dburi
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
+//GetRawsByProject returns all the raws output from a module for a specified project
+func (api *API) GetRawsByProject(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	sendDefaultValue(w, CodeNotImplementedYet)
 }
 
-//GetRawModuleByProject returns all the raw output for requested module.
-func (api *API) GetRawModuleByProject(w http.ResponseWriter, r *http.Request) {
+//GetRawsByModule returns all the raws output from the requested module and project
+func (api *API) GetRawsByModule(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	sendDefaultValue(w, CodeNotImplementedYet)
 }
 
-/*
-GetRoutesByIP returns all the routes info following this template :
-  "data": [
-    {
-      "Source": "1.2.3.4",
-      "Destination": "4.3.2.1",
-      "Hops": {
-        "IP" : "127.0.0.1",
-        "Max": 0.123,
-        "Min": 0.1,
-        "Avg": 0.11
-      }
-    },
-    ...
-    ]
-*/
+// GetRoutesByIP returns all the routes informations
 func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	sendDefaultValue(w, CodeNotImplementedYet)
 }
 
-/*
-CreateProject return this template after creating the new project
-  "data": "ProjectName"
-*/
+// CreateProject creates a new project and return its name inside the data field
 func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var project models.Project
 	var res Result
@@ -302,6 +557,7 @@ func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	res = CodeToResult[CodeOK]
 	res.Message = "Command Sent"
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -349,6 +605,7 @@ func (api *API) RunModules(w http.ResponseWriter, r *http.Request) {
 
 	res = CodeToResult[CodeOK]
 	res.Message = "Command sent"
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -391,6 +648,7 @@ func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 
 	res = CodeToResult[CodeOK]
 	res.Message = "Command sent"
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
 
