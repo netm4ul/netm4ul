@@ -247,8 +247,16 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// calling the private function !
 	ips, err := api.db.GetIPs(project)
+	if err == models.ErrNotFound {
+		log.Debugf("Ip for project %s not found", project)
+		res = CodeToResult[CodeNotFound]
+		res.Message = "No IP found"
+
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
 
 	// Database error
 	if err != nil {
@@ -263,17 +271,6 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Debugf("IPs : %+v", ips)
-
-	// Not found
-	if len(ips) == 0 {
-		log.Debugf("Ip for project %s not found", project)
-		res = CodeToResult[CodeNotFound]
-		res.Message = "No IP found"
-
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
-		return
-	}
 
 	res = CodeToResult[CodeOK]
 	res.Data = ips
@@ -373,20 +370,19 @@ func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbport, err := api.db.GetPort(project, ip, port)
-	if err != nil {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeDatabaseError]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
-		return
-	}
-
 	//Check if the port exist
-	if dbport.CreatedAt.IsZero() {
+	if err == models.ErrNotFound {
 		log.Debugf("No port for project %s, ip %s and port %s found", project, ip, port)
 		res = CodeToResult[CodeNotFound]
 		res.Message = "No port found"
 
+		w.WriteHeader(res.HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	if err != nil {
+		log.Debugf("Error : %s", err)
+		res = CodeToResult[CodeDatabaseError]
 		w.WriteHeader(res.HTTPCode)
 		json.NewEncoder(w).Encode(res)
 		return
@@ -432,7 +428,7 @@ func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uris, err := api.db.GetURIs(project, ip, port)
-	if err == models.ErrNotFound || len(uris) == 0 {
+	if err == models.ErrNotFound {
 		log.Debugf("No uris for project : %s, ip : %s, port : %s, protocol %s found", project, ip, port, protocol)
 		res = CodeToResult[CodeNotFound]
 		res.Message = "No URI found"

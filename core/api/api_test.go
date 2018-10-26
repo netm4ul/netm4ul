@@ -384,7 +384,7 @@ func TestAPI_GetIPsByProjectName(t *testing.T) {
 		tests.NormalIPs = nil
 		url := localApi.Prefix + "/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips"
-		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetIPsByProjectName, http.StatusNotFound, api.CodeNotFound, true)
+		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetIPsByProjectName, http.StatusOK, api.CodeOK, true)
 		if jsonres.Data != nil {
 			t.Errorf("Got data (%s), should be nil", jsonres.Data)
 		}
@@ -507,6 +507,47 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 	})
 }
 
+func TestAPI_GetPortByIP(t *testing.T) {
+	conf := config.ConfigToml{
+		API: config.API{
+			Port: 1234,
+			IP:   "0.0.0.0",
+		},
+		Project: config.Project{
+			Name: "test",
+		},
+		Database: config.Database{
+			DatabaseType: "testadapter",
+		},
+		Algorithm: config.Algorithm{
+			Name: "random",
+		},
+	}
+
+	localApi := setup(conf)
+	t.Run("Get empty port info", func(t *testing.T) {
+		backup := tests.NormalPorts
+		tests.NormalPorts = []models.Port{}
+		url := localApi.Prefix + "/projects/" + url.PathEscape(conf.Project.Name) +
+			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + "123"
+		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetPortByIP, http.StatusNotFound, api.CodeNotFound, true)
+		if jsonres.Data != nil {
+			t.Errorf("Got data (%s), should be nil", jsonres.Data)
+		}
+		tests.NormalPorts = backup
+	})
+
+	t.Run("Get port info", func(t *testing.T) {
+		url := localApi.Prefix + "/projects/" + url.PathEscape(conf.Project.Name) +
+			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + url.PathEscape(strconv.Itoa(int(tests.NormalPorts[0].Number)))
+		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetPortByIP, http.StatusOK, api.CodeOK, true)
+		if jsonres.Data == nil {
+			t.Errorf("Got nil data instead of %+v", tests.NormalPorts[0])
+		}
+	})
+}
 func TestAPI_GetPortsByIP(t *testing.T) {
 	conf := config.ConfigToml{
 		API: config.API{
@@ -582,6 +623,59 @@ func TestAPI_GetPortsByIP(t *testing.T) {
 
 }
 
+func TestAPI_GetURIsByPort(t *testing.T) {
+	conf := config.ConfigToml{
+		API: config.API{
+			Port: 1234,
+			IP:   "0.0.0.0",
+		},
+		Project: config.Project{
+			Name: "test",
+		},
+		Database: config.Database{
+			DatabaseType: "testadapter",
+		},
+		Algorithm: config.Algorithm{
+			Name: "random",
+		},
+	}
+
+	localApi := setup(conf)
+
+	t.Run("Get list of URIs by port", func(t *testing.T) {
+		url := localApi.Prefix +
+			"/projects/" + url.PathEscape(conf.Project.Name) +
+			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+			"/uris"
+		t.Log(url)
+		jsonres := rrCheck(t, localApi, "GET", url, nil, localApi.GetURIsByPort, http.StatusOK, api.CodeOK, true)
+		if jsonres.Data == nil {
+			t.Errorf("Got nil response, should be %s", tests.NormalURIs)
+		}
+
+		var uris []models.URI
+		err := customDecode(jsonres.Data, &uris)
+		if err != nil {
+			t.Errorf("Could not decode JSON : %s", err)
+		}
+
+		for i, u := range uris {
+			if u.Name != tests.NormalURIs[i].Name {
+				t.Errorf("Got the wrong URI name : %s instead of %s", u.Name, tests.NormalURIs[0].Name)
+			}
+			if u.Code != tests.NormalURIs[i].Code {
+				t.Errorf("Got the wrong URI Code : %s instead of %s", u.Code, tests.NormalURIs[0].Code)
+			}
+			if u.CreatedAt != tests.NormalURIs[i].CreatedAt {
+				t.Errorf("Got the wrong URI created at : %s instead of %s", u.CreatedAt, tests.NormalURIs[0].CreatedAt)
+			}
+			if u.UpdatedAt != tests.NormalURIs[i].UpdatedAt {
+				t.Errorf("Got the wrong URI updated at : %s instead of %s", u.UpdatedAt, tests.NormalURIs[0].UpdatedAt)
+			}
+		}
+	})
+}
 func TestAPI_GetURIByPort(t *testing.T) {
 	conf := config.ConfigToml{
 		API: config.API{
