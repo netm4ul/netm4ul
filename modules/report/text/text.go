@@ -132,7 +132,7 @@ func (t *Text) getData() (map[string]interface{}, error) {
 		return nil, errors.New("Couldn't retrieve Domains from the database [" + t.DB.Name() + "] : " + err.Error())
 	}
 	data["Domains"] = domains
-	log.Debug("Domain : %+v\n", domains)
+	log.Debugf("Domain : %+v\n", domains)
 
 	ips, err := t.DB.GetIPs(t.cfg.Project.Name)
 	if err != nil {
@@ -142,9 +142,9 @@ func (t *Text) getData() (map[string]interface{}, error) {
 
 	data["Ports"] = make([]models.Port, 0)
 	for _, ip := range ips {
-		log.Debug("ip : %s\n", ip.Value)
+		log.Debugf("ip : %s\n", ip.Value)
 		ports, err := t.DB.GetPorts(t.cfg.Project.Name, ip.Value)
-		log.Debug("ports : %+v\n", ports)
+		log.Debugf("ports : %+v\n", ports)
 		if err != nil {
 			return nil, errors.New("Couldn't retrieve Ports from the database [" + t.DB.Name() + "] : " + err.Error())
 		}
