@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/netm4ul/netm4ul/cmd"
+	"github.com/netm4ul/netm4ul/cli"
 )
 
 func main() {
