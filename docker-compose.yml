@@ -2,35 +2,23 @@ version: '3.1'
 
 services:
   server:
-    build: .
-    container_name: "server"
-    command: ["./netm4ul","start", "server", "-v"]
+    image: netm4ul/netm4ul
+    container_name: "netm4ul-server"
+    command: ["start", "server", "-v"]
     ports:
       - 8080:8080
 
-  client:
-    container_name: "client"
-    build: .
-    command: ["./netm4ul","start", "client", "-v"]
+  nmap:
+    image: netm4ul/netm4ul:nmap
+    container_name: "netm4ul-client-nmap"
+    command: ["start", "client", "-v"]
+
+  masscan:
+    image: netm4ul/netm4ul:masscan
+    container_name: "netm4ul-client-masscan"
+    command: ["start", "client", "-v"]
     
   postgres:
     image: postgres
     environment:
       POSTGRES_PASSWORD: password
-  #   volumes:
-  #     - ./data:/var/lib/postgresql/data
-  #   ports:
-  #     - 5432:5432
-#  mongodb:
-#    image: mongo:latest
-#    container_name: "mongodb"
-#    environment:
-#      MONGO_DATA_DIR: /data/db
-#      MONGO_LOG_DIR: /dev/null
-#      # MONGODB_USER: user
-#      # MONGODB_PASS: pass
-#    volumes:
-#      - ./data/db:/data/db
-#    ports:
-#      - 27017:27017
-#    command: mongod --smallfiles --logpath=/dev/null # --quiet
