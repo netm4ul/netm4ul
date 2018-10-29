@@ -295,6 +295,16 @@ func (f *JsonDB) CreateOrUpdateUser(user models.User) error {
 	return nil
 }
 
+//CreateUser is the public wrapper to create a new User in the database.
+func (f *JsonDB) CreateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateUser is the public wrapper to update a new User in the database.
+func (f *JsonDB) UpdateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
 // This function is only internaly used to get the jsonUser list.
 // The public GetUsers will return the generic model.User
 func (f *JsonDB) getUsers() ([]jsonUser, error) {
@@ -407,6 +417,16 @@ func (f *JsonDB) CreateOrUpdateProject(project models.Project) error {
 	jp := jsonProject{}
 	jp.FromModel(project)
 	return f.createOrUpdateProject(jp)
+}
+
+//CreateProject is the public wrapper to create a new Project in the database.
+func (f *JsonDB) CreateProject(project models.Project) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateProject is the public wrapper to update a new Project in the database.
+func (f *JsonDB) UpdateProject(project models.Project) error {
+	return errors.New("Not implemented yet")
 }
 
 func (f *JsonDB) createOrUpdateProject(project jsonProject) error {
@@ -569,6 +589,16 @@ func (f *JsonDB) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	return nil
 }
 
+//CreateIP is the public wrapper to create a new IP in the database.
+func (f *JsonDB) CreateIP(project string, ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateIP is the public wrapper to update a new IP in the database.
+func (f *JsonDB) UpdateIP(project string, ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
 // CreateOrUpdateIPs is not implemented yet.
 // It should be only useful for bulk update. It might use CreateOrUpdateIP internally
 func (f *JsonDB) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
@@ -640,6 +670,16 @@ func (f *JsonDB) CreateOrUpdateDomain(projectName string, domain models.Domain) 
 	return errors.New("Not implemented yet")
 }
 
+//CreateDomain is the public wrapper to create a new Domain in the database.
+func (f *JsonDB) CreateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateDomain is the public wrapper to update a new Domain in the database.
+func (f *JsonDB) UpdateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
 // CreateOrUpdateDomains creates or updates multiple (sub)domain name.
 // It should be used instead of CreateOrUpdateDomain for bulk insert
 // TODO
@@ -695,6 +735,16 @@ func (f *JsonDB) CreateOrUpdatePort(projectName string, ip string, portModel mod
 	}
 
 	return f.writePorts(projectName, ip, portsFromFile)
+}
+
+//CreatePort is the public wrapper to create a new Port in the database.
+func (f *JsonDB) CreatePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdatePort is the public wrapper to update a new Port in the database.
+func (f *JsonDB) UpdatePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
 }
 
 // CreateOrUpdatePorts loop around CreateOrUpdatePort and *fail* on the first error of it.
@@ -799,6 +849,16 @@ func (f *JsonDB) CreateOrUpdateURI(projectName string, ip string, port string, u
 		urisFromFile = append(urisFromFile, uriJson)
 	}
 	return f.writeURIs(projectName, ip, port, urisFromFile)
+}
+
+//CreateURI is the public wrapper to create a new URI in the database.
+func (f *JsonDB) CreateURI(projectName string, ip string, port string, uri models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateURI is the public wrapper to update a new URI in the database.
+func (f *JsonDB) UpdateURI(projectName string, ip string, port string, uri models.URI) error {
+	return errors.New("Not implemented yet")
 }
 
 // CreateOrUpdateURIs create or update a given URI

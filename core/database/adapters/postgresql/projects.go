@@ -50,6 +50,16 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 	return nil
 }
 
+//CreateProject is the public wrapper to create a new Project in the database.
+func (pg *PostgreSQL) CreateProject(projectName models.Project) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateProject is the public wrapper to update a new Project in the database.
+func (pg *PostgreSQL) UpdateProject(projectName models.Project) error {
+	return errors.New("Not implemented yet")
+}
+
 func (pg *PostgreSQL) getProjects() ([]pgProject, error) {
 	var projects []pgProject
 	res := pg.db.Find(&projects)

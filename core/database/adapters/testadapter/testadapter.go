@@ -70,6 +70,16 @@ func (test *Test) CreateOrUpdateUser(user models.User) error {
 	return nil
 }
 
+//CreateUser is the public wrapper to create a new User in the database.
+func (test *Test) CreateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateUser is the public wrapper to update a new User in the database.
+func (test *Test) UpdateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
 //GenerateNewToken changes the in memory value of the user token
 func (test *Test) GenerateNewToken(user models.User) error {
 	tests.NormalUser.Token = "Changed token"
@@ -86,6 +96,16 @@ func (test *Test) DeleteUser(user models.User) error {
 //CreateOrUpdateProject is a no-op
 func (test *Test) CreateOrUpdateProject(projectName models.Project) error {
 	return nil
+}
+
+//CreateProject is the public wrapper to create a new Project in the database.
+func (test *Test) CreateProject(project models.Project) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateProject is the public wrapper to update a new Project in the database.
+func (test *Test) UpdateProject(project models.Project) error {
+	return errors.New("Not implemented yet")
 }
 
 //GetProjects returns the projects stored in the /tests/values.go file
@@ -124,6 +144,16 @@ func (test *Test) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	return nil
 }
 
+//CreateIP is the public wrapper to create a new IP in the database.
+func (test *Test) CreateIP(projectName string, ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateIP is the public wrapper to update a new IP in the database.
+func (test *Test) UpdateIP(projectName string, ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
 //CreateOrUpdateIPs is a no-op
 func (test *Test) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
 	return nil
@@ -148,6 +178,16 @@ func (test *Test) DeleteIP(ip models.IP) error {
 
 //CreateOrUpdateDomain is a no-op
 func (test *Test) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+//CreateDomain is the public wrapper to create a new Domain in the database.
+func (test *Test) CreateDomain(projectName string, domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateDomain is the public wrapper to update a new Domain in the database.
+func (test *Test) UpdateDomain(projectName string, domain models.Domain) error {
 	return errors.New("Not implemented yet")
 }
 
@@ -176,6 +216,16 @@ func (test *Test) DeleteDomain(projectName string, domain models.Domain) error {
 //CreateOrUpdatePort is a no-op
 func (test *Test) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
 	return nil
+}
+
+//CreatePort is the public wrapper to create a new port in the database.
+func (test *Test) CreatePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdatePort is the public wrapper to update a new port in the database.
+func (test *Test) UpdatePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
 }
 
 //CreateOrUpdatePorts is a no-op
@@ -213,6 +263,16 @@ func (test *Test) DeletePort(projectName string, ip string, port models.Port) er
 //CreateOrUpdateURI is a no-op
 func (test *Test) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
 	return nil
+}
+
+//CreateURI is the public wrapper to create a new URI in the database.
+func (test *Test) CreateURI(projectName string, ip string, port string, URI models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateURI is the public wrapper to update a new URI in the database.
+func (test *Test) UpdateURI(projectName string, ip string, port string, URI models.URI) error {
+	return errors.New("Not implemented yet")
 }
 
 //CreateOrUpdateURIs is a no-op

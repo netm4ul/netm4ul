@@ -46,6 +46,16 @@ func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port mod
 	return nil
 }
 
+//CreatePort is the public wrapper to create a new port in the database.
+func (pg *PostgreSQL) CreatePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdatePort is the public wrapper to update a new port in the database.
+func (pg *PostgreSQL) UpdatePort(projectName string, ip string, port models.Port) error {
+	return errors.New("Not implemented yet")
+}
+
 func (pg *PostgreSQL) createOrUpdatePorts(projectName string, ip string, ports []pgPort) error {
 	for _, port := range ports {
 		err := pg.createOrUpdatePort(projectName, ip, port)

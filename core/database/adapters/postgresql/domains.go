@@ -51,6 +51,16 @@ func (pg *PostgreSQL) createOrUpdateDomains(projectName string, domains []pgDoma
 	return nil
 }
 
+//CreateDomain is the public wrapper to create a new Domain in the database.
+func (pg *PostgreSQL) CreateDomain(projectName string, Domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateDomain is the public wrapper to update a new Domain in the database.
+func (pg *PostgreSQL) UpdateDomain(projectName string, Domain models.Domain) error {
+	return errors.New("Not implemented yet")
+}
+
 // CreateOrUpdateDomains is the "public" handler for creating a new or updating multiple domains name.
 // This function should be used instead of CreateOrUpdateDomain during bulk inserts.
 func (pg *PostgreSQL) CreateOrUpdateDomains(projectName string, domains []models.Domain) error {

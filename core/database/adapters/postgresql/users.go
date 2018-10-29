@@ -60,6 +60,16 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 	return nil
 }
 
+//CreateUser is the public wrapper to create a new User in the database.
+func (pg *PostgreSQL) CreateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateUser is the public wrapper to update a new User in the database.
+func (pg *PostgreSQL) UpdateUser(user models.User) error {
+	return errors.New("Not implemented yet")
+}
+
 func (pg *PostgreSQL) getUser(username string) (pgUser, error) {
 
 	pguser := pgUser{}

@@ -147,6 +147,8 @@ type Database interface {
 
 	//Users
 	CreateOrUpdateUser(user User) error
+	CreateUser(user User) error
+	UpdateUser(user User) error
 	GetUser(username string) (User, error)
 	GetUserByToken(token string) (User, error)
 	GenerateNewToken(user User) error
@@ -154,12 +156,16 @@ type Database interface {
 
 	// Project
 	CreateOrUpdateProject(Project) error
+	CreateProject(Project) error
+	UpdateProject(Project) error
 	GetProjects() ([]Project, error)
 	GetProject(projectName string) (Project, error)
 	DeleteProject(project Project) error
 
 	// IP
 	CreateOrUpdateIP(projectName string, ip IP) error
+	CreateIP(projectName string, ip IP) error
+	UpdateIP(projectName string, ip IP) error
 	CreateOrUpdateIPs(projectName string, ip []IP) error
 	GetIPs(projectName string) ([]IP, error)
 	GetIP(projectName string, ip string) (IP, error)
@@ -167,6 +173,8 @@ type Database interface {
 
 	// Domain
 	CreateOrUpdateDomain(projectName string, domain Domain) error
+	CreateDomain(projectName string, domain Domain) error
+	UpdateDomain(projectName string, domain Domain) error
 	CreateOrUpdateDomains(projectName string, domain []Domain) error
 	GetDomains(projectName string) ([]Domain, error)
 	GetDomain(projectName string, domain string) (Domain, error)
@@ -174,6 +182,8 @@ type Database interface {
 
 	// Port
 	CreateOrUpdatePort(projectName string, ip string, port Port) error
+	CreatePort(projectName string, ip string, port Port) error
+	UpdatePort(projectName string, ip string, port Port) error
 	CreateOrUpdatePorts(projectName string, ip string, port []Port) error
 	GetPorts(projectName string, ip string) ([]Port, error)
 	GetPort(projectName string, ip string, port string) (Port, error) // TOFIX : includes protocols (tcp, upd...) *optionnal* parameters. Returns CodeAmbiguousRequest if 2 ports of differents type are found.
@@ -181,6 +191,8 @@ type Database interface {
 
 	// URI (directory and files)
 	CreateOrUpdateURI(projectName string, ip string, port string, dir URI) error
+	CreateURI(projectName string, ip string, port string, dir URI) error
+	UpdateURI(projectName string, ip string, port string, dir URI) error
 	CreateOrUpdateURIs(projectName string, ip string, port string, dir []URI) error
 	GetURIs(projectName string, ip string, port string) ([]URI, error)
 	GetURI(projectName string, ip string, port string, dir string) (URI, error)

@@ -55,6 +55,16 @@ func (pg *PostgreSQL) createOrUpdateIPs(projectName string, ips []pgIP) error {
 	return nil
 }
 
+//CreateIP is the public wrapper to create a new IP in the database.
+func (pg *PostgreSQL) CreateIP(projectName string, ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateIP is the public wrapper to update a new IP in the database.
+func (pg *PostgreSQL) UpdateIP(projectName string, ip models.IP) error {
+	return errors.New("Not implemented yet")
+}
+
 //CreateOrUpdateIPs is the public wrapper to create or update multiple IP
 // This function should be used instead of CreateOrUpdateIP during bulk inserts.
 func (pg *PostgreSQL) CreateOrUpdateIPs(projectName string, ips []models.IP) error {

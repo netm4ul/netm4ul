@@ -49,6 +49,16 @@ func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port stri
 	return nil
 }
 
+//CreateURI is the public wrapper to create a new URI in the database.
+func (pg *PostgreSQL) CreateURI(projectName string, ip string, port string, URI models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
+//UpdateURI is the public wrapper to update a new URI in the database.
+func (pg *PostgreSQL) UpdateURI(projectName string, ip string, port string, URI models.URI) error {
+	return errors.New("Not implemented yet")
+}
+
 func (pg *PostgreSQL) createOrUpdateURIs(projectName string, ip string, port string, uris []pgURI) error {
 	// TOFIX
 	// bulk insert!
