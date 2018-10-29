@@ -44,6 +44,14 @@ deps:
 	@echo "Ensure dependencies"
 	@dep ensure
 
+.PHONY: docker-build
+docker-build:
+	@./Dockerfiles/build-all.sh
+
+.PHONY: docker-publish
+docker-publish:
+	@./Dockerfiles/publish-all.sh
+
 .PHONY: clean
 clean:
 	@rm -f $(TARGET)
