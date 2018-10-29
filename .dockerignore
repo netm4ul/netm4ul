@@ -1,0 +1,25 @@
+# dep lock file
+*.lock
+
+# Test binary, build with `go test -c`
+*.test
+
+# vim backup file
+*.swp
+
+# Remove project folder
+vendor/
+.idea/
+.vscode/
+data/
+*.log
+reports/*
+
+
+# Don't copy config file
+netm4ul.conf
+netm4ul.conf.*
+
+# Don't copy code coverage files
+coverage.*
+*.profile

@@ -8,7 +8,7 @@ if [ $curr_dir == "Dockerfiles" ]; then
 fi
 
 # main container (netm4ul/netm4ul:latest)
-docker build -t netm4ul/netm4ul .
+docker build -t netm4ul/netm4ul . -f Dockerfiles/Dockerfile
 
 # "child" container (every tool into it's own docker)
 list_of_container=("nmap" "masscan")

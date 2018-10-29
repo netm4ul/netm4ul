@@ -45,11 +45,11 @@ deps:
 	@dep ensure
 
 .PHONY: docker-build
-docker-build:
+docker-build: build
 	@./Dockerfiles/build-all.sh
 
 .PHONY: docker-publish
-docker-publish:
+docker-publish: docker-build
 	@./Dockerfiles/publish-all.sh
 
 .PHONY: clean
