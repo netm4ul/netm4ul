@@ -1,6 +1,9 @@
 package api
 
-import "github.com/gorilla/mux"
+import (
+	"github.com/gorilla/mux"
+	"net/http"
+)
 
 //Routes is responsible for seting up all the handler function for the API
 func (api *API) Routes() {
@@ -41,4 +44,6 @@ func (api *API) Routes() {
 
 	// DELETE
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}", api.DeleteProject).Methods("DELETE")
+
+	api.Router.NotFoundHandler = http.HandlerFunc(api.NotFound)
 }

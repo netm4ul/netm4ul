@@ -74,6 +74,6 @@ func init() {
 
 func sendDefaultValue(w http.ResponseWriter, code Code) {
 	res := CodeToResult[code]
-	w.WriteHeader(CodeToResult[code].HTTPCode)
+	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
