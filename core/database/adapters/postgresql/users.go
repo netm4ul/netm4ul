@@ -62,7 +62,25 @@ func (pg *PostgreSQL) CreateOrUpdateUser(user models.User) error {
 
 //CreateUser is the public wrapper to create a new User in the database.
 func (pg *PostgreSQL) CreateUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	inDbUser, err := pg.getUser(user.Name)
+	if err != nil {
+		return errors.New("Could not get user : " + err.Error())
+	}
+	if inDbUser.Name != "" {
+		return models.ErrUserAlreadyExist
+	}
+
+	pguser := pgUser{}
+	pguser.FromModel(user)
+
+	user.Token = security.GenerateNewToken()
+
+	res := pg.db.Create(&pguser)
+	if res.Error != nil {
+		return errors.New("Could not insert user in the database : " + res.Error.Error())
+	}
+
+	return nil
 }
 
 //UpdateUser is the public wrapper to update a new User in the database.
