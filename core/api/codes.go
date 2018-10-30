@@ -83,3 +83,9 @@ func sendInvalidArgument(w http.ResponseWriter) {
 	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
+
+func sendDatabaseError(w http.ResponseWriter) {
+	res := CodeToResult[CodeDatabaseError]
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}

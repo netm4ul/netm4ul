@@ -379,10 +379,7 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 
 	ports, err := api.db.GetPorts(project, ip)
 	if err != nil {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeDatabaseError]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendDatabaseError(w)
 		return
 	}
 
@@ -446,11 +443,9 @@ func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(res)
 		return
 	}
+
 	if err != nil {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeDatabaseError]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendDatabaseError(w)
 		return
 	}
 
@@ -502,10 +497,7 @@ func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeDatabaseError]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendDatabaseError(w)
 		return
 	}
 
@@ -564,10 +556,7 @@ func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeDatabaseError]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendDatabaseError(w)
 		return
 	}
 
