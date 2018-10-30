@@ -40,6 +40,7 @@ func (api *API) authMiddleware(next http.Handler) http.Handler {
 		//bypass authentification for whitelisted api calls
 		if !api.isUnderMAC(r) {
 			next.ServeHTTP(w, r)
+			return
 		}
 
 		token := r.Header.Get("X-Session-Token")
@@ -56,9 +57,10 @@ func (api *API) authMiddleware(next http.Handler) http.Handler {
 		if user.Name != "" {
 			log.Debugf("Authenticated user : %s\n", user.Name)
 			next.ServeHTTP(w, r)
-		} else {
-			sendDefaultValue(w, CodeForbidden)
-			// http.Error(w, AccessForbiddenResponse, http.StatusForbidden)
+			return
 		}
+
+		sendDefaultValue(w, CodeForbidden)
+		return
 	})
 }
