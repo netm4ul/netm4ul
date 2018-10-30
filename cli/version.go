@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/netm4ul/netm4ul/cli/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +13,7 @@ var versionCmd = &cobra.Command{
 		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		PrintVersion(cliSession)
+		ui.PrintVersion(cliSession)
 	},
 }
 

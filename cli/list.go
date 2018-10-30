@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/netm4ul/netm4ul/cli/ui"
 	"github.com/spf13/cobra"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // listCmd represents the list command
@@ -25,8 +28,8 @@ var listProjectsCmd = &cobra.Command{
 		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("listProjectsCmd called")
-		printProjectsInfo(cliSession)
+		log.Debug("listProjectsCmd called")
+		ui.PrintProjectsInfo(cliSession)
 	},
 }
 
@@ -37,19 +40,18 @@ var listProjectCmd = &cobra.Command{
 		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("listProjectCmd called")
+		log.Debug("listProjectCmd called")
 		// no argument, read from config
 		if len(args) == 0 {
-			printProjectInfo(cliSession.Config.Project.Name, cliSession)
+			ui.PrintProjectInfo(cliSession.Config.Project.Name, cliSession)
 			os.Exit(0)
 		}
 		// 1 arguments, use it
 		if len(args) == 1 {
-			printProjectInfo(args[0], cliSession)
+			ui.PrintProjectInfo(args[0], cliSession)
 		} else {
 			fmt.Println("Too many arguments expected 1, got", len(args))
 		}
-
 	},
 }
 
@@ -60,7 +62,7 @@ var listIPCmd = &cobra.Command{
 		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("listIPCmd called")
+		log.Debug("listIPCmd called")
 	},
 }
 
@@ -71,7 +73,7 @@ var listPortCmd = &cobra.Command{
 		createSessionBase()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("listPortCmd called")
+		log.Debug("listPortCmd called")
 	},
 }
 
