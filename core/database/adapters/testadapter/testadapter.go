@@ -131,18 +131,42 @@ func (test *Test) DeleteUser(user models.User) error {
 // Project
 
 //CreateOrUpdateProject is a no-op
-func (test *Test) CreateOrUpdateProject(projectName models.Project) error {
+func (test *Test) CreateOrUpdateProject(project models.Project) error {
+	exist := false
+	for _, p := range tests.NormalProjects {
+		if p.Name == project.Name {
+			exist = true
+		}
+	}
+
+	if exist {
+		test.UpdateProject(project)
+	} else {
+		test.CreateProject(project)
+	}
 	return nil
 }
 
 //CreateProject is the public wrapper to create a new Project in the database.
 func (test *Test) CreateProject(project models.Project) error {
-	return errors.New("Not implemented yet")
+	tests.NormalProjects = append(tests.NormalProjects, project)
+	return nil
 }
 
 //UpdateProject is the public wrapper to update a new Project in the database.
 func (test *Test) UpdateProject(project models.Project) error {
-	return errors.New("Not implemented yet")
+	exist := false
+	for index, p := range tests.NormalProjects {
+		if p.Name == project.Name {
+			exist = true
+			tests.NormalProjects[index] = project
+		}
+	}
+
+	if !exist {
+		return models.ErrNotFound
+	}
+	return nil
 }
 
 //GetProjects returns the projects stored in the /tests/values.go file
@@ -169,9 +193,21 @@ func (test *Test) GetProject(projectName string) (models.Project, error) {
 	return models.Project{}, models.ErrNotFound
 }
 
-//DeleteProject TOFIX
+//DeleteProject
 func (test *Test) DeleteProject(project models.Project) error {
-	return errors.New("Not implemented yet")
+	exist := false
+	for index, p := range tests.NormalProjects {
+		if p.Name == project.Name {
+			exist = true
+			tests.NormalProjects[index] = tests.NormalProjects[len(tests.NormalProjects)-1]
+			tests.NormalProjects = tests.NormalProjects[:len(tests.NormalProjects)-1]
+		}
+	}
+
+	if !exist {
+		return models.ErrNotFound
+	}
+	return nil
 }
 
 // IP
