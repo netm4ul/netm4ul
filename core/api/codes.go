@@ -77,3 +77,9 @@ func sendDefaultValue(w http.ResponseWriter, code Code) {
 	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
 }
+
+func sendInvalidArgument(w http.ResponseWriter) {
+	res := CodeToResult[CodeInvalidInput]
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}

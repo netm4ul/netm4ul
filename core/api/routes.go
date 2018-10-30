@@ -22,6 +22,8 @@ func (api *API) Routes() {
 
 	api.Router.HandleFunc(api.Prefix+"/projects", api.GetProjects).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}", api.GetProject).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/domains", api.GetDomains).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/domains/{domain}", api.GetDomain).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/algorithm", api.GetAlgorithm).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips", api.GetIPsByProjectName).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports", api.GetPortsByIP).Methods("GET")

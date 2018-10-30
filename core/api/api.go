@@ -142,6 +142,74 @@ func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+func (api *API) GetDomains(w http.ResponseWriter, r *http.Request) {
+
+	var res Result
+	var err error
+	var project string
+
+	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		sendInvalidArgument(w)
+		return
+	}
+
+	domains, err := api.db.GetDomains(project)
+	if err != nil {
+		res = CodeToResult[CodeDatabaseError]
+		log.Errorf("Could not retrieve project : %+v", err)
+		w.WriteHeader(CodeToResult[CodeDatabaseError].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Data = domains
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
+func (api *API) GetDomain(w http.ResponseWriter, r *http.Request) {
+
+	var res Result
+	var err error
+	var project string
+	var domainName string
+
+	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+	if project, err = url.PathUnescape(vars["name"]); err != nil {
+		pathUnescapeErr++
+	}
+	if domainName, err = url.PathUnescape(vars["domain"]); err != nil {
+		pathUnescapeErr++
+	}
+
+	if pathUnescapeErr != 0 {
+		sendInvalidArgument(w)
+		return
+	}
+
+	domains, err := api.db.GetDomain(project, domainName)
+	if err != nil {
+		res = CodeToResult[CodeDatabaseError]
+		log.Errorf("Could not retrieve project : %+v", err)
+		w.WriteHeader(CodeToResult[CodeDatabaseError].HTTPCode)
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	res = CodeToResult[CodeOK]
+	res.Data = domains
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
 /*
 GetProject return this template
   "data": {
@@ -161,10 +229,7 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pathUnescapeErr != 0 {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeInvalidInput]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendInvalidArgument(w)
 		return
 	}
 
@@ -250,10 +315,7 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pathUnescapeErr != 0 {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeInvalidInput]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendInvalidArgument(w)
 		return
 	}
 
@@ -304,10 +366,7 @@ func (api *API) GetPortsByIP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pathUnescapeErr != 0 {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeInvalidInput]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendInvalidArgument(w)
 		return
 	}
 	protocol := r.FormValue("protocol")
@@ -365,10 +424,7 @@ func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pathUnescapeErr != 0 {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeInvalidInput]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendInvalidArgument(w)
 		return
 	}
 	protocol := r.FormValue("protocol")
@@ -423,10 +479,7 @@ func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pathUnescapeErr != 0 {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeInvalidInput]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendInvalidArgument(w)
 		return
 	}
 	protocol := r.FormValue("protocol")
@@ -487,10 +540,7 @@ func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pathUnescapeErr != 0 {
-		log.Debugf("Error : %s", err)
-		res = CodeToResult[CodeInvalidInput]
-		w.WriteHeader(res.HTTPCode)
-		json.NewEncoder(w).Encode(res)
+		sendInvalidArgument(w)
 		return
 	}
 
