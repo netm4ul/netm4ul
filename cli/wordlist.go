@@ -48,6 +48,9 @@ const (
 )
 
 func init() {
+	none := wordlist{Name: "None", Type: "all"}
+	wordlists = append(wordlists, none)
+
 	//passwords
 	rockyou := wordlist{Name: "Rockyou", URL: rockyouURL, Type: "passwords", FileName: "rockyou.txt"}
 	probablev2top12000 := wordlist{Name: "Probable v2 top 12000", URL: probablev2top12000URL, Type: "passwords", FileName: "probablev2Top12000.txt"}
@@ -115,7 +118,7 @@ func printWordlistByType(t string) int {
 	//We are using a external index because the "wordlists" var contains different types of wordlist (password, subdomains, usernames...)
 	index := 0
 	for _, wl := range wordlists {
-		if wl.Type == t {
+		if wl.Type == t || wl.Type == "all" {
 			fmt.Printf("[%d] %s\n", index, wl.Name)
 			index++
 		}

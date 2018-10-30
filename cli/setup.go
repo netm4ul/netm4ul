@@ -424,19 +424,9 @@ func setupAPI() error {
 		}
 		user := models.User{Name: cliSession.Config.API.User, Password: hashedPassword, CreatedAt: now, UpdatedAt: now}
 
-		err = db.CreateOrUpdateUser(user)
+		err = db.CreateUser(user)
 		if err != nil {
 			return errors.New("Could not create user : " + err.Error())
-		}
-		log.Debugf("user : %+v", user)
-		err = db.GenerateNewToken(user)
-		if err != nil {
-			return errors.New("Could not generate new token for user : " + err.Error())
-		}
-
-		user, err = db.GetUser(user.Name)
-		if err != nil {
-			return errors.New("Could not get newly created user : " + err.Error())
 		}
 
 		cliSession.Config.API.Token = user.Token
@@ -503,18 +493,26 @@ func setupWordlists() error {
 
 	// return the selected "wordlist" struct from its index number
 	// This is not optimal. (TOFIX)
-	passwordWordlist, err := getWordlistByTypeAndIndex("passwords", selectedPasswordIndex)
-	domainWordlist, err := getWordlistByTypeAndIndex("subdomains", selectedDomainIndex)
-
-	fmt.Printf("Downloading : [%s] and [%s] wordlists\n", passwordWordlist.Name, domainWordlist.Name)
-	err = downloadWordlist(passwordWordlist)
-	if err != nil {
-		return errors.New("Could not download the password wordlist : " + err.Error())
+	if selectedPasswordIndex != 0 {
+		passwordWordlist, err := getWordlistByTypeAndIndex("passwords", selectedPasswordIndex)
+		fmt.Printf("Downloading : [%s] wordlists\n", passwordWordlist.Name)
+		err = downloadWordlist(passwordWordlist)
+		if err != nil {
+			return errors.New("Could not download the password wordlist : " + err.Error())
+		}
+	} else {
+		fmt.Println("Skip downloading password wordlist")
 	}
 
-	err = downloadWordlist(domainWordlist)
-	if err != nil {
-		return errors.New("Could not download the subdomains wordlist : " + err.Error())
+	if selectedPasswordIndex != 0 {
+		domainWordlist, err := getWordlistByTypeAndIndex("subdomains", selectedDomainIndex)
+		fmt.Printf("Downloading : [%s] wordlists\n", domainWordlist.Name)
+		err = downloadWordlist(domainWordlist)
+		if err != nil {
+			return errors.New("Could not download the subdomains wordlist : " + err.Error())
+		}
+	} else {
+		fmt.Println("Skip downloading subdomains wordlist")
 	}
 
 	fmt.Println("Download complete")
