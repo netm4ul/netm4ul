@@ -94,7 +94,7 @@ func (api *API) Shutdown() {
 func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 
 	info := Info{Port: api.Session.Config.API.Port, Versions: Version}
-	d := Metadata{Info: info, Nodes: api.Server.Session.Nodes}
+	d := Metadata{Info: info}
 
 	res := CodeToResult[CodeOK]
 	res.Data = d
