@@ -73,7 +73,7 @@ func (pg *PostgreSQL) CreateUser(user models.User) error {
 	pguser := pgUser{}
 	pguser.FromModel(user)
 
-	user.Token = security.GenerateNewToken()
+	pguser.Token = security.GenerateNewToken()
 
 	res := pg.db.Create(&pguser)
 	if res.Error != nil {

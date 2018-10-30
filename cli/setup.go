@@ -429,6 +429,10 @@ func setupAPI() error {
 			return errors.New("Could not create user : " + err.Error())
 		}
 
+		user, err = db.GetUser(user.Name)
+		if err != nil {
+			return fmt.Errorf("Could not get newly created user : %s", err.Error())
+		}
 		cliSession.Config.API.Token = user.Token
 	}
 
