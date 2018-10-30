@@ -21,27 +21,22 @@ func PrintVersion(s *session.Session) {
 }
 
 func PrintProjectInfo(projectName string, s *session.Session) {
-	//TODO
-	// everyhting !
 	var p models.Project
 	var err error
 	var data [][]string
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"IP", "Ports"})
+	table.SetHeader([]string{"Name", "Description", "Created at", "Updated at"})
 
 	if projectName == "" {
 		log.Fatalln("No project provided")
-		// exit
 	}
 
 	p, err = requester.GetProject(projectName, s)
 	if err != nil {
 		log.Errorf("Can't get project %s : %s", projectName, err.Error())
 	}
-
-	log.Debugf("Project : %+v", p)
-
+	data = append(data, []string{p.Name, p.Description, p.CreatedAt.String(), p.UpdatedAt.String()})
 	table.AppendBulk(data)
 	table.Render()
 }
@@ -51,7 +46,7 @@ func PrintProjectsInfo(s *session.Session) {
 	var data [][]string
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Project", "Description", "# IPs", "Last update"})
+	table.SetHeader([]string{"Project", "Description", "# IPs", "# Domains", "# Ports", "# URI", "Created at", "Last update"})
 
 	// get list of projects
 	listOfProjects, err := requester.GetProjects(s)
@@ -61,10 +56,44 @@ func PrintProjectsInfo(s *session.Session) {
 
 	// build array of array for the table !
 	for _, p := range listOfProjects {
-		if s.Verbose {
-			log.Infof("p : %+v", p)
+		portList := []models.Port{}
+		uriList := []models.URI{}
+
+		ipList, err := requester.GetIPs(p.Name, s)
+		if err != nil {
+			log.Fatalf("Couldn't get ips list : %s", err)
 		}
-		data = append(data, []string{p.Name, p.Description, strconv.Itoa(int(p.UpdatedAt.Unix()))})
+
+		domainList, err := requester.GetDomains(p.Name, s)
+		if err != nil {
+			log.Fatalf("Couldn't get ips list : %s", err)
+		}
+		for _, ip := range ipList {
+			pl, err := requester.GetPorts(p.Name, ip.Value, s)
+			if err != nil {
+				log.Fatalf("Couldn't get ips list : %s", err)
+			}
+			portList = append(portList, pl...)
+
+			for _, port := range pl {
+				ul, err := requester.GetURIs(p.Name, ip.Value, strconv.Itoa(int(port.Number)), s)
+				if err != nil {
+					log.Fatalf("Couldn't get ips list : %s", err)
+				}
+				uriList = append(uriList, ul...)
+			}
+		}
+
+		data = append(data, []string{
+			p.Name,
+			p.Description,
+			strconv.Itoa(len(ipList)),
+			strconv.Itoa(len(domainList)),
+			strconv.Itoa(len(portList)),
+			strconv.Itoa(len(uriList)),
+			p.CreatedAt.String(),
+			p.UpdatedAt.String(),
+		})
 	}
 
 	table.AppendBulk(data)

@@ -211,3 +211,95 @@ func GetProject(name string, s *session.Session) (models.Project, error) {
 
 	return data, nil
 }
+
+func GetIPs(projectName string, s *session.Session) ([]models.IP, error) {
+	var data []models.IP
+	resjson, err := getData("/projects/"+projectName+"/ips", s)
+
+	log.Debugf("response : %+v", resjson)
+	if err != nil {
+		return data, err
+	}
+
+	// using mapstructure to decode all the json response into the data variable.
+	err = mapstructure.Decode(resjson.Data, &data)
+	if err != nil {
+		return data, err
+	}
+
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return data, errors.New("Can't get projects list :" + err.Error())
+	}
+
+	return data, nil
+}
+
+func GetDomains(projectName string, s *session.Session) ([]models.IP, error) {
+	var data []models.IP
+	resjson, err := getData("/projects/"+projectName+"/domains", s)
+
+	log.Debugf("response : %+v", resjson)
+	if err != nil {
+		return data, err
+	}
+
+	// using mapstructure to decode all the json response into the data variable.
+	err = mapstructure.Decode(resjson.Data, &data)
+	if err != nil {
+		return data, err
+	}
+
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return data, errors.New("Can't get projects list :" + err.Error())
+	}
+
+	return data, nil
+}
+
+func GetPorts(projectName string, ip string, s *session.Session) ([]models.Port, error) {
+	var data []models.Port
+	resjson, err := getData("/projects/"+projectName+"/ips/"+ip+"/ports", s)
+
+	log.Debugf("response : %+v", resjson)
+	if err != nil {
+		return data, err
+	}
+
+	// using mapstructure to decode all the json response into the data variable.
+	err = mapstructure.Decode(resjson.Data, &data)
+	if err != nil {
+		return data, err
+	}
+
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return data, errors.New("Can't get projects list :" + err.Error())
+	}
+
+	return data, nil
+}
+
+func GetURIs(projectName string, ip string, port string, s *session.Session) ([]models.URI, error) {
+	var data []models.URI
+	resjson, err := getData("/projects/"+projectName+"/ips/"+ip+"/ports/"+port+"/uris", s)
+
+	log.Debugf("response : %+v", resjson)
+	if err != nil {
+		return data, err
+	}
+
+	// using mapstructure to decode all the json response into the data variable.
+	err = mapstructure.Decode(resjson.Data, &data)
+	if err != nil {
+		return data, err
+	}
+
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return data, errors.New("Can't get projects list :" + err.Error())
+	}
+
+	return data, nil
+}
