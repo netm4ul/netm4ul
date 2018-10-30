@@ -54,7 +54,7 @@ func getData(ressource string, s *session.Session) (api.Result, error) {
 		return api.Result{}, errors.New("Can't get create new request : " + err.Error())
 	}
 
-	req.Header.Add("X-Session-Token", s.Config.API.Token)
+	req.Header.Set("X-Session-Token", s.Config.API.Token)
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -100,8 +100,15 @@ func postData(ressource string, s *session.Session, rawdata interface{}) (api.Re
 	}
 	url := getURL(ressource, s)
 
-	//TODO add header, auth
-	res, err := http.Post(url, "application/json", bytes.NewBuffer(jsondata))
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsondata))
+	if err != nil {
+		return api.Result{}, errors.New("Can't get create new request : " + err.Error())
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Session-Token", s.Config.API.Token)
+	res, err := client.Do(req)
+
 	if err != nil {
 		return api.Result{}, errors.New("Could not post data " + err.Error())
 	}
