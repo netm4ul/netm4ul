@@ -16,6 +16,7 @@ var (
 	NormalURIs     []models.URI
 	NormalDomains  []models.Domain
 	NormalRaws     map[string][]models.Raw
+	NormalUsers    []models.User
 	NormalUser     models.User
 )
 
@@ -134,7 +135,6 @@ func init() {
 			NormalRaw,
 		},
 	}
-
 	NormalUser = models.User{
 		Name:      "TestUser",
 		Password:  "$2y$10$Fu4hg./ZybmFjiPxIpEOROGwQhF3sfwakddzlWFtV.I3rJu6sfy/2", // Test password
@@ -142,4 +142,6 @@ func init() {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
+	NormalUsers = make([]models.User, 0)
+	NormalUsers = append(NormalUsers, NormalUser)
 }

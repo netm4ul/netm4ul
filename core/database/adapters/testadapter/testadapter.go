@@ -29,14 +29,14 @@ func (test *Test) Name() string {
 	return "TestAdapter"
 }
 
-//SetupDatabase TOFIX. It will probably just return nil because this adapters should not require any setup.
+//SetupDatabase no op. This adapter don't have any setup
 func (test *Test) SetupDatabase() error {
-	return errors.New("Not implemented yet")
+	return nil
 }
 
-//DeleteDatabase TOFIX.
+//DeleteDatabase no op.
 func (test *Test) DeleteDatabase() error {
-	return errors.New("Not implemented yet")
+	return nil
 }
 
 //SetupAuth doesn't do anything. This adapter doesn't require any authentification setup.
@@ -67,17 +67,36 @@ func (test *Test) GetUserByToken(token string) (models.User, error) {
 
 //CreateOrUpdateUser is a no-op.
 func (test *Test) CreateOrUpdateUser(user models.User) error {
+	exist := false
+	for _, u := range tests.NormalUsers {
+		if u.Name == user.Name {
+			exist = true
+		}
+	}
+
+	if exist {
+		test.UpdateUser(user)
+	} else {
+		test.CreateUser(user)
+	}
+
 	return nil
 }
 
 //CreateUser is the public wrapper to create a new User in the database.
 func (test *Test) CreateUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	tests.NormalUsers = append(tests.NormalUsers, user)
+	return nil
 }
 
 //UpdateUser is the public wrapper to update a new User in the database.
 func (test *Test) UpdateUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	for index, u := range tests.NormalUsers {
+		if u.Name == user.Name {
+			tests.NormalUsers[index] = user
+		}
+	}
+	return nil
 }
 
 //GenerateNewToken changes the in memory value of the user token
@@ -86,9 +105,27 @@ func (test *Test) GenerateNewToken(user models.User) error {
 	return nil
 }
 
-//DeleteUser TOFIX
+//DeleteUser delete an user or return an ErrNotFound if it doesn't exist
 func (test *Test) DeleteUser(user models.User) error {
-	return errors.New("Not implemented yet")
+	var index int
+	var u models.User
+
+	exist := false
+	for index, u = range tests.NormalUsers {
+		if u.Name == user.Name {
+			exist = true
+			//remove an element from the slice (without preserving the order)
+			// move the last element of the slice into the "index"
+			// remove the last element
+			tests.NormalUsers[index] = tests.NormalUsers[len(tests.NormalUsers)-1]
+			tests.NormalUsers = tests.NormalUsers[:len(tests.NormalUsers)-1]
+		}
+	}
+
+	if !exist {
+		return models.ErrNotFound
+	}
+	return nil
 }
 
 // Project
