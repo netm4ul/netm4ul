@@ -16,13 +16,13 @@ type Command struct {
 
 // Node : Node info
 type Node struct {
-	IP           string
-	ID           string
-	Modules      []string `json:"modules"`
-	Project      string   `json:"project"`
-	IsAvailable  bool
-	Requirements requirements.Requirements
-	Conn         net.Conn
+	IP           string                    `json:"ip"`
+	ID           string                    `json:"id"`
+	Modules      []string                  `json:"modules"`
+	Project      string                    `json:"project"`
+	IsAvailable  bool                      `json:"is_available"`
+	Requirements requirements.Requirements `json:"requirements"`
+	Conn         net.Conn                  `json:"-"`
 }
 
 /*

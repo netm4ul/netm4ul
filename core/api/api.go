@@ -103,6 +103,16 @@ func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+//GetNodes returns informations about all the connected (client) nodes for this server
+func (api *API) GetNodes(w http.ResponseWriter, r *http.Request) {
+
+	res := CodeToResult[CodeOK]
+	res.Data = api.Server.Session.Nodes
+
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
 /*
 GetProjects return this template
   "data": [

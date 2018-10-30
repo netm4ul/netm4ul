@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"encoding/json"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	log "github.com/sirupsen/logrus"
@@ -14,10 +15,19 @@ type NetworkType int
 
 //Requirements defines all the specification needed for a node to be eligble at executing commands.
 type Requirements struct {
-	NetworkType       NetworkType `json:"networkType"`       // "external", "internal", ""
-	NetworkCapacity   Capacity    `json:"networkCapacity"`   // CapacityLow, CapacityMedium, CapacityHigh
-	ComputingCapacity Capacity    `json:"computingCapacity"` // CapacityLow, CapacityMedium, CapacityHigh
-	MemoryCapacity    Capacity    `json:"memoryCapacity"`    // CapacityLow, CapacityMedium, CapacityHigh
+	NetworkType       NetworkType `json:"network_type"`       // "external", "internal", ""
+	NetworkCapacity   Capacity    `json:"network_capacity"`   // CapacityLow, CapacityMedium, CapacityHigh
+	ComputingCapacity Capacity    `json:"computing_capacity"` // CapacityLow, CapacityMedium, CapacityHigh
+	MemoryCapacity    Capacity    `json:"memory_capacity"`    // CapacityLow, CapacityMedium, CapacityHigh
+}
+
+func (r Requirements) MarshalJSON() ([]byte, error) {
+	m := make(map[string]string)
+	m["network_type"] = r.NetworkType.String()
+	m["network_capacity"] = r.NetworkCapacity.String()
+	m["computing_capacity"] = r.ComputingCapacity.String()
+	m["memory_capacity"] = r.MemoryCapacity.String()
+	return json.Marshal(m)
 }
 
 const (

@@ -37,6 +37,6 @@ type Info struct {
 
 //Metadata of the current system (node, api, database)
 type Metadata struct {
-	Nodes []communication.Node `json:"nodes"`
+	Nodes []communication.Node `json:"nodes,omitempty"`
 	Info  Info                 `json:"api"`
 }
