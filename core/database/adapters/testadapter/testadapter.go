@@ -94,9 +94,10 @@ func (test *Test) UpdateUser(user models.User) error {
 	for index, u := range tests.NormalUsers {
 		if u.Name == user.Name {
 			tests.NormalUsers[index] = user
+			return nil
 		}
 	}
-	return nil
+	return models.ErrNotFound
 }
 
 //GenerateNewToken changes the in memory value of the user token
@@ -110,22 +111,19 @@ func (test *Test) DeleteUser(user models.User) error {
 	var index int
 	var u models.User
 
-	exist := false
 	for index, u = range tests.NormalUsers {
 		if u.Name == user.Name {
-			exist = true
 			//remove an element from the slice (without preserving the order)
 			// move the last element of the slice into the "index"
 			// remove the last element
 			tests.NormalUsers[index] = tests.NormalUsers[len(tests.NormalUsers)-1]
 			tests.NormalUsers = tests.NormalUsers[:len(tests.NormalUsers)-1]
+			// return early so we don't hit the ErrNotFound
+			return nil
 		}
 	}
 
-	if !exist {
-		return models.ErrNotFound
-	}
-	return nil
+	return models.ErrNotFound
 }
 
 // Project
@@ -155,18 +153,13 @@ func (test *Test) CreateProject(project models.Project) error {
 
 //UpdateProject is the public wrapper to update a new Project in the database.
 func (test *Test) UpdateProject(project models.Project) error {
-	exist := false
 	for index, p := range tests.NormalProjects {
 		if p.Name == project.Name {
-			exist = true
 			tests.NormalProjects[index] = project
 		}
 	}
 
-	if !exist {
-		return models.ErrNotFound
-	}
-	return nil
+	return models.ErrNotFound
 }
 
 //GetProjects returns the projects stored in the /tests/values.go file
@@ -193,38 +186,58 @@ func (test *Test) GetProject(projectName string) (models.Project, error) {
 	return models.Project{}, models.ErrNotFound
 }
 
-//DeleteProject
+//DeleteProject will delete the given project from the memory. It will return ErrNotFound if the project doesn't exist
 func (test *Test) DeleteProject(project models.Project) error {
-	exist := false
 	for index, p := range tests.NormalProjects {
 		if p.Name == project.Name {
-			exist = true
 			tests.NormalProjects[index] = tests.NormalProjects[len(tests.NormalProjects)-1]
 			tests.NormalProjects = tests.NormalProjects[:len(tests.NormalProjects)-1]
+			return nil
 		}
 	}
 
-	if !exist {
-		return models.ErrNotFound
-	}
-	return nil
+	return models.ErrNotFound
 }
 
 // IP
 
-//CreateOrUpdateIP is a no-op
+//CreateOrUpdateIP create an new IP  if it doesn't exist or update it if it does exist.
 func (test *Test) CreateOrUpdateIP(projectName string, ip models.IP) error {
-	return nil
+	exist := false
+	for _, lip := range tests.NormalIPs {
+		if lip.Value == ip.Value {
+			exist = true
+		}
+	}
+
+	if exist {
+		return test.UpdateIP(projectName, ip)
+	}
+	return test.CreateIP(projectName, ip)
 }
 
 //CreateIP is the public wrapper to create a new IP in the database.
 func (test *Test) CreateIP(projectName string, ip models.IP) error {
-	return errors.New("Not implemented yet")
+	for _, lip := range tests.NormalIPs {
+		if lip.Value == ip.Value {
+			return models.ErrAlreadyExist
+		}
+	}
+
+	tests.NormalIPs = append(tests.NormalIPs, ip)
+	return nil
 }
 
 //UpdateIP is the public wrapper to update a new IP in the database.
 func (test *Test) UpdateIP(projectName string, ip models.IP) error {
-	return errors.New("Not implemented yet")
+	for index, lip := range tests.NormalIPs {
+		if lip.Value == ip.Value {
+			tests.NormalIPs[index] = ip
+			return nil
+		}
+	}
+
+	return models.ErrNotFound
 }
 
 //CreateOrUpdateIPs is a no-op
