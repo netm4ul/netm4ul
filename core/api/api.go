@@ -543,6 +543,7 @@ func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Debugf("Could not decode b64 uri : %s", err)
 		sendInvalidArgument(w)
+		return
 	}
 	uri := string(uriBytes)
 

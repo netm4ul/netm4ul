@@ -74,6 +74,7 @@ func setup(conf config.ConfigToml) *api.API {
 //rrCheck : checks the response code for the provided request
 func rrCheck(t *testing.T, localApi *api.API, method string, url string, body io.Reader, handlerFunc http.HandlerFunc, httpCode int, apiCode api.Code, isLoggedIn bool) api.Result {
 	var jsonres api.Result
+	t.Log(url)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		t.Fatal(err)
@@ -752,7 +753,6 @@ func TestAPI_GetURIByPort(t *testing.T) {
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
 			"/uris/" + url.PathEscape("non-valid-uri")
-		t.Log(urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusUnprocessableEntity, api.CodeInvalidInput, true)
 		if jsonres.Data != nil {
 			t.Errorf("Got data (%s), should be nil", jsonres.Data)
@@ -928,17 +928,6 @@ func TestAPI_GetURIByPort(t *testing.T) {
 
 	})
 
-	t.Run("Get non-existing URI", func(t *testing.T) {
-		urlGetUri := localApi.Prefix +
-			"/projects/" + url.PathEscape(conf.Project.Name) +
-			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
-			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape("nonExistingURI")
-		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusNotFound, api.CodeNotFound, true)
-		if jsonres.Data != nil {
-			t.Errorf("Got data (%s), should be nil", jsonres.Data)
-		}
-	})
 }
 
 func TestAPI_GetRawModuleByProject(t *testing.T) {
