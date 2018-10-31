@@ -67,7 +67,7 @@ func (pg *PostgreSQL) CreateUser(user models.User) error {
 		return errors.New("Could not get user : " + err.Error())
 	}
 	if inDbUser.Name != "" {
-		return models.ErrUserAlreadyExist
+		return models.ErrAlreadyExist
 	}
 
 	pguser := pgUser{}
