@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -510,10 +511,12 @@ func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetURIByPort returns the specified URI information.
+// The URI provided MUST be base64 encoded (and then urlEncoded)
+// We are using standard base64 (and not the url-base64 for simplicity with frontend and other languages)
 func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 	var res Result
 	var err error
-	var project, ip, port, uri string
+	var project, ip, port, urib64 string
 
 	vars := mux.Vars(r)
 	pathUnescapeErr := 0
@@ -527,7 +530,7 @@ func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 	if port, err = url.PathUnescape(vars["port"]); err != nil {
 		pathUnescapeErr++
 	}
-	if uri, err = url.PathUnescape(vars["uri"]); err != nil {
+	if urib64, err = url.PathUnescape(vars["uri"]); err != nil {
 		pathUnescapeErr++
 	}
 
@@ -536,8 +539,14 @@ func (api *API) GetURIByPort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	protocol := r.FormValue("protocol")
+	uriBytes, err := base64.StdEncoding.DecodeString(urib64)
+	if err != nil {
+		log.Debugf("Could not decode b64 uri : %s", err)
+		sendInvalidArgument(w)
+	}
+	uri := string(uriBytes)
 
+	protocol := r.FormValue("protocol")
 	if protocol != "" {
 		log.Debugf("project : %s, ip : %s, port : %s, protocol %s", project, ip, port, protocol)
 		sendDefaultValue(w, CodeNotImplementedYet)

@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net"
@@ -412,11 +413,27 @@ func TestAPI_GetIPsByProjectName(t *testing.T) {
 			if ip.Network != tests.NormalIPs[i].Network {
 				t.Errorf("Received wrong network : got %s instead of %s", ip.Network, tests.NormalIPs[i].Network)
 			}
-			if ip.CreatedAt != tests.NormalIPs[i].CreatedAt {
-				t.Errorf("Received wrong creation time : got %s instead of %s", ip.CreatedAt, tests.NormalIPs[i].CreatedAt)
+			shouldCreatedAt, err := tests.NormalIPs[i].CreatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the shouldCreatedAt %s", tests.NormalIPs[i].CreatedAt)
 			}
-			if ip.UpdatedAt != tests.NormalIPs[i].UpdatedAt {
-				t.Errorf("Received wrong update time : got %s instead of %s", ip.UpdatedAt, tests.NormalIPs[i].UpdatedAt)
+			gotCreatedAt, err := ip.CreatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the gotCreatedAt %s", tests.NormalIPs[i].CreatedAt)
+			}
+			if string(shouldCreatedAt) != string(gotCreatedAt) {
+				t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", ip.CreatedAt, tests.NormalIPs[i].CreatedAt)
+			}
+			shouldUpdatedAt, err := tests.NormalIPs[i].UpdatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the shouldUpdatedAt %s", tests.NormalIPs[i].UpdatedAt)
+			}
+			gotUpdatedAt, err := ip.UpdatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the gotUpdatedAt %s", tests.NormalIPs[i].UpdatedAt)
+			}
+			if string(shouldUpdatedAt) != string(gotUpdatedAt) {
+				t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", ip.UpdatedAt, tests.NormalIPs[i].UpdatedAt)
 			}
 		}
 	})
@@ -612,11 +629,27 @@ func TestAPI_GetPortsByIP(t *testing.T) {
 			if port.Number != tests.NormalPorts[i].Number {
 				t.Errorf("Received wrong Number : got %d instead of %d", port.Number, tests.NormalPorts[i].Number)
 			}
-			if port.CreatedAt != tests.NormalPorts[i].CreatedAt {
-				t.Errorf("Received wrong CreatedAt : got %s instead of %s", port.CreatedAt, tests.NormalPorts[i].CreatedAt)
+			shouldCreatedAt, err := tests.NormalPorts[i].CreatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the shouldCreatedAt %s", tests.NormalPorts[i].CreatedAt)
 			}
-			if port.UpdatedAt != tests.NormalPorts[i].UpdatedAt {
-				t.Errorf("Received wrong UpdateAt : got %s instead of %s", port.UpdatedAt, tests.NormalIPs[i].UpdatedAt)
+			gotCreatedAt, err := port.CreatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the gotCreatedAt %s", tests.NormalPorts[i].CreatedAt)
+			}
+			if string(shouldCreatedAt) != string(gotCreatedAt) {
+				t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", port.CreatedAt, tests.NormalPorts[i].CreatedAt)
+			}
+			shouldUpdatedAt, err := tests.NormalPorts[i].UpdatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the shouldUpdatedAt %s", tests.NormalPorts[i].UpdatedAt)
+			}
+			gotUpdatedAt, err := port.UpdatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the gotUpdatedAt %s", tests.NormalPorts[i].UpdatedAt)
+			}
+			if string(shouldUpdatedAt) != string(gotUpdatedAt) {
+				t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", port.UpdatedAt, tests.NormalPorts[i].UpdatedAt)
 			}
 		}
 	})
@@ -662,16 +695,32 @@ func TestAPI_GetURIsByPort(t *testing.T) {
 
 		for i, u := range uris {
 			if u.Name != tests.NormalURIs[i].Name {
-				t.Errorf("Got the wrong URI name : %s instead of %s", u.Name, tests.NormalURIs[0].Name)
+				t.Errorf("Got the wrong URI name : %s instead of %s", u.Name, tests.NormalURIs[i].Name)
 			}
 			if u.Code != tests.NormalURIs[i].Code {
-				t.Errorf("Got the wrong URI Code : %s instead of %s", u.Code, tests.NormalURIs[0].Code)
+				t.Errorf("Got the wrong URI Code : %s instead of %s", u.Code, tests.NormalURIs[i].Code)
 			}
-			if u.CreatedAt != tests.NormalURIs[i].CreatedAt {
-				t.Errorf("Got the wrong URI created at : %s instead of %s", u.CreatedAt, tests.NormalURIs[0].CreatedAt)
+			shouldCreatedAt, err := tests.NormalURIs[i].CreatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the shouldCreatedAt %s", tests.NormalURIs[i].CreatedAt)
 			}
-			if u.UpdatedAt != tests.NormalURIs[i].UpdatedAt {
-				t.Errorf("Got the wrong URI updated at : %s instead of %s", u.UpdatedAt, tests.NormalURIs[0].UpdatedAt)
+			gotCreatedAt, err := u.CreatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the gotCreatedAt %s", tests.NormalURIs[i].CreatedAt)
+			}
+			if string(shouldCreatedAt) != string(gotCreatedAt) {
+				t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", u.CreatedAt, tests.NormalURIs[i].CreatedAt)
+			}
+			shouldUpdatedAt, err := tests.NormalURIs[i].UpdatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the shouldUpdatedAt %s", tests.NormalURIs[i].UpdatedAt)
+			}
+			gotUpdatedAt, err := u.UpdatedAt.MarshalText()
+			if err != nil {
+				t.Errorf("Could not MarshalText the gotUpdatedAt %s", tests.NormalURIs[i].UpdatedAt)
+			}
+			if string(shouldUpdatedAt) != string(gotUpdatedAt) {
+				t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", u.UpdatedAt, tests.NormalURIs[i].UpdatedAt)
 			}
 		}
 	})
@@ -695,14 +744,30 @@ func TestAPI_GetURIByPort(t *testing.T) {
 
 	localApi := setup(conf)
 
-	t.Run("Get URI from a new port (empty)", func(t *testing.T) {
+	t.Run("Get invalid URI (non base64)", func(t *testing.T) {
 		backup := tests.NormalURIs
 		tests.NormalURIs = []models.URI{}
 		urlGetUri := localApi.Prefix +
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape("non-existing-uri")
+			"/uris/" + url.PathEscape("non-valid-uri")
+		t.Log(urlGetUri)
+		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusUnprocessableEntity, api.CodeInvalidInput, true)
+		if jsonres.Data != nil {
+			t.Errorf("Got data (%s), should be nil", jsonres.Data)
+		}
+		tests.NormalURIs = backup
+	})
+
+	t.Run("Get non existing uri", func(t *testing.T) {
+		backup := tests.NormalURIs
+		tests.NormalURIs = []models.URI{}
+		urlGetUri := localApi.Prefix +
+			"/projects/" + url.PathEscape(conf.Project.Name) +
+			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
+			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
+			"/uris/" + url.PathEscape(base64.StdEncoding.EncodeToString([]byte("non-existing-uri")))
 		t.Log(urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusNotFound, api.CodeNotFound, true)
 		if jsonres.Data != nil {
@@ -711,14 +776,14 @@ func TestAPI_GetURIByPort(t *testing.T) {
 		tests.NormalURIs = backup
 	})
 
-	t.Run("Get existing URI without slash-", func(t *testing.T) {
+	t.Run("Get existing URI", func(t *testing.T) {
 		var uri models.URI
 
 		urlGetUri := localApi.Prefix +
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(tests.NormalURIs[0].Name)
+			"/uris/" + url.PathEscape(base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[0].Name)))
 
 		t.Logf("URL :%s", urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
@@ -736,12 +801,27 @@ func TestAPI_GetURIByPort(t *testing.T) {
 		if uri.Code != tests.NormalURIs[0].Code {
 			t.Errorf("Got the wrong URI Code : %s instead of %s", uri.Code, tests.NormalURIs[0].Code)
 		}
-
-		if uri.CreatedAt != tests.NormalURIs[0].CreatedAt {
+		shouldCreatedAt, err := tests.NormalURIs[0].CreatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the shouldCreatedAt %s", tests.NormalURIs[0].CreatedAt)
+		}
+		gotCreatedAt, err := uri.CreatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the gotCreatedAt %s", tests.NormalURIs[0].CreatedAt)
+		}
+		if string(shouldCreatedAt) != string(gotCreatedAt) {
 			t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", uri.CreatedAt, tests.NormalURIs[0].CreatedAt)
 		}
 
-		if uri.UpdatedAt != tests.NormalURIs[0].UpdatedAt {
+		shouldUpdatedAt, err := tests.NormalURIs[0].UpdatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the shouldUpdatedAt %s", tests.NormalURIs[0].UpdatedAt)
+		}
+		gotUpdatedAt, err := uri.UpdatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the gotUpdatedAt %s", tests.NormalURIs[0].UpdatedAt)
+		}
+		if string(shouldUpdatedAt) != string(gotUpdatedAt) {
 			t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", uri.UpdatedAt, tests.NormalURIs[0].UpdatedAt)
 		}
 
@@ -753,7 +833,7 @@ func TestAPI_GetURIByPort(t *testing.T) {
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(tests.NormalURIs[1].Name)
+			"/uris/" + url.PathEscape(base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[1].Name)))
 
 		t.Logf("URL :%s", urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
@@ -772,11 +852,27 @@ func TestAPI_GetURIByPort(t *testing.T) {
 			t.Errorf("Got the wrong URI Code : %s instead of %s", uri.Code, tests.NormalURIs[1].Code)
 		}
 
-		if uri.CreatedAt != tests.NormalURIs[1].CreatedAt {
+		shouldCreatedAt, err := tests.NormalURIs[1].CreatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the shouldCreatedAt %s", tests.NormalURIs[1].CreatedAt)
+		}
+		gotCreatedAt, err := uri.CreatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the gotCreatedAt %s", tests.NormalURIs[1].CreatedAt)
+		}
+		if string(shouldCreatedAt) != string(gotCreatedAt) {
 			t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", uri.CreatedAt, tests.NormalURIs[1].CreatedAt)
 		}
 
-		if uri.UpdatedAt != tests.NormalURIs[1].UpdatedAt {
+		shouldUpdatedAt, err := tests.NormalURIs[1].UpdatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the shouldUpdatedAt %s", tests.NormalURIs[1].UpdatedAt)
+		}
+		gotUpdatedAt, err := uri.UpdatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the gotUpdatedAt %s", tests.NormalURIs[1].UpdatedAt)
+		}
+		if string(shouldUpdatedAt) != string(gotUpdatedAt) {
 			t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", uri.UpdatedAt, tests.NormalURIs[1].UpdatedAt)
 		}
 	})
@@ -787,7 +883,7 @@ func TestAPI_GetURIByPort(t *testing.T) {
 			"/projects/" + url.PathEscape(conf.Project.Name) +
 			"/ips/" + url.PathEscape(tests.NormalIPs[0].Value) +
 			"/ports/" + strconv.Itoa(int(tests.NormalPorts[0].Number)) +
-			"/uris/" + url.PathEscape(tests.NormalURIs[2].Name)
+			"/uris/" + url.PathEscape(base64.StdEncoding.EncodeToString([]byte(tests.NormalURIs[2].Name)))
 
 		t.Logf("URL :%s", urlGetUri)
 		jsonres := rrCheck(t, localApi, "GET", urlGetUri, nil, localApi.GetURIByPort, http.StatusOK, api.CodeOK, true)
@@ -806,11 +902,27 @@ func TestAPI_GetURIByPort(t *testing.T) {
 			t.Errorf("Got the wrong URI Code : %s instead of %s", uri.Code, tests.NormalURIs[2].Code)
 		}
 
-		if uri.CreatedAt != tests.NormalURIs[2].CreatedAt {
+		shouldCreatedAt, err := tests.NormalURIs[2].CreatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the shouldCreatedAt %s", tests.NormalURIs[2].CreatedAt)
+		}
+		gotCreatedAt, err := uri.CreatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the gotCreatedAt %s", tests.NormalURIs[2].CreatedAt)
+		}
+		if string(shouldCreatedAt) != string(gotCreatedAt) {
 			t.Errorf("Got the wrong URI CreatedAt : %s instead of %s", uri.CreatedAt, tests.NormalURIs[2].CreatedAt)
 		}
 
-		if uri.UpdatedAt != tests.NormalURIs[2].UpdatedAt {
+		shouldUpdatedAt, err := tests.NormalURIs[2].UpdatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the shouldUpdatedAt %s", tests.NormalURIs[2].UpdatedAt)
+		}
+		gotUpdatedAt, err := uri.UpdatedAt.MarshalText()
+		if err != nil {
+			t.Errorf("Could not MarshalText the gotUpdatedAt %s", tests.NormalURIs[2].UpdatedAt)
+		}
+		if string(shouldUpdatedAt) != string(gotUpdatedAt) {
 			t.Errorf("Got the wrong URI UpdatedAt : %s instead of %s ", uri.UpdatedAt, tests.NormalURIs[2].UpdatedAt)
 		}
 
