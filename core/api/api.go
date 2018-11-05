@@ -10,13 +10,13 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-
-	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/loadbalancing"
 	"github.com/netm4ul/netm4ul/core/server"
 	"github.com/netm4ul/netm4ul/core/session"
 	log "github.com/sirupsen/logrus"
@@ -60,7 +60,12 @@ func (api *API) Start() {
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      api.Router, // Pass our instance of gorilla/mux in.
+		//TOFIX ! load from config
+		Handler: handlers.CORS(
+			handlers.AllowedOrigins([]string{"*"}),
+			handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+			handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "X-Session-Token"}),
+		)(api.Router), // Pass our instance of gorilla/mux in.
 	}
 
 	go func() {
@@ -112,6 +117,27 @@ func (api *API) GetNodes(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
+}
+func (api *API) GetNode(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+	for _, node := range api.Server.Session.Nodes {
+		if node.ID == id {
+			res := CodeToResult[CodeOK]
+			res.Data = node
+			w.WriteHeader(res.HTTPCode)
+			json.NewEncoder(w).Encode(res)
+			return
+		}
+	}
+
+	res := CodeToResult[CodeNotFound]
+	res.Message = "Node not found"
+	w.WriteHeader(CodeToResult[CodeNotFound].HTTPCode)
+	json.NewEncoder(w).Encode(res)
+	return
+
 }
 
 /*

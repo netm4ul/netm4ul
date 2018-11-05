@@ -81,6 +81,14 @@
   version = "v1.1"
 
 [[projects]]
+  digest = "1:66d63ec7b6035984dced87ad37066e5f4ad277c60234a9d9925537248e983200"
+  name = "github.com/gorilla/handlers"
+  packages = ["."]
+  pruneopts = ""
+  revision = "7e0847f9db758cdebd26c149d0ae9d5d0b9c98ce"
+  version = "v1.4.0"
+
+[[projects]]
   digest = "1:aa016bbb412f496a7baed9e02787a60cd15c9a3edfa72da9c4a95d6cea610334"
   name = "github.com/gorilla/mux"
   packages = ["."]
@@ -282,6 +290,7 @@
     "github.com/edznux/go-nmap",
     "github.com/fatih/color",
     "github.com/go-pg/pg/orm",
+    "github.com/gorilla/handlers",
     "github.com/gorilla/mux",
     "github.com/jinzhu/gorm",
     "github.com/jinzhu/gorm/dialects/postgres",
