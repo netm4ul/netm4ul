@@ -9,7 +9,7 @@ import (
 
 //Random is the struct for this algorithm
 type Random struct {
-	Nodes []communication.Node
+	Nodes map[string]communication.Node
 }
 
 //NewRandom is a Random generator.
@@ -26,19 +26,25 @@ func (r *Random) Name() string {
 
 //SetNodes is the setter for the Nodes variable.
 //It is used for adding new nodes from outside this package.
-func (r *Random) SetNodes(nodes []communication.Node) {
+func (r *Random) SetNodes(nodes map[string]communication.Node) {
 	r.Nodes = nodes
 }
 
 //NextExecutionNodes returns selected nodes
-func (r *Random) NextExecutionNodes(cmd communication.Command) []communication.Node {
+func (r *Random) NextExecutionNodes(cmd communication.Command) map[string]communication.Node {
 
 	// no client found !
 	if len(r.Nodes) == 0 {
-		return []communication.Node{}
+		return map[string]communication.Node{}
 	}
-	selectedNode := []communication.Node{
-		r.Nodes[rand.Intn(len(r.Nodes))],
+	var selectedNode communication.Node
+	x := rand.Intn(len(r.Nodes) - 1)
+	for _, node := range r.Nodes {
+		if x == 0 {
+			selectedNode = node
+			break
+		}
+		x--
 	}
-	return selectedNode
+	return map[string]communication.Node{selectedNode.ID: selectedNode}
 }

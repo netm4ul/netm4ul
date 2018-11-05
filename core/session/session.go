@@ -32,7 +32,7 @@ type Session struct {
 	Config         config.ConfigToml
 	Connector      Connector
 	Algo           loadbalancing.Algorithm
-	Nodes          []communication.Node
+	Nodes          map[string]communication.Node
 	IsServer       bool
 	IsClient       bool
 	ConfigPath     string

@@ -47,7 +47,7 @@ var startServerCmd = &cobra.Command{
 		}
 
 		cliSession.IsServer = isServer
-		cliSession.Nodes = make([]communication.Node, 0)
+		cliSession.Nodes = make(map[string]communication.Node, 0)
 
 		if cliSession.Config.TLSParams.UseTLS {
 			cliSession.Config.TLSParams.TLSConfig, err = cliSession.Config.TLSBuildServerConf()

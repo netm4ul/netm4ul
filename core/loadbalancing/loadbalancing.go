@@ -18,8 +18,8 @@ var (
 //Algorithm is the interface implemented by all load balancing algorithm
 type Algorithm interface {
 	Name() string
-	SetNodes(nodes []communication.Node)
-	NextExecutionNodes(cmd communication.Command) []communication.Node
+	SetNodes(nodes map[string]communication.Node)
+	NextExecutionNodes(cmd communication.Command) map[string]communication.Node
 }
 
 func init() {

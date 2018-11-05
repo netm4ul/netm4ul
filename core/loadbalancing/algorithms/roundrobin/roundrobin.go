@@ -7,7 +7,7 @@ import (
 
 //RoundRobin is the struct for this algorithm
 type RoundRobin struct {
-	Nodes []communication.Node
+	Nodes map[string]communication.Node
 }
 
 //NewRoundRobin is a RoundRobin generator.
@@ -23,18 +23,18 @@ func (rr *RoundRobin) Name() string {
 
 //SetNodes is the setter for the Nodes variable.
 //It is used for adding new nodes from outside this package.
-func (rr *RoundRobin) SetNodes(nodes []communication.Node) {
+func (rr *RoundRobin) SetNodes(nodes map[string]communication.Node) {
 	rr.Nodes = nodes
 }
 
 //NextExecutionNodes returns just 1 node every time.
-func (rr *RoundRobin) NextExecutionNodes(cmd communication.Command) []communication.Node {
+func (rr *RoundRobin) NextExecutionNodes(cmd communication.Command) map[string]communication.Node {
 	//Sort node by their ID
-	selectedNode := []communication.Node{}
+	selectedNode := map[string]communication.Node{}
 	log.Debugf("rr.Nodes : %+v", rr.Nodes)
 	for _, n := range rr.Nodes {
 		if n.IsAvailable {
-			selectedNode = append(selectedNode, n)
+			selectedNode[n.ID] = n
 			//break at the first available node
 			break
 		}
