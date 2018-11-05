@@ -15,6 +15,7 @@ import (
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/events"
 	"github.com/netm4ul/netm4ul/modules"
 )
 
@@ -58,9 +59,8 @@ func (D *DNS) Version() string {
 }
 
 // DependsOn : Generate the dependencies requirement
-func (D *DNS) DependsOn() []modules.Condition {
-	var _ modules.Condition
-	return []modules.Condition{}
+func (D *DNS) DependsOn() events.EventType {
+	return events.EventDomain
 }
 
 /*

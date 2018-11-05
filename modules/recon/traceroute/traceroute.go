@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/BurntSushi/toml"
 	"github.com/aeden/traceroute"
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/events"
 	"github.com/netm4ul/netm4ul/modules"
+	log "github.com/sirupsen/logrus"
 )
 
 // Result represent the parsed output
@@ -62,9 +62,8 @@ func (T *Traceroute) Version() string {
 }
 
 // DependsOn : Generate the dependencies requirement
-func (T *Traceroute) DependsOn() []modules.Condition {
-	var _ modules.Condition
-	return []modules.Condition{}
+func (T *Traceroute) DependsOn() events.EventType {
+	return events.EventIP
 }
 
 // Run : Main function of the module

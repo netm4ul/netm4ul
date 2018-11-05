@@ -8,21 +8,19 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	"os"
-	"path/filepath"
-
+	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
-
-	"github.com/BurntSushi/toml"
+	"github.com/netm4ul/netm4ul/core/events"
 	"github.com/netm4ul/netm4ul/modules"
+	log "github.com/sirupsen/logrus"
 )
 
 // Results represent the parsed output
@@ -109,9 +107,8 @@ func (M *Masscan) Version() string {
 }
 
 // DependsOn : Generate the dependencies requirement
-func (M *Masscan) DependsOn() []modules.Condition {
-	var _ modules.Condition
-	return []modules.Condition{}
+func (M *Masscan) DependsOn() events.EventType {
+	return events.EventIP
 }
 
 // Run : Main function of the module

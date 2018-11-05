@@ -14,6 +14,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/events"
 	"github.com/netm4ul/netm4ul/modules"
 	log "github.com/sirupsen/logrus"
 )
@@ -60,8 +61,8 @@ func (d *dnsbruteforce) Author() string {
 }
 
 //DependsOn returns the module dependencies
-func (d *dnsbruteforce) DependsOn() []modules.Condition {
-	return nil
+func (d *dnsbruteforce) DependsOn() events.EventType {
+	return events.EventDomain
 }
 
 // try to generate a non existing sub domain. If it resolve, the DNS is probably resolving to all requests.

@@ -2,11 +2,13 @@ package testadapter
 
 import (
 	"errors"
+	"github.com/netm4ul/netm4ul/core/events"
 	"strconv"
 
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database/models"
 	"github.com/netm4ul/netm4ul/tests"
+	log "github.com/sirupsen/logrus"
 )
 
 //Test is the base struct for the "testadapter" adapter.
@@ -211,8 +213,11 @@ func (test *Test) CreateOrUpdateIP(projectName string, ip models.IP) error {
 	}
 
 	if exist {
+		log.Debugf("Updating ip : %s", ip.Value)
 		return test.UpdateIP(projectName, ip)
 	}
+
+	log.Debugf("Creating ip : %s", ip.Value)
 	return test.CreateIP(projectName, ip)
 }
 
@@ -225,6 +230,7 @@ func (test *Test) CreateIP(projectName string, ip models.IP) error {
 	}
 
 	tests.NormalIPs = append(tests.NormalIPs, ip)
+	events.NewEventIP(ip)
 	return nil
 }
 
@@ -269,6 +275,7 @@ func (test *Test) CreateOrUpdateDomain(projectName string, domain models.Domain)
 
 //CreateDomain is the public wrapper to create a new Domain in the database.
 func (test *Test) CreateDomain(projectName string, domain models.Domain) error {
+	events.NewEventDomain(domain)
 	return errors.New("Not implemented yet")
 }
 
@@ -306,6 +313,7 @@ func (test *Test) CreateOrUpdatePort(projectName string, ip string, port models.
 
 //CreatePort is the public wrapper to create a new port in the database.
 func (test *Test) CreatePort(projectName string, ip string, port models.Port) error {
+	events.NewEventPort(port)
 	return errors.New("Not implemented yet")
 }
 
@@ -353,6 +361,7 @@ func (test *Test) CreateOrUpdateURI(projectName string, ip string, port string, 
 
 //CreateURI is the public wrapper to create a new URI in the database.
 func (test *Test) CreateURI(projectName string, ip string, port string, URI models.URI) error {
+	events.NewEventURI(URI)
 	return errors.New("Not implemented yet")
 }
 

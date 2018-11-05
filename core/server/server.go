@@ -2,21 +2,20 @@ package server
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/gob"
 	"errors"
 	"io"
 	"net"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
-	"crypto/tls"
-
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/config"
 	"github.com/netm4ul/netm4ul/core/database"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/events"
 	"github.com/netm4ul/netm4ul/core/session"
+	log "github.com/sirupsen/logrus"
 )
 
 //Server represent the base structure for the server node.
@@ -35,9 +34,10 @@ func CreateServer(s *session.Session) *Server {
 	}
 	server.Db = db
 
-	server.Session.Nodes = make([]communication.Node, 0)
+	server.Session.Nodes = make(map[string]communication.Node, 0)
 	server.Session.Config.Modules = make(map[string]config.Module)
 
+	go server.SetupEventsPropagations()
 	return &server
 }
 
@@ -75,6 +75,24 @@ func (server *Server) Listen() {
 	}
 }
 
+//SetupEventsPropagations will listen on the EventsQueue.
+func (server *Server) SetupEventsPropagations() {
+	for {
+		ev := <-events.EventQueue
+		server.RunModulesByEvents(ev)
+	}
+}
+
+func (server *Server) RunModulesByEvents(ev events.Event) {
+	for moduleName, module := range server.Session.ModulesEnabled {
+		requiredEv := module.DependsOn()
+		if requiredEv == ev.Type {
+			log.Printf("Module %s will be run (event of type : %s received)\n", moduleName, ev.Type)
+			//TODO : actually run the modules !
+		}
+	}
+}
+
 func (server *Server) handleRequest(conn net.Conn) {
 
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
@@ -102,23 +120,8 @@ func (server *Server) handleHello(conn net.Conn, rw *bufio.ReadWriter) {
 	node.Conn = conn
 	node.IP = ip
 
-	// check if the node is known and create or update it.
-	found := false
-	var i int
-	var n communication.Node
-	for i, n = range server.Session.Nodes {
-		if n.ID == node.ID {
-			found = true
-		}
-	}
+	server.Session.Nodes[node.ID] = node
 
-	if found {
-		log.Infoln("Node known. Updating")
-		server.Session.Nodes[i] = node
-	} else {
-		server.Session.Nodes = append(server.Session.Nodes, node)
-		log.Infoln("Unknown node. Creating")
-	}
 }
 
 //SendCmdByName is a wrapper to the SendCommand function.
@@ -174,7 +177,7 @@ func (server *Server) SendCmd(command communication.Command) error {
 
 //getNextNodes return a list of net.Conn available. They must follows the requirements.
 //The next command will be sent on all of these
-func (server *Server) getNextNodes(cmd communication.Command) ([]communication.Node, error) {
+func (server *Server) getNextNodes(cmd communication.Command) (map[string]communication.Node, error) {
 	// TODO : Requirements for each modules and load balance
 	nodes := server.Session.Algo.NextExecutionNodes(cmd)
 	log.Debug("Selected nodes : ", nodes)
@@ -194,8 +197,7 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 		log.Errorf("Connection closed : %s [%s]", err.Error(), conn.RemoteAddr())
 		for i, node := range server.Session.Nodes {
 			if node.Conn.RemoteAddr() == conn.RemoteAddr() {
-				// remove the i'th element
-				server.Session.Nodes = append(server.Session.Nodes[:i], server.Session.Nodes[i+1:]...)
+				delete(server.Session.Nodes, i)
 			}
 		}
 		// stop all handleData for this conn
@@ -219,8 +221,8 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 
 	found := false
 	var node communication.Node
-	var i int
-	for i, node = range server.Session.Nodes {
+	var id string
+	for id, node = range server.Session.Nodes {
 		if node.IP == ip {
 			found = true
 		}
@@ -234,7 +236,7 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 	server.Db.Connect(&server.Session.Config)
 	//update it every time
 	p := models.Project{
-		Name: server.Session.Nodes[i].Project,
+		Name: server.Session.Nodes[id].Project,
 	}
 	err = server.Db.CreateOrUpdateProject(p)
 	if err != nil {
@@ -249,5 +251,6 @@ func (server *Server) handleData(conn net.Conn, rw *bufio.ReadWriter) bool {
 		return false
 	}
 	log.Infof("Saved database info, module : %s", data.ModuleName)
+	node.IsAvailable = true
 	return false
 }

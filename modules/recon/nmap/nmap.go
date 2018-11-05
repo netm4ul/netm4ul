@@ -13,14 +13,13 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/BurntSushi/toml"
 	gonmap "github.com/edznux/go-nmap"
-
 	"github.com/netm4ul/netm4ul/core/communication"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	"github.com/netm4ul/netm4ul/core/events"
 	"github.com/netm4ul/netm4ul/modules"
+	log "github.com/sirupsen/logrus"
 )
 
 //ConfigToml : configuration model (from the toml file)
@@ -72,9 +71,8 @@ func (N *Nmap) Author() string {
 }
 
 // DependsOn : Generate the dependencies requirements
-func (N *Nmap) DependsOn() []modules.Condition {
-	var _ modules.Condition
-	return []modules.Condition{}
+func (N *Nmap) DependsOn() events.EventType {
+	return events.EventIP
 }
 
 // Run : Main function of the module

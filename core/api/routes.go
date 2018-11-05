@@ -19,6 +19,7 @@ func (api *API) Routes() {
 	api.Router.HandleFunc(api.Prefix+"/users/{name}", api.GetUser).Methods("GET")
 
 	api.Router.HandleFunc(api.Prefix+"/nodes", api.GetNodes).Methods("GET")
+	api.Router.HandleFunc(api.Prefix+"/nodes/{id}", api.GetNode).Methods("GET")
 
 	api.Router.HandleFunc(api.Prefix+"/projects", api.GetProjects).Methods("GET")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}", api.GetProject).Methods("GET")

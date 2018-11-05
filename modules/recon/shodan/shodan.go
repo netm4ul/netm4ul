@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"errors"
+	"github.com/netm4ul/netm4ul/core/events"
 	"os"
 	"path/filepath"
 	"time"
@@ -53,9 +54,8 @@ func (S *Shodan) Version() string {
 }
 
 // DependsOn : Generate the dependencies requirement
-func (S *Shodan) DependsOn() []modules.Condition {
-	var _ modules.Condition
-	return []modules.Condition{}
+func (S *Shodan) DependsOn() events.EventType {
+	return events.EventDomain
 }
 
 // NewShodan : Generate shodan object

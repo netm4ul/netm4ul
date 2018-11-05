@@ -38,7 +38,7 @@ func (r *Random) NextExecutionNodes(cmd communication.Command) map[string]commun
 		return map[string]communication.Node{}
 	}
 	var selectedNode communication.Node
-	x := rand.Intn(len(r.Nodes) - 1)
+	x := rand.Intn(len(r.Nodes))
 	for _, node := range r.Nodes {
 		if x == 0 {
 			selectedNode = node
