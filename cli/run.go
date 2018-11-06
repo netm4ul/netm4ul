@@ -3,9 +3,14 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/netm4ul/netm4ul/cli/requester"
+	"github.com/netm4ul/netm4ul/core/database/models"
+	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/netm4ul/netm4ul/core/api"
 	"github.com/netm4ul/netm4ul/core/communication"
@@ -32,16 +37,21 @@ var runCmd = &cobra.Command{
 			log.Fatalln("Too few arguments ! Expecting target.")
 		}
 
-		targets, err := parseTargets(args)
+		err := run(args)
 		if err != nil {
-			log.Errorf("Error while parsing targets : %s\n", err.Error())
+			fmt.Printf("Error occured : %s", err)
 		}
 
-		log.Debugf("targets : %+v", targets)
-		log.Debugf("CLIModules : %+v", cliModules)
-		log.Debugf("Modules : %+v", cliSession.Config.Modules)
-		log.Debugf("CLIMode : %+v", cliMode)
-		log.Debugf("Mode : %+v", cliSession.Config.Algorithm.Mode)
+		// targets, err := parseTargets(args)
+		// if err != nil {
+		// 	log.Errorf("Error while parsing targets : %s\n", err.Error())
+		// }
+
+		// log.Debugf("targets : %+v", targets)
+		// log.Debugf("CLIModules : %+v", cliModules)
+		// log.Debugf("Modules : %+v", cliSession.Config.Modules)
+		// log.Debugf("CLIMode : %+v", cliMode)
+		// log.Debugf("Mode : %+v", cliSession.Config.Algorithm.Mode)
 
 		// if len(CLImodules) > 0 {
 		// 	mods, err := parseModules(CLImodules, CLISession)
@@ -51,13 +61,13 @@ var runCmd = &cobra.Command{
 		// 	addModules(mods, CLISession)
 		// }
 
-		if len(cliModules) > 0 {
-			fmt.Println("Running only specified module(s) :", cliModules)
-			runSpecifiedModules(targets, cliModules)
-			return
-		}
+		// if len(cliModules) > 0 {
+		// 	fmt.Println("Running only specified module(s) :", cliModules)
+		// 	runSpecifiedModules(targets, cliModules)
+		// 	return
+		// }
 
-		runModules(targets)
+		// runModules(targets)
 	},
 }
 
@@ -79,6 +89,68 @@ func createProject(project string) {
 		fmt.Println("Received invalid json !", err)
 	}
 	fmt.Println(res)
+}
+
+func run(arg []string) error {
+	if len(arg) == 0 {
+		return errors.New("Not argument found")
+	}
+
+	for _, target := range arg {
+		ip, ipNet, err := net.ParseCIDR(target)
+		// if this is a domain
+		if err != nil {
+			ips, err := net.LookupIP(target)
+			if err != nil {
+				return errors.New("Could not lookup address : " + target + ", " + err.Error())
+			}
+			domain := models.Domain{Name: target, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+			err = requester.PostDomain(cliSession.Config.Project.Name, cliSession, domain)
+			if err != nil {
+				return err
+			}
+			if ips == nil {
+				return errors.New("Could not resolve :" + target)
+			}
+
+			// convert ips to strings
+			for _, ip := range ips {
+				ipm := models.IP{Value: ip.String(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Network: "external"}
+				err := requester.PostIP(cliSession.Config.Project.Name, cliSession, ipm)
+				if err != nil {
+					return err
+				}
+			}
+
+		} else {
+			// if this is an ip
+			// check if ip is specified (not :: or 0.0.0.0)
+			if ip.IsUnspecified() {
+				return errors.New("Target ip is Unspecified (0.0.0.0 or ::)")
+			}
+
+			// check if ip isn't loopback
+			if ip.IsLoopback() {
+				return errors.New("Target ip is loopback address")
+			}
+
+			// IP Range (CIDR)
+			if ipNet != nil {
+				h, err := hosts(target)
+				if err != nil {
+					return errors.New("Target ip range is invalid (" + err.Error() + ")")
+				}
+				for _, ip := range h {
+					ipm := models.IP{Value: ip.String(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Network: "external"}
+					err := requester.PostIP(cliSession.Config.Project.Name, cliSession, ipm)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func runModules(targets []communication.Input) {
@@ -157,7 +229,7 @@ func runSpecifiedModules(targets []communication.Input, modules []string) {
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.PersistentFlags().StringArrayVar(&cliModules, "modules", []string{}, "Set custom module(s)")
+	// runCmd.PersistentFlags().StringArrayVar(&cliModules, "modules", []string{}, "Set custom module(s)")
 	runCmd.PersistentFlags().StringVarP(&cliMode, "mode", "m", DefaultMode, "Use predefined mode")
-	runCmd.PersistentFlags().StringVarP(&cliProjectName, "project", "p", "", "Set project name")
+	// runCmd.PersistentFlags().StringVarP(&cliProjectName, "project", "p", "", "Set project name")
 }

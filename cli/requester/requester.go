@@ -112,40 +112,17 @@ func postData(ressource string, s *session.Session, rawdata interface{}) (api.Re
 	if err != nil {
 		return api.Result{}, errors.New("Could not post data " + err.Error())
 	}
-
-	err = json.NewDecoder(res.Body).Decode(result)
+	err = json.NewDecoder(res.Body).Decode(&result)
 	if err != nil {
 		return api.Result{}, errors.New("Could not read response data " + err.Error())
 	}
 	return result, nil
 }
 
-func createProjectIfNotExist(s *session.Session) {
-	p := models.Project{Name: s.Config.Project.Name, Description: s.Config.Project.Description}
-
-	listOfProject, err := GetProjects(s)
-	if err != nil {
-		log.Errorf("Can't get project list : %s", err.Error())
-	}
-
-	for _, project := range listOfProject {
-		if project.Name == s.Config.Project.Name {
-			return
-			// already exist, so exit this function
-		}
-	}
-
-	err = CreateProject(p, s)
-	if err != nil {
-		log.Errorf("Can't create project : %s", err.Error())
-	}
-
-}
-
 /*
-CreateProject is a wrapper function to create a new project.
+PostProject is a wrapper function to create a new project.
 */
-func CreateProject(p models.Project, s *session.Session) error {
+func PostProject(p models.Project, s *session.Session) error {
 
 	ressource := "/projects"
 
@@ -185,7 +162,7 @@ func GetProjects(s *session.Session) ([]models.Project, error) {
 
 	// Check if the api response code say that everything went fine or abort.
 	if resjson.Code != api.CodeOK {
-		return data, errors.New("Can't get projects list :" + err.Error())
+		return data, errors.New("Can't get projects list :" + resjson.Code.String())
 	}
 
 	return data, nil
@@ -209,11 +186,11 @@ func GetProject(name string, s *session.Session) (models.Project, error) {
 
 	err = mapstructure.Decode(resjson.Data, &data)
 	if err != nil {
-		return data, err
+		return data, errors.New("Could not decode project data : " + err.Error())
 	}
 
 	if resjson.Code != api.CodeOK {
-		return data, errors.New("Can't get projects list :" + err.Error())
+		return data, errors.New("Can't get projects list :" + resjson.Code.String())
 	}
 
 	return data, nil
@@ -231,19 +208,33 @@ func GetIPs(projectName string, s *session.Session) ([]models.IP, error) {
 	// using mapstructure to decode all the json response into the data variable.
 	err = mapstructure.Decode(resjson.Data, &data)
 	if err != nil {
-		return data, err
+		return data, errors.New("Could not decode IPs data : " + err.Error())
 	}
 
 	// Check if the api response code say that everything went fine or abort.
 	if resjson.Code != api.CodeOK {
-		return data, errors.New("Can't get projects list :" + err.Error())
+		return data, errors.New("Can't get projects list :" + resjson.Code.String())
 	}
 
 	return data, nil
 }
 
-func GetDomains(projectName string, s *session.Session) ([]models.IP, error) {
-	var data []models.IP
+func PostIP(projectName string, s *session.Session, ip models.IP) error {
+	log.Debugf("Posting IP %s on %s", ip.Value, projectName)
+	resjson, err := postData("/projects/"+projectName+"/ips/", s, ip)
+	log.Debugf("response : %+v", resjson)
+	if err != nil {
+		return err
+	}
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return errors.New("Can't create ip :" + resjson.Code.String())
+	}
+	return nil
+}
+
+func GetDomains(projectName string, s *session.Session) ([]models.Domain, error) {
+	var data []models.Domain
 	resjson, err := getData("/projects/"+projectName+"/domains", s)
 
 	log.Debugf("response : %+v", resjson)
@@ -254,15 +245,29 @@ func GetDomains(projectName string, s *session.Session) ([]models.IP, error) {
 	// using mapstructure to decode all the json response into the data variable.
 	err = mapstructure.Decode(resjson.Data, &data)
 	if err != nil {
-		return data, err
+		return data, errors.New("Could not decode domains data : " + err.Error())
 	}
 
 	// Check if the api response code say that everything went fine or abort.
 	if resjson.Code != api.CodeOK {
-		return data, errors.New("Can't get projects list :" + err.Error())
+		return data, errors.New("Can't get projects list :" + resjson.Code.String())
 	}
 
 	return data, nil
+}
+
+func PostDomain(projectName string, s *session.Session, domain models.Domain) error {
+	log.Debugf("Posting domain %s on %s\n", domain.Name, projectName)
+	resjson, err := postData("/projects/"+projectName+"/domains/", s, domain)
+	log.Debugf("response : %+v\n", resjson)
+	if err != nil {
+		return err
+	}
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return errors.New("Can't create domain : " + resjson.Code.String())
+	}
+	return nil
 }
 
 func GetPorts(projectName string, ip string, s *session.Session) ([]models.Port, error) {
@@ -277,15 +282,29 @@ func GetPorts(projectName string, ip string, s *session.Session) ([]models.Port,
 	// using mapstructure to decode all the json response into the data variable.
 	err = mapstructure.Decode(resjson.Data, &data)
 	if err != nil {
-		return data, err
+		return data, errors.New("Could not decode ports data : " + err.Error())
 	}
 
 	// Check if the api response code say that everything went fine or abort.
 	if resjson.Code != api.CodeOK {
-		return data, errors.New("Can't get projects list :" + err.Error())
+		return data, errors.New("Can't get projects list :" + resjson.Code.String())
 	}
 
 	return data, nil
+}
+
+func PostPort(projectName string, s *session.Session, ip string, port models.Port) error {
+	log.Debugf("Posting port %d on project : %s", port.Number, projectName)
+	resjson, err := postData("/projects/"+projectName+"/ips/"+ip+"/ports", s, port)
+	log.Debugf("response : %+v", resjson)
+	if err != nil {
+		return err
+	}
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return errors.New("Can't create port :" + resjson.Code.String())
+	}
+	return nil
 }
 
 func GetURIs(projectName string, ip string, port string, s *session.Session) ([]models.URI, error) {
@@ -300,13 +319,27 @@ func GetURIs(projectName string, ip string, port string, s *session.Session) ([]
 	// using mapstructure to decode all the json response into the data variable.
 	err = mapstructure.Decode(resjson.Data, &data)
 	if err != nil {
-		return data, err
+		return data, errors.New("Could not decode URI data : " + err.Error())
 	}
 
 	// Check if the api response code say that everything went fine or abort.
 	if resjson.Code != api.CodeOK {
-		return data, errors.New("Can't get projects list :" + err.Error())
+		return data, errors.New("Can't get projects list :" + resjson.Code.String())
 	}
 
 	return data, nil
+}
+
+func PostURI(projectName string, s *session.Session, ip string, port int, uri models.URI) error {
+	log.Debugf("Posting uri %s on port %d on project : %s", uri.Name, port, projectName)
+	resjson, err := postData("/projects/"+projectName+"/ips/"+ip+"/ports/"+strconv.Itoa(port)+"/uris", s, uri)
+	log.Debugf("response : %+v", resjson)
+	if err != nil {
+		return err
+	}
+	// Check if the api response code say that everything went fine or abort.
+	if resjson.Code != api.CodeOK {
+		return errors.New("Can't create uri : " + resjson.Code.String())
+	}
+	return nil
 }
