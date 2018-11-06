@@ -150,6 +150,7 @@ func (test *Test) CreateOrUpdateProject(project models.Project) error {
 //CreateProject is the public wrapper to create a new Project in the database.
 func (test *Test) CreateProject(project models.Project) error {
 	tests.NormalProjects = append(tests.NormalProjects, project)
+	events.NewEventProject(project)
 	return nil
 }
 
@@ -222,6 +223,7 @@ func (test *Test) CreateIP(projectName string, ip models.IP) error {
 	}
 
 	tests.NormalIPs = append(tests.NormalIPs, ip)
+
 	events.NewEventIP(ip)
 	return nil
 }
@@ -296,6 +298,7 @@ func (test *Test) CreateDomain(projectName string, domain models.Domain) error {
 		}
 	}
 	tests.NormalDomains = append(tests.NormalDomains, domain)
+
 	events.NewEventDomain(domain)
 	return nil
 }

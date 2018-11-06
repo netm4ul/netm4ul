@@ -11,6 +11,8 @@ type EventType int
 
 func (ev EventType) String() string {
 	switch ev {
+	case EventProject:
+		return "Event Project"
 	case EventIP:
 		return "Event IP"
 	case EventDomain:
@@ -41,6 +43,8 @@ const (
 	EventPort
 	//EventURI : new URI found
 	EventURI
+	//EventProject : new Project created
+	EventProject
 )
 
 var (
@@ -51,6 +55,12 @@ var (
 func init() {
 	// Create the event queue before anything else
 	EventQueue = make(chan Event)
+}
+
+//NewEventProject send new pre-filled event of the Project type
+func NewEventProject(data models.Project) {
+	log.Debug("New event Project !")
+	EventQueue <- Event{Type: EventProject, Timestamp: time.Now(), Data: data}
 }
 
 //NewEventIP send new pre-filled event of the IP type
