@@ -237,6 +237,26 @@ func (api *API) GetDomain(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+func (api *API) PostDomain(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	decoder := json.NewDecoder(r.Body)
+	var domain models.Domain
+	err := decoder.Decode(&domain)
+	if err != nil {
+		sendInvalidArgument(w)
+		return
+	}
+	log.Println(domain)
+	err = api.db.CreateOrUpdateDomain(api.Session.Config.Project.Name, domain)
+	if err != nil {
+		log.Errorf("Database error : %s", err)
+		sendDatabaseError(w)
+		return
+	}
+	sendDefaultValue(w, CodeOK)
+}
+
 /*
 GetProject return this template
   "data": {
@@ -287,6 +307,26 @@ func (api *API) GetProject(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+func (api *API) PostProject(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	decoder := json.NewDecoder(r.Body)
+	var project models.Project
+	err := decoder.Decode(&project)
+	if err != nil {
+		sendInvalidArgument(w)
+		return
+	}
+	log.Println(project)
+	err = api.db.CreateOrUpdateProject(project)
+	if err != nil {
+		log.Errorf("Database error : %s", err)
+		sendDatabaseError(w)
+		return
+	}
+	sendDefaultValue(w, CodeOK)
+}
+
 //GetAlgorithm return the current algorithm used by the server
 func (api *API) GetAlgorithm(w http.ResponseWriter, r *http.Request) {
 	var res Result
@@ -296,8 +336,8 @@ func (api *API) GetAlgorithm(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-//ChangeAlgorithm is the api endpoint handler for changing the loadbalancing algorithm
-func (api *API) ChangeAlgorithm(w http.ResponseWriter, r *http.Request) {
+//PostAlgorithm is the api endpoint handler for changing the loadbalancing algorithm
+func (api *API) PostAlgorithm(w http.ResponseWriter, r *http.Request) {
 	var algorithm string
 
 	decoder := json.NewDecoder(r.Body)
@@ -375,6 +415,26 @@ func (api *API) GetIPsByProjectName(w http.ResponseWriter, r *http.Request) {
 	res.Data = ips
 	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
+}
+
+func (api *API) PostIP(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	decoder := json.NewDecoder(r.Body)
+	var IP models.IP
+	err := decoder.Decode(&IP)
+	if err != nil {
+		sendInvalidArgument(w)
+		return
+	}
+	log.Println(IP)
+	err = api.db.CreateOrUpdateIP(api.Session.Config.Project.Name, IP)
+	if err != nil {
+		log.Errorf("Database error : %s", err)
+		sendDatabaseError(w)
+		return
+	}
+	sendDefaultValue(w, CodeOK)
 }
 
 // GetPortsByIP return all the ports for a given IP (and project)
@@ -480,6 +540,38 @@ func (api *API) GetPortByIP(w http.ResponseWriter, r *http.Request) {
 	res.Data = dbport
 	w.WriteHeader(res.HTTPCode)
 	json.NewEncoder(w).Encode(res)
+}
+
+func (api *API) PostPortsByIP(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var ip string
+	var err error
+	vars := mux.Vars(r)
+	pathUnescapeErr := 0
+	if ip, err = url.PathUnescape(vars["ip"]); err != nil {
+		pathUnescapeErr++
+	}
+	if pathUnescapeErr != 0 {
+		sendInvalidArgument(w)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var port models.Port
+	err = decoder.Decode(&port)
+	if err != nil {
+		sendInvalidArgument(w)
+		return
+	}
+	log.Println(port)
+	err = api.db.CreateOrUpdatePort(api.Session.Config.Project.Name, ip, port)
+	if err != nil {
+		log.Errorf("Database error : %s", err)
+		sendDatabaseError(w)
+		return
+	}
+	sendDefaultValue(w, CodeOK)
 }
 
 func (api *API) GetURIsByPort(w http.ResponseWriter, r *http.Request) {
@@ -618,32 +710,6 @@ func (api *API) GetRawsByModule(w http.ResponseWriter, r *http.Request) {
 func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	sendDefaultValue(w, CodeNotImplementedYet)
-}
-
-// CreateProject creates a new project and return its name inside the data field
-func (api *API) CreateProject(w http.ResponseWriter, r *http.Request) {
-	var project models.Project
-	var res Result
-
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&project)
-
-	if err != nil {
-		log.Debugf("Could not decode provided json : %+v", err)
-		sendDefaultValue(w, CodeCouldNotDecodeJSON)
-		return
-	}
-
-	log.Debugf("JSON input : %+v", project)
-	defer r.Body.Close()
-
-	//Create project in DBk
-	api.db.CreateOrUpdateProject(project)
-
-	res = CodeToResult[CodeOK]
-	res.Message = "Command Sent"
-	w.WriteHeader(res.HTTPCode)
-	json.NewEncoder(w).Encode(res)
 }
 
 //TODO : use RunModule !

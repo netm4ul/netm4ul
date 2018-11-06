@@ -38,14 +38,22 @@ func (api *API) Routes() {
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/raws/{module}", api.GetRawsByModule).Methods("GET")
 
 	// POST
+
+	//	user
 	api.Router.HandleFunc(api.Prefix+"/users/create", api.CreateUser).Methods("POST")
 	api.Router.HandleFunc(api.Prefix+"/users/login", api.UserLogin).Methods("POST")
 	api.Router.HandleFunc(api.Prefix+"/users/logout", api.UserLogout).Methods("POST")
-
-	api.Router.HandleFunc(api.Prefix+"/projects", api.CreateProject).Methods("POST")
-	api.Router.HandleFunc(api.Prefix+"/projects/{name}/algorithm", api.ChangeAlgorithm).Methods("POST")
+	//	objects
+	api.Router.HandleFunc(api.Prefix+"/projects", api.PostProject).Methods("POST")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/algorithm", api.PostAlgorithm).Methods("POST")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/run", api.RunModules).Methods("POST")
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}/run/{module}", api.RunModule).Methods("POST")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips", api.PostIP).Methods("POST")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/ips/{ip}/ports", api.PostPortsByIP).Methods("POST")
+	api.Router.HandleFunc(api.Prefix+"/projects/{name}/domains", api.PostDomain).Methods("POST")
+
+	//PUT
+	//... updates ...
 
 	// DELETE
 	api.Router.HandleFunc(api.Prefix+"/projects/{name}", api.DeleteProject).Methods("DELETE")
