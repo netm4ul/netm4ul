@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"errors"
+	"github.com/netm4ul/netm4ul/core/events"
 
 	"github.com/jinzhu/gorm"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -51,12 +52,13 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 }
 
 //CreateProject is the public wrapper to create a new Project in the database.
-func (pg *PostgreSQL) CreateProject(projectName models.Project) error {
+func (pg *PostgreSQL) CreateProject(project models.Project) error {
+	events.NewEventProject(project)
 	return errors.New("Not implemented yet")
 }
 
 //UpdateProject is the public wrapper to update a new Project in the database.
-func (pg *PostgreSQL) UpdateProject(projectName models.Project) error {
+func (pg *PostgreSQL) UpdateProject(project models.Project) error {
 	return errors.New("Not implemented yet")
 }
 

@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"errors"
+	"github.com/netm4ul/netm4ul/core/events"
 
 	"github.com/netm4ul/netm4ul/core/database/models"
 )
@@ -48,6 +49,7 @@ func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port mod
 
 //CreatePort is the public wrapper to create a new port in the database.
 func (pg *PostgreSQL) CreatePort(projectName string, ip string, port models.Port) error {
+	events.NewEventPort(port)
 	return errors.New("Not implemented yet")
 }
 

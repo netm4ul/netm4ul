@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"errors"
+	"github.com/netm4ul/netm4ul/core/events"
 
 	"github.com/jinzhu/gorm"
 	"github.com/netm4ul/netm4ul/core/database/models"
@@ -57,6 +58,7 @@ func (pg *PostgreSQL) createOrUpdateIPs(projectName string, ips []pgIP) error {
 
 //CreateIP is the public wrapper to create a new IP in the database.
 func (pg *PostgreSQL) CreateIP(projectName string, ip models.IP) error {
+	events.NewEventIP(ip)
 	return errors.New("Not implemented yet")
 }
 

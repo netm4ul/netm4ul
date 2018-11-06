@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"errors"
+	"github.com/netm4ul/netm4ul/core/events"
 
 	"github.com/netm4ul/netm4ul/core/database/models"
 )
@@ -51,6 +52,8 @@ func (pg *PostgreSQL) CreateOrUpdateURI(projectName string, ip string, port stri
 
 //CreateURI is the public wrapper to create a new URI in the database.
 func (pg *PostgreSQL) CreateURI(projectName string, ip string, port string, URI models.URI) error {
+
+	events.NewEventURI(URI)
 	return errors.New("Not implemented yet")
 }
 
@@ -136,7 +139,6 @@ func (pg *PostgreSQL) getURI(projectName string, ip string, port string, dir str
 
 //GetURI will return one URI in the database from a project ip and port combo. This function is a wrapper around `getURI`
 func (pg *PostgreSQL) GetURI(projectName string, ip string, port string, dir string) (models.URI, error) {
-
 	uri, err := pg.getURI(projectName, ip, port, dir)
 	if err != nil {
 		return models.URI{}, err

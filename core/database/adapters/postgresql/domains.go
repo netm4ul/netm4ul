@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"errors"
+	"github.com/netm4ul/netm4ul/core/events"
 
 	"github.com/netm4ul/netm4ul/core/database/models"
 	log "github.com/sirupsen/logrus"
@@ -52,12 +53,14 @@ func (pg *PostgreSQL) createOrUpdateDomains(projectName string, domains []pgDoma
 }
 
 //CreateDomain is the public wrapper to create a new Domain in the database.
-func (pg *PostgreSQL) CreateDomain(projectName string, Domain models.Domain) error {
+func (pg *PostgreSQL) CreateDomain(projectName string, domain models.Domain) error {
+
+	events.NewEventDomain(domain)
 	return errors.New("Not implemented yet")
 }
 
 //UpdateDomain is the public wrapper to update a new Domain in the database.
-func (pg *PostgreSQL) UpdateDomain(projectName string, Domain models.Domain) error {
+func (pg *PostgreSQL) UpdateDomain(projectName string, domain models.Domain) error {
 	return errors.New("Not implemented yet")
 }
 
