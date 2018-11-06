@@ -184,11 +184,21 @@ func (api *API) RunModule(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-/*
-DeleteProject return this template after deleting the project
-  "data": "ProjectName"
-*/
-func (api *API) DeleteProject(w http.ResponseWriter, r *http.Request) {
+//GetIndex returns a link to the documentation on the root path
+func (api *API) GetIndex(w http.ResponseWriter, r *http.Request) {
+
+	info := Info{Port: api.Session.Config.API.Port, Versions: Version}
+	d := Metadata{Info: info}
+
+	res := CodeToResult[CodeOK]
+	res.Data = d
+	res.Message = "Documentation available at https://github.com/netm4ul/netm4ul"
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
+}
+
+// GetRoutesByIP returns all the routes informations
+func (api *API) GetRoutesByIP(w http.ResponseWriter, r *http.Request) {
 	//TODO
 	sendDefaultValue(w, CodeNotImplementedYet)
 }
