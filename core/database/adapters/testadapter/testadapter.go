@@ -172,15 +172,7 @@ func (test *Test) GetProjects() ([]models.Project, error) {
 //GetProject returns the project named "projectName" if it exist in the /tests/values.go file
 //It returns an error if the project doesn't exist.
 func (test *Test) GetProject(projectName string) (models.Project, error) {
-	ps, err := test.GetProjects()
-	var projects []models.Project
-	projects = append([]models.Project{}, ps...)
-
-	if err != nil {
-		return models.Project{}, errors.New("Could not get projects" + err.Error())
-	}
-
-	for _, p := range projects {
+	for _, p := range tests.NormalProjects {
 		if p.Name == projectName {
 			return p, nil
 		}
@@ -246,8 +238,15 @@ func (test *Test) UpdateIP(projectName string, ip models.IP) error {
 	return models.ErrNotFound
 }
 
-//CreateOrUpdateIPs is a no-op
-func (test *Test) CreateOrUpdateIPs(projectName string, ip []models.IP) error {
+//CreateOrUpdateIPs call the CreateOrUpdateIP func to create a new IP. No optimisation needed
+func (test *Test) CreateOrUpdateIPs(projectName string, ips []models.IP) error {
+	var err error
+	for _, ip := range ips {
+		err = test.CreateOrUpdateIP(projectName, ip)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -258,7 +257,12 @@ func (test *Test) GetIPs(projectName string) ([]models.IP, error) {
 
 //GetIP returns the IP address from the /tests/values.go file given the project name and an ip string
 func (test *Test) GetIP(projectName string, ip string) (models.IP, error) {
-	return tests.NormalIPs[0], nil
+	for _, lip := range tests.NormalIPs {
+		if lip.Value == ip {
+			return lip, nil
+		}
+	}
+	return models.IP{}, models.ErrNotFound
 }
 
 //DeleteIP TOFIX
@@ -268,25 +272,55 @@ func (test *Test) DeleteIP(ip models.IP) error {
 
 // Domain
 
-//CreateOrUpdateDomain is a no-op
+//CreateOrUpdateDomain will create or update a domain (if it already exist)
 func (test *Test) CreateOrUpdateDomain(projectName string, domain models.Domain) error {
-	return errors.New("Not implemented yet")
+	exist := false
+	for _, ldomain := range tests.NormalDomains {
+		if ldomain.Name == domain.Name {
+			exist = true
+		}
+	}
+	if exist {
+		log.Debugf("Updating domain : %s", domain.Name)
+		return test.UpdateDomain(projectName, domain)
+	}
+	log.Debugf("Creating domain : %s", domain.Name)
+	return test.CreateDomain(projectName, domain)
 }
 
 //CreateDomain is the public wrapper to create a new Domain in the database.
 func (test *Test) CreateDomain(projectName string, domain models.Domain) error {
+	for _, ldomain := range tests.NormalDomains {
+		if ldomain.Name == domain.Name {
+			return models.ErrAlreadyExist
+		}
+	}
+	tests.NormalDomains = append(tests.NormalDomains, domain)
 	events.NewEventDomain(domain)
-	return errors.New("Not implemented yet")
+	return nil
 }
 
 //UpdateDomain is the public wrapper to update a new Domain in the database.
 func (test *Test) UpdateDomain(projectName string, domain models.Domain) error {
-	return errors.New("Not implemented yet")
+	for index, ldomain := range tests.NormalDomains {
+		if ldomain.Name == domain.Name {
+			tests.NormalDomains[index] = domain
+			return nil
+		}
+	}
+	return models.ErrNotFound
 }
 
-//CreateOrUpdateDomains is a no-op
-func (test *Test) CreateOrUpdateDomains(projectName string, domain []models.Domain) error {
-	return errors.New("Not implemented yet")
+//CreateOrUpdateDomains call the CreateOrUpdateDomain func to create a new Domain. No optimisation needed
+func (test *Test) CreateOrUpdateDomains(projectName string, domains []models.Domain) error {
+	var err error
+	for _, domain := range domains {
+		err = test.CreateOrUpdateDomain(projectName, domain)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 //GetDomains return all the domains
@@ -294,9 +328,14 @@ func (test *Test) GetDomains(projectName string) ([]models.Domain, error) {
 	return tests.NormalDomains, nil
 }
 
-//GetDomain TOFIX
+//GetDomain return the domain model corresponding to the domain name provided in the arguments
 func (test *Test) GetDomain(projectName string, domain string) (models.Domain, error) {
-	return models.Domain{}, errors.New("Not implemented yet")
+	for _, ldomain := range tests.NormalDomains {
+		if ldomain.Name == domain {
+			return ldomain, nil
+		}
+	}
+	return models.Domain{}, models.ErrNotFound
 }
 
 //DeleteDomain TOFIX
