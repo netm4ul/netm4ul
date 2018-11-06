@@ -440,7 +440,7 @@ func TestAPI_GetIPsByProjectName(t *testing.T) {
 	})
 }
 
-func TestAPI_ChangeAlgorithm(t *testing.T) {
+func TestAPI_PostAlgorithm(t *testing.T) {
 	conf := config.ConfigToml{
 		API: config.API{
 			Port: 1234,
@@ -462,7 +462,7 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 		urlChangeAlgo := localApi.Prefix + "/projects/" + url.PathEscape(conf.Project.Name) +
 			"/algorithm"
 		body := strings.NewReader("\"roundrobin\"")
-		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.ChangeAlgorithm, http.StatusOK, api.CodeOK, true)
+		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.PostAlgorithm, http.StatusOK, api.CodeOK, true)
 
 		expected := "Algorithm changed to : roundrobin"
 		if jsonres.Message != expected {
@@ -492,7 +492,7 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 		urlChangeAlgo := localApi.Prefix + "/projects/" + url.PathEscape(conf.Project.Name) +
 			"/algorithm"
 		body := strings.NewReader("\"NON-EXISTING-ALGORITHM\"")
-		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.ChangeAlgorithm, http.StatusUnprocessableEntity, api.CodeInvalidInput, true)
+		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.PostAlgorithm, http.StatusUnprocessableEntity, api.CodeInvalidInput, true)
 
 		if jsonres.Data != nil {
 			t.Errorf("Expected empty data, got %s", jsonres.Data)
@@ -510,7 +510,7 @@ func TestAPI_ChangeAlgorithm(t *testing.T) {
 		urlChangeAlgo := localApi.Prefix + "/projects/" + url.PathEscape(conf.Project.Name) +
 			"/algorithm"
 		body := strings.NewReader("INVALID-JSON")
-		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.ChangeAlgorithm, http.StatusBadRequest, api.CodeCouldNotDecodeJSON, true)
+		jsonres := rrCheck(t, localApi, "POST", urlChangeAlgo, body, localApi.PostAlgorithm, http.StatusBadRequest, api.CodeCouldNotDecodeJSON, true)
 
 		if jsonres.Data != nil {
 			t.Errorf("Expected empty data, got %s", jsonres.Data)

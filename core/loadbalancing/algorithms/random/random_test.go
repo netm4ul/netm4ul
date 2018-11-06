@@ -12,7 +12,7 @@ func TestRandom_NextExecutionNodes(t *testing.T) {
 
 	rand.Seed(123) // fixed seed so we can expect the same random every time.
 	type fields struct {
-		Nodes []communication.Node
+		Nodes map[string]communication.Node
 	}
 
 	type args struct {
@@ -23,20 +23,20 @@ func TestRandom_NextExecutionNodes(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   []communication.Node
+		want   map[string]communication.Node
 	}{
 		{
 			name: "Testing next node execution",
 			args: args{cmd: communication.Command{Name: "test_cmd"}},
 			fields: fields{
-				Nodes: []communication.Node{
-					{
+				Nodes: map[string]communication.Node{
+					"1": {
 						ID:          "1",
 						Project:     "TestProject",
 						Modules:     []string{"A", "B", "C"},
 						IsAvailable: true,
 					},
-					{
+					"2": {
 						ID:          "2",
 						Project:     "TestProject",
 						Modules:     []string{"A", "C", "E"},
@@ -44,8 +44,8 @@ func TestRandom_NextExecutionNodes(t *testing.T) {
 					},
 				},
 			},
-			want: []communication.Node{
-				{
+			want: map[string]communication.Node{
+				"2": {
 					ID:          "2",
 					Project:     "TestProject",
 					Modules:     []string{"A", "C", "E"},
