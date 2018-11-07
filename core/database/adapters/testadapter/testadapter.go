@@ -350,22 +350,53 @@ func (test *Test) DeleteDomain(projectName string, domain models.Domain) error {
 
 //CreateOrUpdatePort is a no-op
 func (test *Test) CreateOrUpdatePort(projectName string, ip string, port models.Port) error {
-	return nil
+	exist := false
+	for _, lport := range tests.NormalPorts {
+		if lport.Number == port.Number {
+			exist = true
+		}
+	}
+	if exist {
+		log.Debugf("Updating Port : %d", port.Number)
+		return test.UpdatePort(projectName, ip, port)
+	}
+	log.Debugf("Creating Port : %d", port.Number)
+	return test.CreatePort(projectName, ip, port)
 }
 
 //CreatePort is the public wrapper to create a new port in the database.
 func (test *Test) CreatePort(projectName string, ip string, port models.Port) error {
+	for _, lport := range tests.NormalPorts {
+		if lport.Number == port.Number {
+			return models.ErrAlreadyExist
+		}
+	}
+	tests.NormalPorts = append(tests.NormalPorts, port)
+
 	events.NewEventPort(port)
-	return errors.New("Not implemented yet")
+	return nil
 }
 
 //UpdatePort is the public wrapper to update a new port in the database.
 func (test *Test) UpdatePort(projectName string, ip string, port models.Port) error {
-	return errors.New("Not implemented yet")
+	for index, lport := range tests.NormalPorts {
+		if lport.Number == port.Number {
+			tests.NormalPorts[index] = port
+			return nil
+		}
+	}
+	return models.ErrNotFound
 }
 
-//CreateOrUpdatePorts is a no-op
-func (test *Test) CreateOrUpdatePorts(projectName string, ip string, port []models.Port) error {
+//CreateOrUpdatePorts calls in a loop the CreateOrUpdatePort function
+func (test *Test) CreateOrUpdatePorts(projectName string, ip string, ports []models.Port) error {
+	var err error
+	for _, port := range ports {
+		err = test.CreateOrUpdatePort(projectName, ip, port)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
