@@ -429,22 +429,53 @@ func (test *Test) DeletePort(projectName string, ip string, port models.Port) er
 
 //CreateOrUpdateURI is a no-op
 func (test *Test) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error {
-	return nil
+	exist := false
+	for _, luri := range tests.NormalURIs {
+		if luri.Name == uri.Name {
+			exist = true
+		}
+	}
+	if exist {
+		log.Debugf("Updating URI : %d", uri.Name)
+		return test.UpdateURI(projectName, ip, port, uri)
+	}
+	log.Debugf("Creating URI : %d", uri.Name)
+	return test.CreateURI(projectName, ip, port, uri)
 }
 
 //CreateURI is the public wrapper to create a new URI in the database.
-func (test *Test) CreateURI(projectName string, ip string, port string, URI models.URI) error {
-	events.NewEventURI(URI)
-	return errors.New("Not implemented yet")
+func (test *Test) CreateURI(projectName string, ip string, port string, uri models.URI) error {
+	for _, luri := range tests.NormalURIs {
+		if luri.Name == uri.Name {
+			return models.ErrAlreadyExist
+		}
+	}
+	tests.NormalURIs = append(tests.NormalURIs, uri)
+
+	events.NewEventURI(uri)
+	return nil
 }
 
 //UpdateURI is the public wrapper to update a new URI in the database.
-func (test *Test) UpdateURI(projectName string, ip string, port string, URI models.URI) error {
-	return errors.New("Not implemented yet")
+func (test *Test) UpdateURI(projectName string, ip string, port string, uri models.URI) error {
+	for index, lport := range tests.NormalURIs {
+		if lport.Name == uri.Name {
+			tests.NormalURIs[index] = uri
+			return nil
+		}
+	}
+	return models.ErrNotFound
 }
 
 //CreateOrUpdateURIs is a no-op
 func (test *Test) CreateOrUpdateURIs(projectName string, ip string, port string, uris []models.URI) error {
+	var err error
+	for _, uri := range uris {
+		err = test.CreateOrUpdateURI(projectName, ip, port, uri)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
