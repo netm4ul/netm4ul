@@ -44,6 +44,14 @@ func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateUser(user models.Us
 	return errors.New("Not implemented yet")
 }
 
+func ({{.adapterShortName}} *{{.adapterName}}) CreateUser(user models.User) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) UpdateUser(user models.User) error{
+	return errors.New("Not implemented yet")
+}
+
 func ({{.adapterShortName}} *{{.adapterName}}) GetUser(username string) (models.User, error) {
 	return models.User{}, errors.New("Not implemented yet")
 }
@@ -57,7 +65,18 @@ func ({{.adapterShortName}} *{{.adapterName}}) DeleteUser(user models.User) erro
 }
 
 // Project
-func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateProject(projectName string) error{
+
+func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateProject(project models.Project) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) CreateProject(project models.Project) error{
+	// Don't forget to add this function on successful database save 
+	// events.NewEventProject(project)
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) UpdateProject(project models.Project) error{
 	return errors.New("Not implemented yet")
 }
 
@@ -74,7 +93,13 @@ func ({{.adapterShortName}} *{{.adapterName}}) DeleteProject(project models.Proj
 }
 
 // IP
-func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateIP(projectName string, ip models.IP) error{
+func ({{.adapterShortName}} *{{.adapterName}}) CreateIP(projectName string, ip models.IP) error{
+	// Don't forget to add this function on successful database save 
+	// events.NewEventIP(ip)
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) UpdateIP(projectName string, ip models.IP) error{
 	return errors.New("Not implemented yet")
 }
 
@@ -99,6 +124,15 @@ func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateDomain(projectName 
 	return errors.New("Not implemented yet")
 }
 
+func ({{.adapterShortName}} *{{.adapterName}}) CreateDomain(projectName string, domain models.Domain) error{
+	// Don't forget to add this function on successful database save 
+	// events.NewEventDomain(domain)
+	return errors.New("Not implemented yet")
+}
+func ({{.adapterShortName}} *{{.adapterName}}) UpdateDomain(projectName string, domain models.Domain) error{
+	return errors.New("Not implemented yet")
+}
+
 func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateDomains(projectName string, domain []models.Domain) error{
 	return errors.New("Not implemented yet")
 }
@@ -117,6 +151,16 @@ func ({{.adapterShortName}} *{{.adapterName}}) DeleteDomain(projectName string, 
 
 // Port
 func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdatePort(projectName string, ip string, port models.Port) error{
+	// Don't forget to add this function on successful database save 
+	// events.NewEventPort(port)
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) CreatePort(projectName string, ip string, port models.Port) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) UpdatePort(projectName string, ip string, port models.Port) error{
 	return errors.New("Not implemented yet")
 }
 
@@ -138,6 +182,16 @@ func ({{.adapterShortName}} *{{.adapterName}}) DeletePort(projectName string, ip
 
 // URI (directory and files)
 func ({{.adapterShortName}} *{{.adapterName}}) CreateOrUpdateURI(projectName string, ip string, port string, uri models.URI) error{
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) CreateURI(projectName string, ip string, port string, uri models.URI) error{
+	// Don't forget to add this function on successful database save 
+	// events.NewEventURI(uri)
+	return errors.New("Not implemented yet")
+}
+
+func ({{.adapterShortName}} *{{.adapterName}}) UpdateURI(projectName string, ip string, port string, uri models.URI) error{
 	return errors.New("Not implemented yet")
 }
 
