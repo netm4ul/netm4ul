@@ -47,15 +47,44 @@ func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port mod
 	return nil
 }
 
+func (pg *PostgreSQL) createPort(projectName string, ip string, port pgPort) error {
+	//TOFIX
+	res := pg.db.Exec(insertPort, port.Number, port.Protocol, port.Status, port.Banner, port.Type, projectName, ip)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
+}
+
 //CreatePort is the public wrapper to create a new port in the database.
 func (pg *PostgreSQL) CreatePort(projectName string, ip string, port models.Port) error {
+	pgp := pgPort{}
+	pgp.FromModel(port)
+	err := pg.createPort(projectName, ip, pgp)
+	if err != nil {
+		return err
+	}
 	events.NewEventPort(port)
-	return errors.New("Not implemented yet")
+	return nil
+}
+
+func (pg *PostgreSQL) updatePort(projectName string, ip string, port pgPort) error {
+	res := pg.db.Model(&port).Update(port)
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
 }
 
 //UpdatePort is the public wrapper to update a new port in the database.
 func (pg *PostgreSQL) UpdatePort(projectName string, ip string, port models.Port) error {
-	return errors.New("Not implemented yet")
+	pgp := pgPort{}
+	pgp.FromModel(port)
+	err := pg.updatePort(projectName, ip, pgp)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pg *PostgreSQL) createOrUpdatePorts(projectName string, ip string, ports []pgPort) error {
