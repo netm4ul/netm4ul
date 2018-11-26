@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-pg/pg/orm"
 	"github.com/netm4ul/netm4ul/core/config"
 
 	"github.com/jinzhu/gorm"
@@ -71,13 +70,7 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 		&domainToIps{},
 	}
 
-	for _, model := range reqs {
-		log.Debugf("Creating table : %+v", model)
-		pg.db.CreateTable(model, &orm.CreateTableOptions{
-			FKConstraints: true,
-			IfNotExists:   true,
-		})
-	}
+	pg.db.CreateTable(reqs)
 	return nil
 }
 
