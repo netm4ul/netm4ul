@@ -196,10 +196,6 @@ func (N *Nmap) loadArgs(input communication.Input) (opt []string, filename strin
 	log.Debugf("Writing to file '%s'", filename)
 	opt = append(opt, "-oX", filename)
 
-	if input.Domain.Name != "" {
-		opt = append(opt, input.Domain.Name)
-		return opt, filename, nil
-	}
 	if input.IP.Value != "" {
 		opt = append(opt, input.IP.Value)
 		return opt, filename, nil
