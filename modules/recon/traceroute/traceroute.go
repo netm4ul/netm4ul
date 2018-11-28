@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -72,11 +73,10 @@ func (T *Traceroute) Run(input communication.Input, resultChan chan communicatio
 	var err error
 
 	// The traceroute lib doesn't support IPV6, so we specify ipv4 only
-	if input.Domain != "" {
-		ipAddr, err = net.ResolveIPAddr("ip4", input.Domain)
-	}
-	if input.IP != nil {
-		ipAddr, err = net.ResolveIPAddr("ip4", input.IP.String())
+	if input.IP.Value != "" {
+		ipAddr, err = net.ResolveIPAddr("ip4", input.IP.Value)
+	} else {
+		return communication.Done{}, fmt.Errorf("Could not execute traceroute on empty ip")
 	}
 
 	if err != nil {

@@ -92,12 +92,12 @@ func (S *Shodan) Run(input communication.Input, resultChan chan communication.Re
 	// Get IP address
 	var domain string
 
-	if input.Domain == "" {
+	if input.Domain.Name == "" {
 		err := errors.New("Empty domain provided, can't run shodan")
 		return communication.Done{Error: err}, err
 	}
 
-	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{input.Domain})
+	dns, err := shodanClient.GetDNSResolve(shodanContext, []string{input.Domain.Name})
 	if err != nil {
 		return communication.Done{}, err
 	}

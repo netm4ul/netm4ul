@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"io/ioutil"
 	"net"
 
@@ -76,7 +77,7 @@ func parseTargets(targets []string) ([]communication.Input, error) {
 
 			// convert ips to strings
 			for _, ip := range ips {
-				input = communication.Input{Domain: target, IP: ip}
+				input = communication.Input{Domain: models.Domain{Name: target}, IP: models.IP{Value: ip.String()}}
 				inputs = append(inputs, input)
 			}
 
@@ -99,7 +100,7 @@ func parseTargets(targets []string) ([]communication.Input, error) {
 					return []communication.Input{}, errors.New("Target ip range is invalid (" + err.Error() + ")")
 				}
 				for _, host := range h {
-					input = communication.Input{IP: host}
+					input = communication.Input{IP: models.IP{Value: host.String()}}
 					inputs = append(inputs, input)
 				}
 			}

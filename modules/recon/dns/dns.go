@@ -81,14 +81,11 @@ func (D *DNS) Run(input communication.Input, resultChan chan communication.Resul
 		log.Println(err)
 	}
 
-	// Get fqdn of domain
-	var domain string
-
-	if input.Domain != "" {
-		domain = input.Domain
+	if input.Domain.Name == "" {
+		return communication.Done{}, fmt.Errorf("Could execute on empty domain")
 	}
 
-	fqdn := dns.Fqdn(domain)
+	fqdn := dns.Fqdn(input.Domain.Name)
 
 	// instanciate DnsResult
 	result := Result{}

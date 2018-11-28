@@ -110,12 +110,12 @@ func (d *dnsbruteforce) Run(input communication.Input, resultChan chan communica
 	}
 
 	log.Debugf("Starting dns bruteforcing. [Worker count : %d, Wordlist : %s, Timeout : %d]", d.Config.WorkerCount, d.Config.WordlistPath, d.Config.Timeout)
-	if input.Domain == "" {
+	if input.Domain.Name == "" {
 		err := errors.New("No domain name provided")
 		return communication.Done{Error: err}, err
 	}
 
-	isWildcard := d.checkWildcard(input.Domain)
+	isWildcard := d.checkWildcard(input.Domain.Name)
 	if isWildcard {
 		err := errors.New("The domain is a wildcard domain")
 		return communication.Done{Error: err}, err
@@ -158,7 +158,7 @@ func (d *dnsbruteforce) Run(input communication.Input, resultChan chan communica
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		inputList <- line + "." + input.Domain // prepend the domain with the subdomain name
+		inputList <- line + "." + input.Domain.Name // prepend the domain with the subdomain name
 		wg.Add(1)
 	}
 

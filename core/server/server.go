@@ -88,7 +88,37 @@ func (server *Server) RunModulesByEvents(ev events.Event) {
 		requiredEv := module.DependsOn()
 		if requiredEv == ev.Type {
 			log.Printf("Module %s will be run (event of type : %s received)\n", moduleName, ev.Type)
-			//TODO : actually run the modules !
+			if ev.Type == events.EventIP {
+				cmd := communication.Command{
+					Name:    moduleName,
+					Options: communication.Input{IP: ev.Data.(models.IP)},
+				}
+				server.SendCmd(cmd)
+			}
+
+			if ev.Type == events.EventDomain {
+				cmd := communication.Command{
+					Name:    moduleName,
+					Options: communication.Input{Domain: ev.Data.(models.Domain)},
+				}
+				server.SendCmd(cmd)
+			}
+
+			if ev.Type == events.EventPort {
+				cmd := communication.Command{
+					Name:    moduleName,
+					Options: communication.Input{Port: ev.Data.(models.Port)},
+				}
+				server.SendCmd(cmd)
+			}
+
+			if ev.Type == events.EventURI {
+				cmd := communication.Command{
+					Name:    moduleName,
+					Options: communication.Input{Ressource: ev.Data.(models.URI)},
+				}
+				server.SendCmd(cmd)
+			}
 		}
 	}
 }

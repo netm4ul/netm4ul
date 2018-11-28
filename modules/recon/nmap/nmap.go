@@ -3,14 +3,14 @@ package nmap
 //package nmap
 
 import (
-	"strings"
-	// "fmt"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -196,13 +196,15 @@ func (N *Nmap) loadArgs(input communication.Input) (opt []string, filename strin
 	log.Debugf("Writing to file '%s'", filename)
 	opt = append(opt, "-oX", filename)
 
-	if input.Domain != "" {
-		opt = append(opt, input.Domain)
+	if input.Domain.Name != "" {
+		opt = append(opt, input.Domain.Name)
+		return opt, filename, nil
 	}
-	if input.IP != nil {
-		opt = append(opt, input.IP.String())
+	if input.IP.Value != "" {
+		opt = append(opt, input.IP.Value)
+		return opt, filename, nil
 	}
-	return opt, filename, nil
+	return nil, "", fmt.Errorf("Could not read domain or ip")
 }
 
 // ParseConfig : Load the config from the config folder

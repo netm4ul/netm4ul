@@ -1,6 +1,7 @@
 package communication
 
 import (
+	"github.com/netm4ul/netm4ul/core/database/models"
 	"net"
 	"time"
 
@@ -51,8 +52,8 @@ type Done struct {
 
 // Input define the basic target system. Each module can query the database for more information.
 type Input struct {
-	Domain    string `json:"domain,omitempty"`
-	IP        net.IP `json:"ip,omitempty"`
-	Port      int16  `json:"port,omitempty"`
-	Ressource string `json:"ressource,omitempty"`
+	Domain    models.Domain `json:"domain,omitempty"`
+	IP        models.IP     `json:"ip,omitempty"`
+	Port      models.Port   `json:"port,omitempty"`
+	Ressource models.URI    `json:"ressource,omitempty"`
 }

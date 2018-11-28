@@ -125,8 +125,10 @@ func (M *Masscan) Run(input communication.Input, result chan communication.Resul
 
 	// Get IP
 	// IP is the first arguments !
-	if input.IP != nil {
-		opt = append([]string{input.IP.String()}, opt...)
+	if input.IP.Value == "" {
+		opt = append([]string{input.IP.Value}, opt...)
+	} else {
+		return communication.Done{}, fmt.Errorf("Could not execute on empty ip")
 	}
 
 	// Command execution
