@@ -9,24 +9,8 @@ import (
 
 // TOFIX : doing an actual join/relation insert instead of 3 f requests
 func (pg *PostgreSQL) createOrUpdatePort(projectName string, ip string, port pgPort) error {
-	proj := pgProject{}
-	res := pg.db.Where("name = ?", projectName).First(&proj)
-	if res.Error != nil {
-		return errors.New("Could not corresponding project for port : " + res.Error.Error())
-	}
+	res := pg.db.Raw(insertPort, port.Number, port.Protocol, port.Status, port.Banner, port.Type, projectName, ip)
 
-	pip := pgIP{}
-	res = pg.db.Where("value = ?", ip).Where("project_id = ?", proj.ID).First(&pip)
-	if res.Error != nil {
-		return errors.New("Could not corresponding ip for port : " + res.Error.Error())
-	}
-
-	port.IPId = pip.ID
-	res = pg.db.
-		Where("ip_id = ?", pip.ID).
-		Where("number = ?", port.Number).
-		Where("protocol = ?", port.Protocol).
-		FirstOrCreate(&port)
 	if res.Error != nil {
 		return errors.New("Could not create or update port : " + res.Error.Error())
 	}
