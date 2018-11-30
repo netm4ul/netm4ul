@@ -127,13 +127,10 @@ func PostProject(p models.Project, s *session.Session) error {
 	ressource := "/projects"
 
 	res, err := postData(ressource, s, p)
-	if err != nil {
+	if err != nil || res.Data == nil {
 		return errors.New("Can't create project : %s")
 	}
 
-	if res.Data.(string) != p.Name {
-		return errors.New("Error while creating the project")
-	}
 	return nil
 }
 
