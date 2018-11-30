@@ -28,15 +28,16 @@ var runCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		createSessionBase()
 		cliSession.Config.Algorithm.Mode = cliMode
-		if cliProjectName != "" {
-			createProject(cliProjectName)
-		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			log.Fatalln("Too few arguments ! Expecting target.")
 		}
 
+		proj := models.Project{Name: cliSession.Config.Project.Name, Description: cliSession.Config.Project.Description}
+		requester.PostProject(proj, cliSession)
+
+		//Starts the application
 		err := run(args)
 		if err != nil {
 			fmt.Printf("Error occured : %s", err)
@@ -69,26 +70,6 @@ var runCmd = &cobra.Command{
 
 		// runModules(targets)
 	},
-}
-
-func createProject(project string) {
-	url := "http://" + cliSession.Config.Server.IP + ":" + strconv.FormatUint(uint64(cliSession.Config.API.Port), 10) +
-		"/api/v1/projects"
-	jsonInput, err := json.Marshal(project)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonInput))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	res, err := json.Marshal(resp.Body)
-	if err != nil {
-		fmt.Println("Received invalid json !", err)
-	}
-	fmt.Println(res)
 }
 
 func run(arg []string) error {
