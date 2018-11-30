@@ -70,7 +70,10 @@ func (pg *PostgreSQL) createTablesIfNotExist() error {
 		&domainToIps{},
 	}
 
-	pg.db.CreateTable(reqs)
+	for _, model := range reqs {
+		log.Debugf("Creating table : %+v", model)
+		pg.db.CreateTable(model)
+	}
 	return nil
 }
 
