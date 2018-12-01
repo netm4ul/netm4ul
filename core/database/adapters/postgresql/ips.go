@@ -16,6 +16,7 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 	res := pg.db.Raw(selectIPByProjectName, projectName, ip.Value).Scan(&foundIP)
 	log.Debugf("Found ip : %+v", foundIP)
 
+	// insert ip if it doesn't exist
 	if gorm.IsRecordNotFoundError(res.Error) {
 		res := pg.db.Create(&ip)
 		if res.Error != nil {
@@ -29,17 +30,26 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 		return errors.New("Could not select ip : " + res.Error.Error())
 	}
 
-	return pg.updateIP(projectName, ip)
+	err := pg.updateIP(projectName, ip)
+	if err != nil {
+		return errors.New("Could not update ip : " + err.Error())
+	}
+	return nil
 }
 
 //CreateOrUpdateIP is the public wrapper to create or update a new IP in the database.
 func (pg *PostgreSQL) CreateOrUpdateIP(projectName string, ip models.IP) error {
-
+	var err error
 	// convert to pgIP first
 	pip := pgIP{}
 	pip.FromModel(ip)
 
-	err := pg.createOrUpdateIP(projectName, pip)
+	pip.Project, err = pg.getProject(projectName)
+	if err != nil {
+		return errors.New("Could not find projects " + projectName)
+	}
+
+	err = pg.createOrUpdateIP(projectName, pip)
 	if err != nil {
 		return err
 	}
@@ -81,9 +91,10 @@ func (pg *PostgreSQL) CreateIP(projectName string, ip models.IP) error {
 }
 
 func (pg *PostgreSQL) updateIP(projectName string, ip pgIP) error {
-	res := pg.db.Model(&ip).Update(ip)
+	log.Debugf("Updating %+v", ip)
+	res := pg.db.Exec(updateIP, ip.Value, ip.Network)
 	if res.Error != nil {
-		return errors.New("Could not update ip : " + res.Error.Error())
+		return res.Error
 	}
 	return nil
 }

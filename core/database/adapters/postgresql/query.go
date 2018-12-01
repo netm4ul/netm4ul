@@ -281,7 +281,7 @@ VALUES ($1, $2, (SELECT id FROM projects WHERE name = $3))
 returning id;
 `
 
-/* UPDATE */
+/* ========================================= UPDATE ========================================= */
 
 /*
 $1 : token
@@ -299,6 +299,16 @@ $2 : username
 const updateUserPasswordByUsername = `
 UPDATE users SET password = $1
 WHERE name = $2;
+`
+
+/*
+$1 ip value
+$2 ip network
+*/
+const updateIP = `
+UPDATE ips SET updated_at = now()
+WHERE value = $1
+AND network = $2;
 `
 
 /* ========================================= DELETE ========================================= */
