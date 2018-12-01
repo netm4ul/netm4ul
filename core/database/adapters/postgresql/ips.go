@@ -14,13 +14,21 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 
 	var foundIP pgIP
 	res := pg.db.Raw(selectIPByProjectName, projectName, ip.Value).Scan(&foundIP)
+	log.Debug("Found ip : %+v", foundIP)
+
+	if gorm.IsRecordNotFoundError(res.Error) {
+		res := pg.db.Create(&ip)
+		if res.Error != nil {
+			return errors.New("Could not insert ip : " + res.Error.Error())
+		}
+		return nil
+	}
+
+	// handle other errors
 	if res.Error != nil {
-		return errors.New("Could not find the ip in the database :" + res.Error.Error())
+		return errors.New("Could not select ip : " + res.Error.Error())
 	}
-	// not found, create
-	if foundIP.ID == 0 {
-		return pg.createIP(projectName, ip)
-	}
+
 	return pg.updateIP(projectName, ip)
 }
 
@@ -75,7 +83,7 @@ func (pg *PostgreSQL) CreateIP(projectName string, ip models.IP) error {
 func (pg *PostgreSQL) updateIP(projectName string, ip pgIP) error {
 	res := pg.db.Model(&ip).Update(ip)
 	if res.Error != nil {
-		return res.Error
+		return errors.New("Could not update ip : " + res.Error.Error())
 	}
 	return nil
 }
