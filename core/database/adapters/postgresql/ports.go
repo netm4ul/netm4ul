@@ -4,15 +4,37 @@ import (
 	"errors"
 	"github.com/netm4ul/netm4ul/core/events"
 
+	"github.com/jinzhu/gorm"
 	"github.com/netm4ul/netm4ul/core/database/models"
+	log "github.com/sirupsen/logrus"
 )
 
 // TOFIX : doing an actual join/relation insert instead of 3 f requests
 func (pg *PostgreSQL) createOrUpdatePort(projectName string, ip string, port pgPort) error {
-	res := pg.db.Raw(insertPort, port.Number, port.Protocol, port.Status, port.Banner, port.Type, projectName, ip)
+	// res := pg.db.Raw(insertPort, port.Number, port.Protocol, port.Status, port.Banner, port.Type, projectName, ip)
 
+	// if res.Error != nil {
+	// 	return errors.New("Could not create or update port : " + res.Error.Error())
+	// }
+
+	log.Debugf("createOrUpdate Port : %+v", port)
+
+	var foundPort pgPort
+	res := pg.db.Raw(selectPortsByProjectNameAndIP, projectName, ip).Scan(&foundPort)
+
+	// insert port if it doesn't exist
+	if gorm.IsRecordNotFoundError(res.Error) {
+		return pg.createPort(projectName, ip, port)
+	}
+
+	// handle other errors
 	if res.Error != nil {
-		return errors.New("Could not create or update port : " + res.Error.Error())
+		return errors.New("Could not select port : " + res.Error.Error())
+	}
+
+	err := pg.updatePort(projectName, ip, port)
+	if err != nil {
+		return errors.New("Could not update port : " + err.Error())
 	}
 
 	return nil
@@ -33,10 +55,16 @@ func (pg *PostgreSQL) CreateOrUpdatePort(projectName string, ip string, port mod
 
 func (pg *PostgreSQL) createPort(projectName string, ip string, port pgPort) error {
 	//TOFIX
-	res := pg.db.Exec(insertPort, port.Number, port.Protocol, port.Status, port.Banner, port.Type, projectName, ip)
+	res := pg.db.Debug().Create(&port)
 	if res.Error != nil {
-		return res.Error
+		return errors.New("Could not insert ip : " + res.Error.Error())
 	}
+	// res := pg.db.Exec(insertPort, port.Number, port.Protocol, port.Status, port.Banner, port.Type, projectName, ip)
+	// if res.Error != nil {
+	// 	return res.Error
+	// }
+
+	events.NewEventPort(port.ToModel())
 	return nil
 }
 
@@ -48,7 +76,6 @@ func (pg *PostgreSQL) CreatePort(projectName string, ip string, port models.Port
 	if err != nil {
 		return err
 	}
-	events.NewEventPort(port)
 	return nil
 }
 

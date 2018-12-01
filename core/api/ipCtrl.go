@@ -20,7 +20,7 @@ func (api *API) PostIP(w http.ResponseWriter, r *http.Request) {
 		sendInvalidArgument(w)
 		return
 	}
-	log.Println(IP)
+	log.Debugf("PostIP : %+v", IP)
 	err = api.db.CreateOrUpdateIP(api.Session.Config.Project.Name, IP)
 	if err != nil {
 		log.Errorf("Database error : %s", err)

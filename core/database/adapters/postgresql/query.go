@@ -122,7 +122,7 @@ $1 : project name
 $2 : ip value
 */
 const selectPortsByProjectNameAndIP = `
-SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type_id, ports.ip_id
+SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type, ports.ip_id
 FROM ports, ips, projects
 WHERE ips.project_id = projects.id
 AND projects.name = $1
