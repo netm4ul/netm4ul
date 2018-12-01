@@ -90,23 +90,29 @@ func (api *API) GetProjects(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) PostProject(w http.ResponseWriter, r *http.Request) {
+	var res Result
+	var project models.Project
+
 	defer r.Body.Close()
 
 	decoder := json.NewDecoder(r.Body)
-	var project models.Project
 	err := decoder.Decode(&project)
 	if err != nil {
 		sendInvalidArgument(w)
 		return
 	}
-	log.Println(project)
+	log.Debugf("PostProject : %+v\n", project)
 	err = api.db.CreateOrUpdateProject(project)
 	if err != nil {
 		log.Errorf("Database error : %s", err)
 		sendDatabaseError(w)
 		return
 	}
-	sendDefaultValue(w, CodeOK)
+
+	res = CodeToResult[CodeOK]
+	res.Data = project
+	w.WriteHeader(res.HTTPCode)
+	json.NewEncoder(w).Encode(res)
 }
 
 /*

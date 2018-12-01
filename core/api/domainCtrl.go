@@ -88,7 +88,7 @@ func (api *API) PostDomain(w http.ResponseWriter, r *http.Request) {
 		sendInvalidArgument(w)
 		return
 	}
-	log.Println(domain)
+	log.Debugf("PostDomain : %+v", domain)
 	err = api.db.CreateOrUpdateDomain(api.Session.Config.Project.Name, domain)
 	if err != nil {
 		log.Errorf("Database error : %s", err)
