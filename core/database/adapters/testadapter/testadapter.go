@@ -436,10 +436,10 @@ func (test *Test) CreateOrUpdateURI(projectName string, ip string, port string, 
 		}
 	}
 	if exist {
-		log.Debugf("Updating URI : %d", uri.Name)
+		log.Debugf("Updating URI : %s", uri.Name)
 		return test.UpdateURI(projectName, ip, port, uri)
 	}
-	log.Debugf("Creating URI : %d", uri.Name)
+	log.Debugf("Creating URI : %s", uri.Name)
 	return test.CreateURI(projectName, ip, port, uri)
 }
 

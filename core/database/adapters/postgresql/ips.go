@@ -14,7 +14,7 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 
 	var foundIP pgIP
 	res := pg.db.Raw(selectIPByProjectName, projectName, ip.Value).Scan(&foundIP)
-	log.Debug("Found ip : %+v", foundIP)
+	log.Debugf("Found ip : %+v", foundIP)
 
 	if gorm.IsRecordNotFoundError(res.Error) {
 		res := pg.db.Create(&ip)
