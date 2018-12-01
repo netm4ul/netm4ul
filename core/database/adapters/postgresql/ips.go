@@ -10,19 +10,14 @@ import (
 )
 
 func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
-	log.Debugf("Inserting ip : %+v", ip)
+	log.Debugf("createOrUpdate IP : %+v", ip)
 
 	var foundIP pgIP
 	res := pg.db.Raw(selectIPByProjectName, projectName, ip.Value).Scan(&foundIP)
-	log.Debugf("Found ip : %+v", foundIP)
 
 	// insert ip if it doesn't exist
 	if gorm.IsRecordNotFoundError(res.Error) {
-		res := pg.db.Create(&ip)
-		if res.Error != nil {
-			return errors.New("Could not insert ip : " + res.Error.Error())
-		}
-		return nil
+		return pg.createIP(projectName, ip)
 	}
 
 	// handle other errors
@@ -34,6 +29,7 @@ func (pg *PostgreSQL) createOrUpdateIP(projectName string, ip pgIP) error {
 	if err != nil {
 		return errors.New("Could not update ip : " + err.Error())
 	}
+
 	return nil
 }
 
@@ -69,10 +65,11 @@ func (pg *PostgreSQL) createOrUpdateIPs(projectName string, ips []pgIP) error {
 
 func (pg *PostgreSQL) createIP(projectName string, ip pgIP) error {
 	//TOFIX ?
-	res := pg.db.Exec(insertIP, projectName, ip.Value, ip.Network)
+	res := pg.db.Create(&ip)
 	if res.Error != nil {
-		return res.Error
+		return errors.New("Could not insert ip : " + res.Error.Error())
 	}
+	events.NewEventIP(ip.ToModel())
 	return nil
 }
 
@@ -86,7 +83,6 @@ func (pg *PostgreSQL) CreateIP(projectName string, ip models.IP) error {
 		return err
 	}
 
-	events.NewEventIP(ip)
 	return nil
 }
 
