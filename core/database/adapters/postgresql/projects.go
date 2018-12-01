@@ -10,10 +10,9 @@ import (
 )
 
 func (pg *PostgreSQL) createOrUpdateProject(project pgProject) error {
-	var p pgProject
+	var p models.Project
 
-	res := pg.db.Where("name = ?", project.Name).Find(&p)
-
+	res := pg.db.Raw(selectProjectByName, project.Name).Scan(&p)
 	// The project doesn't exist yet
 	if gorm.IsRecordNotFoundError(res.Error) {
 		res := pg.db.Create(&project)
@@ -39,7 +38,7 @@ func (pg *PostgreSQL) createOrUpdateProject(project pgProject) error {
 
 //CreateOrUpdateProject is the public wrapper to create or update a new project in the database.
 func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
-	log.Debugf("Saving project : %s", project)
+	log.Debugf("CreateOrUpdateProject : %s", project)
 
 	p := pgProject{}
 	p.FromModel(project)
@@ -53,13 +52,21 @@ func (pg *PostgreSQL) CreateOrUpdateProject(project models.Project) error {
 
 //CreateProject is the public wrapper to create a new Project in the database.
 func (pg *PostgreSQL) CreateProject(project models.Project) error {
+	res := pg.db.Exec(insertProject, project.Name, project.Description)
+	if res.Error != nil {
+		return res.Error
+	}
 	events.NewEventProject(project)
-	return errors.New("Not implemented yet")
+	return nil
 }
 
 //UpdateProject is the public wrapper to update a new Project in the database.
 func (pg *PostgreSQL) UpdateProject(project models.Project) error {
-	return errors.New("Not implemented yet")
+	res := pg.db.Model(&project).Update(project)
+	if res.Error != nil {
+		return errors.New("Could not update project : " + res.Error.Error())
+	}
+	return nil
 }
 
 func (pg *PostgreSQL) getProjects() ([]pgProject, error) {
