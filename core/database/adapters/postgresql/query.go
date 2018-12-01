@@ -38,9 +38,9 @@ $2 : project name
 const selectDomain = `
 SELECT id, name, created_at, updated_at
 FROM domains, projects
-WHERE domains.name = $1
-AND projects.name = $2
-AND domains.project_name = projects.name; 
+WHERE domains.project_id = projects.id
+AND domains.name = $1
+AND projects.name = $2;
 `
 
 /*
@@ -50,7 +50,7 @@ const selectDomains = `
 SELECT domains.name, domains.created_at, domains.updated_at
 FROM domains, projects
 WHERE projects.name = $1
-AND domains.project_name = projects.name; 
+AND domains.project_id = projects.id; 
 `
 
 /*
@@ -63,7 +63,7 @@ SELECT id, name, created_at, updated_at
 FROM domains, projects
 WHERE name LIKE ('%.' || $1)
 AND projects.name = $2
-AND domains.project_name = projects.name; 
+AND domains.project_id = projects.id; 
 `
 
 /*
@@ -90,7 +90,7 @@ $1 : project name
 const selectIPsByProjectName = `
 SELECT ips.id, ips.value, ips.network, ips.created_at, ips.updated_at
 FROM ips, projects
-WHERE ips.project_name = projects.name
+WHERE ips.project_id = projects.ips
 AND projects.name = $1;
 `
 
@@ -101,7 +101,7 @@ $2 : ip value
 const selectIPByProjectName = `
 SELECT ips.id, ips.value
 FROM ips, projects
-WHERE ips.project_name = projects.name
+WHERE ips.project_id = projects.id
 AND projects.name = $1
 AND ips.value = $2;
 `
@@ -112,7 +112,7 @@ $1 : project name
 const selectPortsByProjectName = `
 SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type_id, ports.ip_id
 FROM ports, ips, projects
-WHERE ips.project_name = projects.name
+WHERE ips.project_id = projects.id
 AND projects.name = $1
 AND ports.ip_id = ips.id;
 `
@@ -124,7 +124,7 @@ $2 : ip value
 const selectPortsByProjectNameAndIP = `
 SELECT ports.id, ports.number, ports.protocol, ports.status, ports.banner, ports.type_id, ports.ip_id
 FROM ports, ips, projects
-WHERE ips.project_name = projects.name
+WHERE ips.project_id = projects.id
 AND projects.name = $1
 AND ports.ip_id = ips.id
 AND ips.value = $2;
@@ -138,7 +138,7 @@ $3 : port number
 const selectURIsByProjectNameAndIPAndPort = `
 SELECT uris.id, uris.name, uris.code
 FROM uris, ports, ips, projects
-WHERE ips.project_name = projects.name
+WHERE ips.project_id = projects.id
 AND projects.name = $1
 AND ports.ip_id = ips.id
 AND ips.value = $2
@@ -150,9 +150,9 @@ AND ports.number = $3;
 $1 : project name
 */
 const selectRawsByProjectName = `
-SELECT raws.id, raws.module, raws.project_name, raws.data, raws.created_at
+SELECT raws.id, raws.module, raws.project_id, raws.data, raws.created_at
 FROM raws, projects
-WHERE raws.project_name = projects.name
+WHERE raws.project_id = projects.id
 AND projects.name = $1;
 `
 
@@ -161,9 +161,9 @@ $1 : project name
 $2 : module name
 */
 const selectRawsByProjectNameAndModuleName = `
-SELECT raws.id, raws.module, raws.project_name, raws.data, raws.created_at
+SELECT raws.id, raws.module, raws.project_id, raws.data, raws.created_at
 FROM raws, projects
-WHERE raws.project_name = projects.name
+WHERE raws.project_id = projects.id
 AND projects.name = $1
 AND raws.module = $2;
 `
@@ -185,8 +185,8 @@ $1 : name
 $2 : project_name
 */
 const insertDomain = `
-INSERT INTO domains (name, project_name)
-VALUES ($1, $2)
+INSERT INTO domains (name, project_id)
+VALUES ($1, (SELECT id FROM projects WHERE name = $2))
 returning id;
 `
 
@@ -207,8 +207,12 @@ $1 : value
 $2 : project name
 */
 const insertIP = `
-INSERT INTO ips (project_name, value, network)
-VALUES ($1, $2, $3)
+INSERT INTO ips (project_id, value, network)
+VALUES (
+	(SELECT id FROM projects WHERE name = $1),
+	$2,
+	$3
+)
 returning id;
 `
 
@@ -233,7 +237,7 @@ VALUES ($1, $2, $3, $4,
 	(
 		SELECT ips.id
 		FROM ips, projects
-		WHERE ips.project_name = projects.name
+		WHERE ips.project_id = projects.id
 		AND projects.name = $6
 		AND ips.value = $7
 	)
@@ -256,7 +260,7 @@ VALUE ($1, $2,
 		SELECT ports.id
 		FROM ports, projects, ips
 		WHERE ports.ip_id = ips.id
-		AND projects.name = ips.project_name
+		AND projects.id = ips.project_id
 		AND ports.number = $3
 		AND ips.value = $4
 		AND projects.name = $5
@@ -272,8 +276,8 @@ $2 : json data (must be valid json)
 $3 : project name
 */
 const insertRaw = `
-INSERT INTO raws(module, data, project_name)
-VALUES ($1, $2, $3)
+INSERT INTO raws(module, data, project_id)
+VALUES ($1, $2, (SELECT id FROM projects WHERE name = $3))
 returning id;
 `
 
