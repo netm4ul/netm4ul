@@ -6,7 +6,7 @@ ARG PROJECT="github.com/netm4ul/netm4ul"
 ARG FULL_PATH=/home/netm4ul/go/src/${PROJECT}
 ARG EXECUTABLE=${FULL_PATH}/netm4ul
 
-ARG GOVERSION=1.10.1
+ARG GOVERSION=1.11.1
 ARG GOOS=linux
 ARG GOARCH=amd64
 ENV PATH=$PATH:/usr/local/go/bin:/home/netm4ul/go/bin
@@ -17,9 +17,8 @@ RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y wget clang gcc git make curl \ 
     && wget https://dl.google.com/go/go${GOVERSION}.${GOOS}-${GOARCH}.tar.gz \
     && tar -C /usr/local -xzf go${GOVERSION}.${GOOS}-${GOARCH}.tar.gz \
-    && mkdir -p /home/netm4ul/go/bin \
+    && mkdir -p /home/netm4ul/go/bin
     # && curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-    && go get -u github.com/golang/dep/cmd/dep
 
 
 # Install nmap : https://github.com/jessfraz/dockerfiles/blob/master/nmap/Dockerfile

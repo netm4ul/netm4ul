@@ -5,7 +5,7 @@ GO_LIST=$(shell go list ./... 2>&1 | grep -v /vendor/ | grep -v "permission deni
 PACKAGES=$(shell echo $(GO_LIST) | sed -e "s!$(PACKAGE_NAME)!!g" | sed -e "s!github.com/netm4ul/netm4ul!!g")
 
 .PHONY: all
-all: vet fmt deps build
+all: vet fmt build
 	@echo "All done"
 
 .PHONY: test
@@ -29,7 +29,7 @@ vet:
 
 .PHONY: fmt
 fmt:
-	@go fmt $(GO_LIST)
+	@go fmt ./...
 
 .PHONY: gofmt
 fmt:
@@ -38,11 +38,6 @@ fmt:
 .PHONY: lint
 lint:
 	@golint $(GO_LIST)
-
-.PHONY: deps
-deps:
-	@echo "Ensure dependencies"
-	@dep ensure
 
 .PHONY: clean
 clean:
