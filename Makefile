@@ -25,19 +25,19 @@ build:
 
 .PHONY: vet
 vet:
-	@go vet $(GO_LIST)
+	@go vet ./...
 
 .PHONY: fmt
 fmt:
 	@go fmt ./...
 
 .PHONY: gofmt
-fmt:
-	@gofmt -s -w $(GO_LIST)
+gofmt:
+	@gofmt -s -w .
 
 .PHONY: lint
 lint:
-	@golint $(GO_LIST)
+	@golint ./...
 
 .PHONY: clean
 clean:
