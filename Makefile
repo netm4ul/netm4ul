@@ -20,6 +20,7 @@ test:
 .PHONY: build
 build:
 	@echo "Building ..."
+	@go mod download
 	@go build $(FLAGS) -o $(TARGET) .
 	@echo "Building done"
 
