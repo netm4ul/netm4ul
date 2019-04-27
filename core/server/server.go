@@ -36,7 +36,7 @@ func CreateServer(s *session.Session) *Server {
 
 	server.Session.Nodes = make(map[string]communication.Node, 0)
 	server.Session.Config.Modules = make(map[string]config.Module)
-
+	log.Debug("Setting up Events Propagations")
 	go server.SetupEventsPropagations()
 	return &server
 }
@@ -85,6 +85,7 @@ func (server *Server) SetupEventsPropagations() {
 
 func (server *Server) RunModulesByEvents(ev events.Event) {
 	for moduleName, module := range server.Session.ModulesEnabled {
+		log.Printf(" ======== %s enabled ======", moduleName)
 		requiredEv := module.DependsOn()
 		if requiredEv == ev.Type {
 			log.Printf("Module %s will be run (event of type : %s received)\n", moduleName, ev.Type)

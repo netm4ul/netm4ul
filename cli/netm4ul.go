@@ -63,7 +63,7 @@ func createSessionBase() {
 	cfg, err := config.LoadConfig(configPath)
 
 	if err != nil {
-		log.Fatalf("Could not load the config file : %s. Please provide a config file (-config path/to/configfile)", configPath)
+		log.Fatalf("Could not load the config file : %s. Please provide a config file (-config path/to/configfile). Error : %s", configPath, err)
 	}
 	// this function will fill the missing value if the config file is missing field
 	// will be especially useful during updates

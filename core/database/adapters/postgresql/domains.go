@@ -37,7 +37,9 @@ func (pg *PostgreSQL) CreateOrUpdateDomain(projectName string, domain models.Dom
 	if err != nil {
 		return err
 	}
-
+	// TODO | TOFIX | NEXT STEP:
+	// Send event only if the domain doesn't exist or is xyz (config ?) hours/days old.
+	// events.NewEventDomain(domain)
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/netm4ul/netm4ul/modules/recon/certificatetransparency"
 	"net"
 	"strings"
 
@@ -71,6 +72,7 @@ func (s *Session) Register(m modules.Module) {
 // loadModule func
 func (s *Session) loadModule() {
 	s.Register(traceroute.NewTraceroute())
+	s.Register(certificatetransparency.Newcertificatetransparency())
 	s.Register(dns.NewDNS())
 	s.Register(nmap.NewNmap())
 	s.Register(dnsbruteforce.NewDnsbruteforce())

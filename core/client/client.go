@@ -88,7 +88,6 @@ func (client *Client) handleData() {
 			log.Error(err.Error())
 			continue
 		}
-
 		// must exist, if it doesn't, the next lines shouldn't be executed
 		module, exist := client.Session.Modules[cmd.Name]
 		if !exist {
@@ -96,6 +95,7 @@ func (client *Client) handleData() {
 		}
 
 		go func() {
+			log.Debugf("Execute %s", cmd.Name)
 			_, err = client.Execute(module, cmd)
 			if err != nil {
 				log.Error("Could not execute module : " + err.Error())
